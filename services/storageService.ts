@@ -6,8 +6,9 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 // --- Helper to map DB User -> Application User ---
 const mapDbUserToUser = (dbUser: any, authName?: string): User => {
     let role = UserRole.STANDARD;
-    if (dbUser.type === 'medico') role = UserRole.DOCTOR;
-    if (dbUser.type === 'paciente') role = UserRole.PATIENT;
+    if (dbUser.role === UserRole.DOCTOR || dbUser.role === 'medico') role = UserRole.DOCTOR;
+    if (dbUser.role === UserRole.PATIENT || dbUser.role === 'paciente') role = UserRole.PATIENT;
+    if (dbUser.role === UserRole.STANDARD || dbUser.role === 'pessoa') role = UserRole.STANDARD;
 
     // Prioritize DB name if it exists and isn't just "User" default, 
     // otherwise use Auth Metadata name, 
@@ -46,7 +47,7 @@ export const storageService = {
             }
             try {
                 const { data: dbUser, error } = await supabase
-                    .from('users')
+                    .from('profiles')
                     .select('*')
                     .eq('id', sessionUser.id)
                     .single();
@@ -102,8 +103,8 @@ export const storageService = {
         if (error) throw error;
         if (!data.user) throw new Error("No user returned");
 
-        // Fetch from users table
-        const { data: dbUser } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+        // Fetch from profiles table
+        const { data: dbUser } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
         if (dbUser) return mapDbUserToUser(dbUser, data.user.user_metadata?.full_name);
 
         // Fallback
@@ -153,30 +154,15 @@ export const storageService = {
     },
 
     saveUser: async (user: User) => {
-        // Map UI Enum to DB 'type' column
-        let dbType = 'pessoa';
-        if (user.role === UserRole.DOCTOR) dbType = 'medico';
-        if (user.role === UserRole.PATIENT) dbType = 'paciente';
-
-        const { error } = await supabase.from('users').upsert({
+        const { error } = await supabase.from('profiles').upsert({
             id: user.id,
             email: user.email,
             name: user.name,
-            type: dbType,
+            role: user.role, // Use UserRole enum directly (STANDARD, DOCTOR, PATIENT)
             language: user.language,
             role_confirmed: user.roleConfirmed
         });
         if (error) throw error;
-
-        // Also sync to profiles table to ensure Doctor Dashboard (View) sees the name
-        try {
-            await supabase.from('profiles').upsert({
-                id: user.id,
-                name: user.name
-            });
-        } catch (e) {
-            console.warn("Failed to sync profile:", e);
-        }
     },
 
     logout: async () => {
@@ -205,7 +191,7 @@ export const storageService = {
     },
 
     deleteAccount: async (userId: string) => {
-        await supabase.from('users').delete().eq('id', userId);
+        await supabase.from('profiles').delete().eq('id', userId);
         await supabase.auth.signOut();
     },
 
@@ -341,17 +327,16 @@ export const storageService = {
     },
 
     connectPatient: async (doctorId: string, patientEmail: string): Promise<{ success: boolean; message: string }> => {
-        // 1. Find patient by email using users table as requested by Stress Test
+        // 1. Find patient by email using profiles table
         const { data: foundUsers, error } = await supabase
-            .from('users')
-            .select('id, type')
+            .from('profiles')
+            .select('id, role')
             .ilike('email', patientEmail);
 
         if (error || !foundUsers || foundUsers.length === 0) return { success: false, message: "patientNotFound" };
 
         const targetUser = foundUsers[0];
-        // Stress test requires checking for 'paciente' type
-        if (targetUser.type !== 'paciente') return { success: false, message: "userIsStandard" };
+        if (targetUser.role !== UserRole.PATIENT && targetUser.role !== 'paciente') return { success: false, message: "userIsStandard" };
 
         // 2. Insert relation using retrieved UUID (targetUser.id)
         const { error: insertError } = await supabase.from('doctor_patients').insert({
