@@ -126,9 +126,8 @@ export const storageService = {
             options: {
                 data: {
                     full_name: name,
-                    name: name,
-                    type: 'pessoa', // Match expected users.type enum
-                    role: 'STANDARD' // Match expected profiles.role
+                    role: 'STANDARD', // Required by profiles table trigger
+                    type: 'pessoa'    // Required by users table trigger
                 }
             }
         });
