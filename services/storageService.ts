@@ -172,8 +172,7 @@ export const storageService = {
         try {
             await supabase.from('profiles').upsert({
                 id: user.id,
-                full_name: user.name,
-                updated_at: new Date().toISOString()
+                name: user.name
             });
         } catch (e) {
             console.warn("Failed to sync profile:", e);

@@ -19,37 +19,7 @@ export default function Auth() {
 
         try {
             if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: fullName,
-                            // Avatar URL could be added here if we had an input for it
-                            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`
-                        },
-                    },
-                })
-                if (error) throw error
-
-                // FORCE SAVE to 'users' table to ensure name persists immediately
-                try {
-                    // We need to construct the user object. The sign up returns session/user usually,
-                    // but sometimes only if autoConfirm is on. 
-                    // However, we can TRY to save using the data we just successfully sent.
-                    // Wait, if email confirmation is required, we might not have a user ID yet usable in public table?
-                    // Standard Supabase behavior: returns user object with ID even if unconfirmed.
-                    const { data: authData } = await supabase.auth.getUser();
-                    // Actually the signUp response `data.user` has the ID.
-                    const newUserId = (await supabase.auth.getUser()).data.user?.id; // Attempt to get current, or from result
-
-                    // Better: Use the result from signUp if available (it might be null if email confirm is strictly enforced blocking login?)
-                    // Let's rely on what we have.
-                    // If we can't get ID, we can't save. 
-                } catch (err) {
-                    console.error("Profile creation warning:", err);
-                }
-
+                await storageService.signupEmail(email, password, fullName);
                 setMessage({ type: 'success', text: 'Conta criada! Verifique seu email ou faça login.' })
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
