@@ -1,4 +1,4 @@
-# Guia de Deploy na Vercel
+# Guia de Deploy na Vercel (Atualizado)
 
 Seu projeto já está configurado para a Vercel! Siga os passos abaixo para colocar o site no ar.
 
