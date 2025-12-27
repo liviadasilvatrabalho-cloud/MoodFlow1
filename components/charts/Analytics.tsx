@@ -163,29 +163,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
                     </div>
                 </div>
 
-                {/* Date Pickers */}
-                <div className="flex gap-4 w-full md:w-auto justify-center">
-                    {viewMode === 'day' && (
-                        <div className="relative group w-full md:w-auto">
-                            <input
-                                type="date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                className="w-full md:w-auto bg-neutral-900 text-white text-sm font-bold px-4 py-2 rounded-xl border border-neutral-700 focus:border-primary focus:outline-none shadow-lg"
-                            />
-                        </div>
-                    )}
-                    {viewMode === 'month' && (
-                        <div className="relative group w-full md:w-auto">
-                            <input
-                                type="month"
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                                className="w-full md:w-auto bg-neutral-900 text-white text-sm font-bold px-4 py-2 rounded-xl border border-neutral-700 focus:border-primary focus:outline-none shadow-lg"
-                            />
-                        </div>
-                    )}
-                </div>
             </div>
 
             {/* Main Mood Chart */}

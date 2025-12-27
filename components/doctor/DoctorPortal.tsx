@@ -401,8 +401,6 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                                 <button onClick={() => setChartViewMode('week')} className={`px-2 md:px-3 py-1 text-xs font-bold rounded transition-colors ${chartViewMode === 'week' ? 'bg-neutral-700 text-white' : 'text-gray-500'}`}>{t.days7}</button>
                                                 <button onClick={() => setChartViewMode('month')} className={`px-2 md:px-3 py-1 text-xs font-bold rounded transition-colors ${chartViewMode === 'month' ? 'bg-neutral-700 text-white' : 'text-gray-500'}`}>{t.viewMonth}</button>
                                             </div>
-                                            {chartViewMode === 'day' && <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-neutral-900 border border-neutral-700 text-white text-xs rounded-lg px-2 py-1 focus:outline-none" />}
-                                            {chartViewMode === 'month' && <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="bg-neutral-900 border border-neutral-700 text-white text-xs rounded-lg px-2 py-1 focus:outline-none" />}
                                         </div>
                                     </div>
 
