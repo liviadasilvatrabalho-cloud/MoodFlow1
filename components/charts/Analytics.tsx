@@ -11,11 +11,23 @@ interface AnalyticsProps {
 
 // Custom Dot uses the payload directly passed from chartData
 const CustomizedDot = (props: any) => {
-    const { cx, cy, payload } = props;
-    // Use the emoji directly from the processed data, no lookup needed. GUARANTEES MATCH.
+    const { cx, cy, payload, index, data } = props;
+
+    // EMOJI THINNING: On mobile, if we have many dots, hide some to avoid crowding
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const totalCount = data?.length || 0;
+
+    if (isMobile && totalCount > 10) {
+        // Show roughly 6-8 emojis max on mobile
+        const step = Math.ceil(totalCount / 7);
+        if (index % step !== 0 && index !== totalCount - 1) {
+            return <circle cx={cx} cy={cy} r={2} fill="#7c3aed" opacity={0.5} />;
+        }
+    }
+
     return (
-        <svg x={cx - 12} y={cy - 12} width={24} height={24} viewBox="0 0 24 24" className="overflow-visible drop-shadow-lg z-50 group">
-            <text x="50%" y="50%" dy=".3em" textAnchor="middle" fontSize="20" className="cursor-pointer transition-transform hover:scale-125">
+        <svg x={cx - 10} y={cy - 10} width={20} height={20} viewBox="0 0 24 24" className="overflow-visible drop-shadow-lg z-50 group">
+            <text x="50%" y="50%" dy=".3em" textAnchor="middle" fontSize="18" className="cursor-pointer transition-transform hover:scale-125">
                 {payload.emoji || '•'}
             </text>
         </svg>

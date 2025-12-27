@@ -12,10 +12,23 @@ interface DoctorPortalProps {
 }
 
 const CustomizedDot = (props: any) => {
-    const { cx, cy, payload } = props;
+    const { cx, cy, payload, index, data } = props;
+
+    // EMOJI THINNING: On mobile, if we have many dots, hide some to avoid crowding
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const totalCount = data?.length || 0;
+
+    if (isMobile && totalCount > 10) {
+        // Show roughly 6-8 emojis max on mobile
+        const step = Math.ceil(totalCount / 7);
+        if (index % step !== 0 && index !== totalCount - 1) {
+            return <circle cx={cx} cy={cy} r={2} fill="#7c3aed" opacity={0.5} />;
+        }
+    }
+
     return (
-        <svg x={cx - 12} y={cy - 12} width={24} height={24} viewBox="0 0 24 24" className="overflow-visible drop-shadow-md cursor-pointer hover:scale-125 transition-transform z-50">
-            <text x="50%" y="50%" dy=".3em" textAnchor="middle" fontSize="20">
+        <svg x={cx - 10} y={cy - 10} width={20} height={20} viewBox="0 0 24 24" className="overflow-visible drop-shadow-md cursor-pointer hover:scale-125 transition-transform z-50">
+            <text x="50%" y="50%" dy=".3em" textAnchor="middle" fontSize="18">
                 {payload.emoji || '•'}
             </text>
         </svg>
@@ -476,7 +489,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                                             <span className={`font-bold text-sm truncate ${moodObj?.color || 'text-white'}`}>{moodObj?.label || 'Diary Entry'}</span>
                                                             <span className="text-[10px] text-neutral-500 font-mono whitespace-nowrap">{new Date(entry.date).toLocaleDateString()} • {new Date(entry.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
-                                                        <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap mt-1">{entry.text}</p>
+                                                        <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap mt-1 break-words overflow-hidden [overflow-wrap:anywhere]">{entry.text}</p>
 
                                                         {entryNotes.length > 0 && (
                                                             <div className="mt-4 space-y-3 border-t border-white/5 pt-3">
@@ -536,7 +549,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                         {displayedPrivateNotes.length === 0 && <p className="text-center text-textMuted text-xs italic pt-10 opacity-50">No private observations.</p>}
                                         {displayedPrivateNotes.map(note => (
                                             <div key={note.id} className="p-4 rounded-xl border bg-black border-white/5">
-                                                <p className="text-gray-300 text-xs leading-relaxed whitespace-pre-wrap">{note.text}</p>
+                                                <p className="text-gray-300 text-xs leading-relaxed whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                 <div className="flex justify-between items-center mt-3">
                                                     <span className="text-[10px] opacity-50">PRIVATE</span>
                                                     <div className="text-[10px] text-gray-600 font-mono">{new Date(note.createdAt).toLocaleString()}</div>

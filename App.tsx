@@ -321,7 +321,7 @@ export default function App() {
                                                     <span className="text-2xl flex-shrink-0">{m?.emoji || '📖'}</span>
                                                     <div className="min-w-0">
                                                         <div className="font-bold text-white text-sm truncate">{m?.label || t.diary}</div>
-                                                        <p className="text-xs text-gray-500 truncate">{e.text || 'No text...'}</p>
+                                                        <p className="text-xs text-gray-500 break-words overflow-hidden [overflow-wrap:anywhere]">{e.text || 'No text...'}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
@@ -432,7 +432,7 @@ export default function App() {
                                                     <span className="text-blue-300 text-xs font-bold">Energy: {entry.energy}/10</span>
                                                 </div>
                                             )}
-                                            <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap font-light">
+                                            <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap font-light break-words overflow-hidden [overflow-wrap:anywhere]">
                                                 {entry.text}
                                             </p>
                                         </div>
