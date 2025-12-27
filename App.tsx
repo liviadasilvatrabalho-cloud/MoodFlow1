@@ -241,9 +241,9 @@ export default function App() {
                 }}
             />
 
-            <main className="flex-1 relative overflow-y-auto custom-scrollbar pb-24 md:pb-0 bg-black">
+            <main className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-0">
                 {view === 'home' && (
-                    <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500">
+                    <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 pt-2 md:pt-0">
                             <div>
                                 <h1 className="text-2xl md:text-3xl font-bold text-white mb-0.5">{t.hello} {user.name.split(' ')[0]}</h1>
@@ -352,7 +352,7 @@ export default function App() {
                 )}
 
                 {view === 'diary' && (
-                    <div className="p-6 md:p-10 max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
+                    <div className="p-4 md:p-10 max-w-5xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
                         <div className="flex justify-between items-center mb-8">
                             <h2 className="text-3xl font-bold text-white">{t.diary}</h2>
                             <button
@@ -403,18 +403,20 @@ export default function App() {
                                                 </div>
                                             )}
 
-                                            {/* Reply Form (Diary) */}
+                                            {/* Reply Form (Diary) - Improved Responsiveness */}
                                             {commentingEntryId === entry.id ? (
-                                                <div className="mt-4 flex gap-2 animate-in fade-in slide-in-from-top-1">
+                                                <div className="mt-4 flex flex-col sm:flex-row gap-2 animate-in fade-in slide-in-from-top-1">
                                                     <input
-                                                        className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+                                                        className="w-full sm:flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none shadow-inner"
                                                         placeholder="Sua resposta para o doutor..."
                                                         value={patientReply}
                                                         onChange={ev => setPatientReply(ev.target.value)}
                                                         autoFocus
                                                     />
-                                                    <Button className="h-9 px-4" onClick={() => handleSavePatientReply(entry.id)}>Enviar</Button>
-                                                    <Button variant="ghost" className="h-9 px-4" onClick={() => setCommentingEntryId(null)}>Cancelar</Button>
+                                                    <div className="flex gap-2 w-full sm:w-auto">
+                                                        <Button className="flex-1 sm:flex-none h-10 px-6 bg-primary hover:bg-primaryDark text-white shadow-lg" onClick={() => handleSavePatientReply(entry.id)}>Enviar</Button>
+                                                        <Button variant="ghost" className="flex-1 sm:flex-none h-10 px-4 text-gray-500" onClick={() => setCommentingEntryId(null)}>Cancelar</Button>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <div
@@ -427,9 +429,9 @@ export default function App() {
                                             )}
 
                                             {entry.energy && (
-                                                <div className="inline-flex items-center gap-1 bg-blue-900/20 border border-blue-900/30 px-3 py-1.5 rounded-lg mb-4">
-                                                    <span className="text-orange-400 text-xs">⚡</span>
-                                                    <span className="text-blue-300 text-xs font-bold">Energy: {entry.energy}/10</span>
+                                                <div className="inline-flex items-center gap-2 bg-blue-900/10 border border-blue-900/20 px-3 py-1.5 rounded-xl mb-4 mt-2">
+                                                    <span className="text-blue-400 text-sm">⚡</span>
+                                                    <span className="text-blue-300 text-xs font-bold whitespace-nowrap">Energy: {entry.energy}/10</span>
                                                 </div>
                                             )}
                                             <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap font-light break-words overflow-hidden [overflow-wrap:anywhere]">
@@ -444,7 +446,7 @@ export default function App() {
                 )}
 
                 {view === 'stats' && (
-                    <div className="p-6 md:p-10 max-w-5xl mx-auto">
+                    <div className="p-4 md:p-10 max-w-5xl mx-auto">
                         <h2 className="text-2xl font-bold text-white mb-6">{t.stats}</h2>
                         <Analytics entries={entries} lang={lang} />
                     </div>

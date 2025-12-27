@@ -55,6 +55,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
     const [notes, setNotes] = useState<DoctorNote[]>([]);
     const [newNote, setNewNote] = useState('');
     const [connectEmail, setConnectEmail] = useState('');
+    const chartScrollRef = useRef<HTMLDivElement>(null);
+
     const [isRecording, setIsRecording] = useState(false);
 
     const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
@@ -302,6 +304,18 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
     // For now, let's favor safety.
     const chartDataToRender = filteredChartData;
 
+    // Auto-scroll to end on mobile when data changes
+    useEffect(() => {
+        if (chartScrollRef.current && window.innerWidth < 768) {
+            const el = chartScrollRef.current;
+            el.scrollLeft = el.scrollWidth;
+            const timer = setTimeout(() => {
+                el.scrollLeft = el.scrollWidth;
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [chartDataToRender.length, chartViewMode]);
+
     const formatXAxis = (tickItem: number) => {
         const d = new Date(tickItem);
         if (chartViewMode === 'day') {
@@ -404,19 +418,15 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                         </div>
                                     </div>
 
-                                    {filteredChartData.length > 0 ? (
+                                    {chartDataToRender.length > 0 ? (
                                         <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden no-scrollbar cursor-grab active:cursor-grabbing select-none"
-                                            ref={(el) => {
-                                                if (el && window.innerWidth < 768) {
-                                                    el.scrollLeft = el.scrollWidth;
-                                                }
-                                            }}>
+                                            ref={chartScrollRef}>
                                             <div style={{
                                                 width: typeof window !== 'undefined' && window.innerWidth < 768 ? `${Math.max(100, filteredChartData.length * 60)}px` : '100%',
                                                 height: '100%'
                                             }}>
                                                 <ResponsiveContainer width="100%" height="100%">
-                                                    <AreaChart data={filteredChartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                                                    <AreaChart data={chartDataToRender} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                                                         <defs>
                                                             <linearGradient id="docMood" x1="0" y1="0" x2="0" y2="1">
                                                                 <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
@@ -518,9 +528,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                                                                     </button>
                                                                 </div>
-                                                                <div className="flex justify-end gap-2 mt-2">
-                                                                    <Button variant="ghost" className="py-1 h-8 text-xs" onClick={() => setCommentingEntryId(null)}>Cancel</Button>
-                                                                    <Button className="py-1 h-8 text-xs bg-blue-600 hover:bg-blue-700" onClick={() => handleSaveEntryComment(entry.id)}>Send</Button>
+                                                                <div className="flex flex-col sm:flex-row justify-end gap-2 mt-2">
+                                                                    <Button variant="ghost" className="h-10 text-xs flex-1 sm:flex-none" onClick={() => setCommentingEntryId(null)}>Cancel</Button>
+                                                                    <Button className="h-10 text-xs bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none" onClick={() => handleSaveEntryComment(entry.id)}>Send</Button>
                                                                 </div>
                                                             </div>
                                                         ) : (

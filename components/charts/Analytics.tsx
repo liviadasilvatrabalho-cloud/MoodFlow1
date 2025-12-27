@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { MoodEntry, Language } from '../../types';
 import { MOODS, TRANSLATIONS } from '../../constants';
@@ -64,6 +64,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
     const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
+    const chartScrollRef = useRef<HTMLDivElement>(null);
 
     // Local Date State (YYYY-MM-DD)
     const [selectedDate, setSelectedDate] = useState(() => {
@@ -177,11 +178,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
                 {/* ADDED min-w-0 to prevent flex/grid collapse causing width(-1) error */}
                 {/* ADDED min-w-0 and horizontal scroll for mobile */}
                 <div className="h-[250px] md:h-[350px] w-full overflow-x-auto overflow-y-hidden no-scrollbar cursor-grab active:cursor-grabbing select-none"
-                    ref={(el) => {
-                        if (el && window.innerWidth < 768) {
-                            el.scrollLeft = el.scrollWidth;
-                        }
-                    }}>
+                    ref={chartScrollRef}>
                     <div style={{
                         width: typeof window !== 'undefined' && window.innerWidth < 768 ? `${Math.max(100, chartData.length * 60)}px` : '100%',
                         height: '100%'
