@@ -219,7 +219,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                             key={tag}
                                             type="button"
                                             onClick={() => toggleTag(tag)}
-                                            className={`px-3 py-2 rounded-xl text-[10px] md:text-xs font-bold transition-all border ${selectedTags.includes(tag)
+                                            className={`px-4 py-2.5 rounded-xl text-[11px] md:text-sm font-bold transition-all border ${selectedTags.includes(tag)
                                                 ? 'bg-white text-black border-white shadow-md'
                                                 : 'bg-neutral-800/50 border-white/5 text-gray-400 hover:text-white'
                                                 }`}

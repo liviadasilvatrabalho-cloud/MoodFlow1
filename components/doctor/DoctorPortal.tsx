@@ -12,23 +12,10 @@ interface DoctorPortalProps {
 }
 
 const CustomizedDot = (props: any) => {
-    const { cx, cy, payload, index, data } = props;
-
-    // EMOJI THINNING: On mobile, if we have many dots, hide some to avoid crowding
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const totalCount = data?.length || 0;
-
-    if (isMobile && totalCount > 10) {
-        // Show roughly 6-8 emojis max on mobile
-        const step = Math.ceil(totalCount / 7);
-        if (index % step !== 0 && index !== totalCount - 1) {
-            return <circle cx={cx} cy={cy} r={2} fill="#7c3aed" opacity={0.5} />;
-        }
-    }
-
+    const { cx, cy, payload } = props;
     return (
-        <svg x={cx - 10} y={cy - 10} width={20} height={20} viewBox="0 0 24 24" className="overflow-visible drop-shadow-md cursor-pointer hover:scale-125 transition-transform z-50">
-            <text x="50%" y="50%" dy=".3em" textAnchor="middle" fontSize="18">
+        <svg x={cx - 12} y={cy - 12} width={24} height={24} viewBox="0 0 24 24" className="overflow-visible drop-shadow-md cursor-pointer hover:scale-125 transition-transform z-50">
+            <text x="50%" y="50%" dy=".3em" textAnchor="middle" fontSize="20">
                 {payload.emoji || '•'}
             </text>
         </svg>
@@ -420,22 +407,43 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                     </div>
 
                                     {filteredChartData.length > 0 ? (
-                                        <div className="flex-1 min-h-0 w-full min-w-0">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <AreaChart data={filteredChartData} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-                                                    <defs>
-                                                        <linearGradient id="docMood" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
-                                                            <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                                                    <XAxis dataKey="timestamp" type="category" tickFormatter={formatXAxis} stroke="#525252" tick={{ fontSize: 9, fill: '#a3a3a3' }} interval={chartViewMode === 'month' ? Math.floor(filteredChartData.length / 4) : Math.max(0, Math.floor(filteredChartData.length / 6))} padding={{ left: 20, right: 20 }} angle={-45} textAnchor="end" height={50} />
-                                                    <YAxis domain={[0, 6]} hide />
-                                                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '5 5' }} />
-                                                    <Area type="monotone" dataKey="mood" stroke="#7c3aed" strokeWidth={3} strokeLinecap="round" fill="url(#docMood)" dot={<CustomizedDot />} animationDuration={500} />
-                                                </AreaChart>
-                                            </ResponsiveContainer>
+                                        <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden no-scrollbar cursor-grab active:cursor-grabbing select-none"
+                                            ref={(el) => {
+                                                if (el && window.innerWidth < 768) {
+                                                    el.scrollLeft = el.scrollWidth;
+                                                }
+                                            }}>
+                                            <div style={{
+                                                width: typeof window !== 'undefined' && window.innerWidth < 768 ? `${Math.max(100, filteredChartData.length * 60)}px` : '100%',
+                                                height: '100%'
+                                            }}>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <AreaChart data={filteredChartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                                                        <defs>
+                                                            <linearGradient id="docMood" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
+                                                                <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                                                        <XAxis
+                                                            dataKey="timestamp"
+                                                            type="category"
+                                                            tickFormatter={formatXAxis}
+                                                            stroke="#525252"
+                                                            tick={{ fontSize: 10, fill: '#a3a3a3' }}
+                                                            interval={0}
+                                                            padding={{ left: 30, right: 30 }}
+                                                            angle={-45}
+                                                            textAnchor="end"
+                                                            height={60}
+                                                        />
+                                                        <YAxis domain={[0, 6]} hide />
+                                                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '5 5' }} />
+                                                        <Area type="monotone" dataKey="mood" stroke="#7c3aed" strokeWidth={3} strokeLinecap="round" fill="url(#docMood)" dot={<CustomizedDot />} animationDuration={500} />
+                                                    </AreaChart>
+                                                </ResponsiveContainer>
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center text-textMuted text-sm bg-neutral-900/30 rounded-2xl border border-dashed border-neutral-800 animate-pulse">
