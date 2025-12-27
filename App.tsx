@@ -394,7 +394,7 @@ export default function App() {
                                                 <div className="mt-4 space-y-3 bg-neutral-900/30 p-4 rounded-xl border border-white/5">
                                                     {doctorNotes.filter(n => n.entryId === entry.id).map(note => (
                                                         <div key={note.id} className={`flex flex-col ${note.authorRole === 'PATIENT' ? 'items-end' : 'items-start'}`}>
-                                                            <div className={`max-w-[90%] p-2 rounded-xl text-[11px] ${note.authorRole === 'PATIENT' ? 'bg-neutral-800 text-gray-400' : 'bg-blue-900/20 text-blue-100 border border-blue-900/20'}`}>
+                                                            <div className={`max-w-[90%] p-2 rounded-xl text-[11px] break-words overflow-hidden [overflow-wrap:anywhere] ${note.authorRole === 'PATIENT' ? 'bg-neutral-800 text-gray-400' : 'bg-blue-900/20 text-blue-100 border border-blue-900/20'}`}>
                                                                 <span className="font-bold block text-[9px] opacity-40 mb-1">{note.authorRole === 'PATIENT' ? 'Minha Resposta' : 'Dr. Note'}</span>
                                                                 {note.text}
                                                             </div>
@@ -406,13 +406,19 @@ export default function App() {
                                             {/* Reply Form (Diary) - Improved Responsiveness */}
                                             {commentingEntryId === entry.id ? (
                                                 <div className="mt-4 flex flex-col sm:flex-row gap-2 animate-in fade-in slide-in-from-top-1">
-                                                    <input
-                                                        className="w-full sm:flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none shadow-inner"
-                                                        placeholder="Sua resposta para o doutor..."
-                                                        value={patientReply}
-                                                        onChange={ev => setPatientReply(ev.target.value)}
-                                                        autoFocus
-                                                    />
+                                                                                                         <textarea
+                                                         className="w-full sm:flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none shadow-inner min-h-[44px] max-h-[150px] resize-none"
+                                                         placeholder="Sua resposta para o doutor..."
+                                                         value={patientReply}
+                                                         onChange={ev => setPatientReply(ev.target.value)}
+                                                         onKeyDown={(e) => {
+                                                             if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
+                                                                 e.preventDefault();
+                                                                 handleSavePatientReply(entry.id);
+                                                             }
+                                                         }}
+                                                         autoFocus
+                                                     />
                                                     <div className="flex gap-2 w-full sm:w-auto">
                                                         <Button className="flex-1 sm:flex-none h-10 px-6 bg-primary hover:bg-primaryDark text-white shadow-lg" onClick={() => handleSavePatientReply(entry.id)}>Enviar</Button>
                                                         <Button variant="ghost" className="flex-1 sm:flex-none h-10 px-4 text-gray-500" onClick={() => setCommentingEntryId(null)}>Cancelar</Button>
