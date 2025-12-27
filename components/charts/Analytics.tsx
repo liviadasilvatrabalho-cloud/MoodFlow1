@@ -215,13 +215,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
                                     type="category"
                                     tickFormatter={formatXAxis}
                                     stroke="#525252"
-                                    tick={{ fontSize: 10, fill: '#a3a3a3' }}
-                                    tickMargin={15}
-                                    interval={viewMode === 'month' ? Math.floor(chartData.length / 5) : 0}
-                                    padding={{ left: 30, right: 30 }}
+                                    tick={{ fontSize: 9, fill: '#a3a3a3' }}
+                                    tickMargin={10}
+                                    interval={viewMode === 'month' ? Math.floor(chartData.length / 4) : Math.max(0, Math.floor(chartData.length / 6))}
+                                    padding={{ left: 20, right: 20 }}
                                     angle={-45}
                                     textAnchor="end"
-                                    height={60}
+                                    height={50}
                                 />
                                 <YAxis domain={[0, 6]} hide />
                                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '5 5' }} trigger="hover" />

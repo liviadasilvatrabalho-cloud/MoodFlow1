@@ -316,20 +316,20 @@ export default function App() {
                                         const entryIsMood = e.entryMode === 'mood' || (!e.entryMode && e.mood !== null);
                                         const m = entryIsMood ? MOODS.find(mood => mood.value === e.mood) : null;
                                         return (
-                                            <div key={e.id} className="bg-[#0A0A0A] p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-all">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-2xl">{m?.emoji || '📖'}</span>
-                                                    <div>
-                                                        <div className="font-bold text-white text-sm">{m?.label || t.diary}</div>
-                                                        <p className="text-xs text-gray-500 truncate max-w-[200px]">{e.text || 'No text...'}</p>
+                                            <div key={e.id} className="bg-[#0A0A0A] p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-all gap-3">
+                                                <div className="flex items-center gap-4 min-w-0 flex-1">
+                                                    <span className="text-2xl flex-shrink-0">{m?.emoji || '📖'}</span>
+                                                    <div className="min-w-0">
+                                                        <div className="font-bold text-white text-sm truncate">{m?.label || t.diary}</div>
+                                                        <p className="text-xs text-gray-500 truncate">{e.text || 'No text...'}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-xs text-blue-500/70 font-mono">{new Date(e.timestamp).toLocaleDateString()}</span>
+                                                <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
+                                                    <span className="text-[10px] text-blue-500/70 font-mono whitespace-nowrap">{new Date(e.timestamp).toLocaleDateString()}</span>
                                                     {user.role === UserRole.PATIENT ? (
                                                         <button
                                                             onClick={(ev) => { ev.stopPropagation(); handleToggleLock(e); }}
-                                                            className="text-orange-400 hover:text-orange-300 transition-colors"
+                                                            className="text-orange-400 hover:text-orange-300 transition-colors flex items-center"
                                                             title={e.isLocked ? "Unlock" : "Lock"}
                                                         >
                                                             {e.isLocked ? (
