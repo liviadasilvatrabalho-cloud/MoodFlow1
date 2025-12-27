@@ -417,7 +417,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                                         </linearGradient>
                                                     </defs>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                                                    <XAxis dataKey="timestamp" type="category" tickFormatter={formatXAxis} stroke="#525252" tick={{ fontSize: 10 }} interval={chartViewMode === 'month' ? Math.floor(filteredChartData.length / 5) : 0} padding={{ left: 30, right: 30 }} angle={-45} textAnchor="end" height={60} />
+                                                    <XAxis dataKey="timestamp" type="category" tickFormatter={formatXAxis} stroke="#525252" tick={{ fontSize: 9, fill: '#a3a3a3' }} interval={chartViewMode === 'month' ? Math.floor(filteredChartData.length / 4) : Math.max(0, Math.floor(filteredChartData.length / 6))} padding={{ left: 20, right: 20 }} angle={-45} textAnchor="end" height={50} />
                                                     <YAxis domain={[0, 6]} hide />
                                                     <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '5 5' }} />
                                                     <Area type="monotone" dataKey="mood" stroke="#7c3aed" strokeWidth={3} strokeLinecap="round" fill="url(#docMood)" dot={<CustomizedDot />} animationDuration={500} />
@@ -469,14 +469,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                             const entryNotes = notes.filter(n => n.entryId === entry.id);
 
                                             return (
-                                                <div key={entry.id} id={`doc-entry-${entry.id}`} className="bg-surface hover:bg-surfaceHighlight transition-colors p-5 rounded-2xl border border-neutral-800 flex gap-5 items-start group relative">
-                                                    <div className="text-3xl">{moodObj?.emoji || '📖'}</div>
+                                                <div key={entry.id} id={`doc-entry-${entry.id}`} className="bg-surface hover:bg-surfaceHighlight transition-colors p-4 md:p-5 rounded-2xl border border-neutral-800 flex gap-4 md:gap-5 items-start group relative">
+                                                    <div className="text-2xl md:text-3xl flex-shrink-0">{moodObj?.emoji || '📖'}</div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-center mb-1">
-                                                            <span className={`font-bold text-sm ${moodObj?.color || 'text-white'}`}>{moodObj?.label || 'Diary Entry'}</span>
-                                                            <span className="text-xs text-neutral-500 font-mono">{new Date(entry.date).toLocaleDateString()} • {new Date(entry.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1 gap-1">
+                                                            <span className={`font-bold text-sm truncate ${moodObj?.color || 'text-white'}`}>{moodObj?.label || 'Diary Entry'}</span>
+                                                            <span className="text-[10px] text-neutral-500 font-mono whitespace-nowrap">{new Date(entry.date).toLocaleDateString()} • {new Date(entry.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
-                                                        <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap mt-2">{entry.text}</p>
+                                                        <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap mt-1">{entry.text}</p>
 
                                                         {entryNotes.length > 0 && (
                                                             <div className="mt-4 space-y-3 border-t border-white/5 pt-3">

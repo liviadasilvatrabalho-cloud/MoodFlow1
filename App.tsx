@@ -243,11 +243,11 @@ export default function App() {
 
             <main className="flex-1 relative overflow-y-auto custom-scrollbar pb-24 md:pb-0 bg-black">
                 {view === 'home' && (
-                    <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 pt-2 md:pt-0">
                             <div>
-                                <h1 className="text-3xl font-bold text-white mb-1">{t.hello} {user.name.split(' ')[0]}</h1>
-                                <p className="text-sm text-gray-400">{t.readyTrack}</p>
+                                <h1 className="text-2xl md:text-3xl font-bold text-white mb-0.5">{t.hello} {user.name.split(' ')[0]}</h1>
+                                <p className="text-[11px] md:text-sm text-gray-400">{t.readyTrack}</p>
                             </div>
                             <div className="hidden md:flex bg-[#111] p-1 rounded-xl border border-white/5">
                                 <button onClick={() => { setShowEntryForm(true); setEntryMode('mood'); }} className="px-4 py-2 bg-[#7c3aed] text-white text-xs font-bold rounded-lg hover:bg-[#6d28d9] transition-colors">
@@ -265,15 +265,15 @@ export default function App() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-[#111] p-8 rounded-3xl border border-white/5 relative overflow-hidden flex items-center justify-between group h-48">
+                            <div className="bg-surface p-6 md:p-8 rounded-3xl border border-white/5 relative overflow-hidden flex items-center justify-between group h-40 md:h-48">
                                 <div className="z-10">
-                                    <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">{t.lastMood}</h2>
+                                    <h2 className="text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 md:mb-4">{t.lastMood}</h2>
                                     {latestEntry ? (
                                         <div>
-                                            <h3 className="text-3xl font-bold text-white mb-1">
+                                            <h3 className="text-2xl md:text-3xl font-bold text-white mb-0.5">
                                                 {isMoodEntry ? (lastMood?.label || 'Okay') : t.diary}
                                             </h3>
-                                            <p className="text-xs text-gray-500 font-mono">
+                                            <p className="text-[10px] md:text-xs text-gray-500 font-mono">
                                                 {new Date(latestEntry.timestamp).toLocaleDateString()} • {new Date(latestEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
@@ -281,12 +281,12 @@ export default function App() {
                                         <p className="text-sm text-gray-500 italic">{t.noEntries}</p>
                                     )}
                                 </div>
-                                <div className="text-[80px] leading-none opacity-100 filter grayscale-0">
+                                <div className="text-[60px] md:text-[80px] leading-none opacity-100 filter grayscale-0">
                                     {isMoodEntry ? (lastMood?.emoji || '🙂') : '📖'}
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] p-8 rounded-3xl relative overflow-hidden flex flex-col justify-between h-48 shadow-xl">
+                            <div className="bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] p-6 md:p-8 rounded-3xl relative overflow-hidden flex flex-col justify-between h-40 md:h-48 shadow-xl">
                                 <div className="z-10">
                                     <h2 className="text-2xl font-bold text-white mb-2">{t.diaryTitle}</h2>
                                     <p className="text-xs text-purple-200 leading-relaxed max-w-[80%] opacity-90">{t.diarySubtitle}</p>

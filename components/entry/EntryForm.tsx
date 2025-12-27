@@ -127,7 +127,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
     };
 
     return (
-        <div className="bg-neutral-900/95 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl w-full max-w-xl mx-auto animate-in zoom-in-95 duration-200 max-h-[85vh] md:max-h-[95vh] flex flex-col">
+        <div className="bg-neutral-900/95 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl w-full max-w-xl mx-auto animate-in zoom-in-95 duration-200 h-[92vh] md:h-auto md:max-h-[95vh] flex flex-col">
 
             {/* Tab Switcher */}
             <div className="px-4 pt-4 pb-2 shrink-0 border-b border-white/5">
@@ -166,7 +166,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                         {mode !== 'diary' && (
                             <div className="space-y-3">
                                 <label className="text-[10px] md:text-xs text-textMuted uppercase tracking-widest font-bold ml-1">{t.howAreYou}</label>
-                                <div className="grid grid-cols-5 gap-2 w-full">
+                                <div className="grid grid-cols-5 gap-1.5 md:gap-2 w-full">
                                     {MOODS.map((m) => {
                                         const isSelected = mood === m.value;
                                         return (
@@ -174,14 +174,14 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                                 key={m.value}
                                                 type="button"
                                                 onClick={() => setMood(m.value)}
-                                                className={`flex flex-col items-center justify-center py-3 rounded-2xl transition-all duration-300 border ${isSelected
+                                                className={`flex flex-col items-center justify-center py-2.5 md:py-3 rounded-2xl transition-all duration-300 border ${isSelected
                                                     ? `${m.bg} ${m.border} scale-105 shadow-xl`
                                                     : 'bg-white/5 border-transparent opacity-60'
                                                     }`}
                                             >
-                                                <span className="text-2xl md:text-3xl drop-shadow-md mb-1">{m.emoji}</span>
+                                                <span className="text-xl md:text-3xl drop-shadow-md mb-0.5">{m.emoji}</span>
                                                 {isSelected && (
-                                                    <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-tighter ${m.color}`}>
+                                                    <span className={`text-[7px] md:text-[9px] font-black uppercase tracking-tighter ${m.color}`}>
                                                         {m.label}
                                                     </span>
                                                 )}
