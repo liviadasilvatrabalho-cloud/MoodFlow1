@@ -158,39 +158,18 @@ export const storageService = {
     saveUser: async (user: User) => {
         const now = new Date().toISOString();
 
-        // 1. Sync to 'profiles' table (English Roles)
         const { error: profileError } = await supabase.from('profiles').upsert({
             id: user.id,
             email: user.email,
             name: user.name,
-            role: user.role, // STANDARD, PATIENT, DOCTOR
+            role: user.role,
             language: user.language,
             role_confirmed: user.roleConfirmed
         });
+
         if (profileError) {
             console.error("Error saving to profiles:", profileError);
             throw profileError;
-        }
-
-        // 2. Sync to 'users' table (Portuguese Types)
-        let dbType = 'pessoa';
-        if (user.role === UserRole.PROFESSIONAL) dbType = 'medico';
-        if (user.role === UserRole.PATIENT) dbType = 'paciente';
-
-        const { error: userError } = await supabase.from('users').upsert({
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            type: dbType,
-            language: user.language,
-            role_confirmed: user.roleConfirmed,
-            joined_at: user.joinedAt || now,
-            updated_at: now
-        });
-
-        if (userError) {
-            console.warn("Soft error: Failed to sync to 'users' table:", userError.message);
-            throw userError;
         }
     },
 
