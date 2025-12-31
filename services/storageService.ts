@@ -56,7 +56,7 @@ export const storageService = {
                 if (error || !dbUser) {
                     console.error("Error fetching user:", error);
 
-                    // NEW: Check if we have a pending role from Auth screen (Google Login flow)
+                    // NEW: Check if we have a pending role from Auth screen
                     const pendingRole = localStorage.getItem('moodflow_selected_role') as UserRole || UserRole.PATIENT;
                     localStorage.removeItem('moodflow_selected_role');
 
@@ -145,18 +145,6 @@ export const storageService = {
         if (error) throw error;
     },
 
-    loginGoogle: async (): Promise<{ user: User | null, isNew: boolean }> => {
-        // Supabase OAuth redirect flow means this function returns before auth completes usually.
-        // But we can initiate it.
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.origin
-            }
-        });
-        if (error) throw error;
-        return { user: null, isNew: false }; // Handled by onAuthStateChange after redirect
-    },
 
     resetPassword: async (email: string): Promise<void> => {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
