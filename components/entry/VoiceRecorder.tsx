@@ -68,17 +68,21 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onTranscription, i
             <button
                 onClick={toggleListening}
                 disabled={isProcessing}
-                className={`h-24 w-24 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl ${isListening
-                        ? 'bg-red-500 scale-110 shadow-[0_0_30px_rgba(239,68,68,0.6)] animate-pulse'
-                        : 'bg-[#1A1A1A] hover:bg-[#222] border border-white/10'
+                className={`h-24 w-24 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl relative group ${isListening
+                        ? 'bg-[#EF4444] scale-110 shadow-[0_0_40px_rgba(239,68,68,0.5)]'
+                        : 'bg-transparent border-[3px] border-white/10 hover:border-white/20 hover:bg-white/5'
                     } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 type="button"
             >
+                {isListening && (
+                    <div className="absolute inset-[-8px] border-2 border-[#EF4444]/30 rounded-full animate-ping pointer-events-none" />
+                )}
+
                 {isListening ? (
-                    <div className="w-8 h-8 bg-white rounded-sm" />
+                    <div className="w-8 h-8 bg-white rounded-lg shadow-inner" />
                 ) : (
-                    <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    <svg className="w-10 h-10 text-white opacity-90 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
                 )}
             </button>
