@@ -92,7 +92,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
     };
 
     return (
-        <div className="bg-[#121212] border border-white/5 rounded-[40px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.9)] w-full max-w-xl mx-auto flex flex-col h-full max-h-[95vh] animate-in zoom-in-95 duration-500 font-sans">
+        <div className="bg-[#121212] sm:border sm:border-white/5 sm:rounded-[40px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.9)] w-full max-w-xl mx-auto flex flex-col h-full max-h-screen sm:max-h-[95vh] animate-in zoom-in-95 duration-500 font-sans">
 
             {/* Dark Mode Tab Switcher */}
             <div className="px-6 py-4 shrink-0 bg-black/20 border-b border-white/5">
@@ -118,7 +118,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-10 scroll-smooth bg-[#121212]">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-8 sm:space-y-10 scroll-smooth bg-[#121212]">
                 {mode === 'voice' ? (
                     <div className="flex flex-col items-center justify-center min-h-[450px] text-center space-y-10 py-6 animate-in fade-in duration-500">
                         <div className="space-y-4">
@@ -149,8 +149,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                             <>
                                 {/* Mood Selection Grid */}
                                 <div className="space-y-6">
-                                    <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">COMO VOCÊ ESTÁ SE SENTINDO?</label>
-                                    <div className="grid grid-cols-5 gap-4">
+                                    <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">COMO VOCÊ ESTÁ SE SENTINDO?</label>
+                                    <div className="grid grid-cols-5 gap-2 sm:gap-4">
                                         {MOODS.map((m) => {
                                             const isSelected = mood === m.value;
                                             return (
@@ -163,8 +163,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                                         : 'bg-white/5 border-transparent opacity-30 hover:opacity-100 hover:scale-[1.02]'
                                                         }`}
                                                 >
-                                                    <span className={`text-4xl md:text-5xl mb-2 select-none transform transition-all ${isSelected ? 'scale-110 drop-shadow-lg' : ''}`}>{m.emoji}</span>
-                                                    {isSelected && <span className="text-[11px] font-black uppercase text-white tracking-tighter animate-in fade-in zoom-in-50">{m.label}</span>}
+                                                    <span className={`text-3xl sm:text-4xl md:text-5xl mb-2 select-none transform transition-all ${isSelected ? 'scale-110 drop-shadow-lg' : ''}`}>{m.emoji}</span>
+                                                    {isSelected && <span className="text-[9px] sm:text-[11px] font-black uppercase text-white tracking-tighter animate-in fade-in zoom-in-50">{m.label}</span>}
                                                 </button>
                                             )
                                         })}
@@ -175,8 +175,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                 <div className="space-y-6 bg-[#0A0A0A] p-10 rounded-[40px] border border-white/5 shadow-inner relative overflow-hidden group">
                                     <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                                     <div className="flex justify-between items-center relative z-10">
-                                        <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black opacity-90">NÍVEL DE ENERGIA</label>
-                                        <span className="text-[#FBBF24] font-black text-3xl tracking-tighter drop-shadow-lg">{energy}<span className="text-gray-700 text-base font-bold ml-1">/10</span></span>
+                                        <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black opacity-90">NÍVEL DE ENERGIA</label>
+                                        <span className="text-[#FBBF24] font-black text-2xl sm:text-3xl tracking-tighter drop-shadow-lg">{energy}<span className="text-gray-700 text-sm sm:text-base font-bold ml-1">/10</span></span>
                                     </div>
                                     <div className="relative pt-6 pb-4 cursor-pointer">
                                         <div className="h-3 w-full bg-gradient-to-r from-[#EF4444] via-[#FBBF24] to-[#10B981] rounded-full shadow-inner opacity-90" />
@@ -290,22 +290,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
 
             <style dangerouslySetInnerHTML={{
                 __html: `
-                .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 20px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
-                
-                input[type='range']::-webkit-slider-thumb {
-                    appearance: none;
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    background: transparent;
-                    cursor: pointer;
-                }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
                 
                 @media (max-width: 640px) {
-                    .bg-[#121212] { border-radius: 0; max-height: 100vh; height: 100vh; }
+                    .bg-[#121212] { border-radius: 0; max-height: 100dvh; height: 100dvh; }
                     .rounded-[40px] { border-radius: 0; }
                 }
             `}} />
