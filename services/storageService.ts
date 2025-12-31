@@ -55,17 +55,27 @@ export const storageService = {
 
                 if (error || !dbUser) {
                     console.error("Error fetching user:", error);
+
+                    // NEW: Check if we have a pending role from Auth screen (Google Login flow)
+                    const pendingRole = localStorage.getItem('moodflow_selected_role') as UserRole || UserRole.PATIENT;
+                    localStorage.removeItem('moodflow_selected_role');
+
                     // Fallback using session metadata
                     const fallbackUser: User = {
                         id: sessionUser.id,
                         email: sessionUser.email!,
-                        name: sessionUser.user_metadata?.full_name || 'User',
-                        role: UserRole.PATIENT,
+                        name: sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || 'User',
+                        role: sessionUser.user_metadata?.role || pendingRole,
                         language: 'pt',
-                        roleConfirmed: false,
+                        roleConfirmed: !!(sessionUser.user_metadata?.role || pendingRole),
                         joinedAt: sessionUser.created_at || new Date().toISOString()
                     };
                     callback(fallbackUser);
+
+                    // If it was a first-time login without a profile, save the initial profile now
+                    if (!dbUser) {
+                        storageService.saveUser(fallbackUser).catch(console.error);
+                    }
                 } else {
                     const mappedUser = mapDbUserToUser(dbUser, sessionUser.user_metadata?.full_name);
                     callback(mappedUser);
@@ -128,7 +138,7 @@ export const storageService = {
                 data: {
                     full_name: name,
                     role: role,
-                    type: role === UserRole.PROFESSIONAL ? 'medico' : 'paciente'
+                    role_confirmed: true // Email signup already confirms role
                 }
             }
         });
