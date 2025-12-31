@@ -11,7 +11,8 @@ import { BottomNav } from './components/ui/BottomNav';
 import Auth from './components/Auth';
 
 // --- 1. Role Selection Screen ---
-const RoleSelectionScreen = ({ user, onSelect, onBack }: { user: User, onSelect: (role: UserRole) => void, onBack: () => void }) => {
+const RoleSelectionScreen = ({ user, onSelect, onBack, lang }: { user: User, onSelect: (role: UserRole) => void, onBack: () => void, lang: Language }) => {
+    const t = TRANSLATIONS[lang];
     return (
         <div className="min-h-screen bg-black flex items-center justify-center p-6">
             <div className="w-full max-w-[400px] animate-in fade-in duration-500">
@@ -31,29 +32,27 @@ const RoleSelectionScreen = ({ user, onSelect, onBack }: { user: User, onSelect:
                 </div>
 
                 {/* Options */}
-                <div className="space-y-3">
-                    <button
-                        onClick={() => onSelect(UserRole.STANDARD)}
-                        className="w-full text-left bg-[#111] hover:bg-[#1A1A1A] border border-neutral-800 hover:border-neutral-700 p-6 rounded-2xl transition-all group"
-                    >
-                        <h3 className="text-white font-bold text-xl mb-2 group-hover:text-primary transition-colors">Usuário Comum</h3>
-                        <p className="text-base text-gray-400 leading-relaxed">Diário pessoal. Análises privadas.</p>
-                    </button>
-
+                <div className="space-y-4">
                     <button
                         onClick={() => onSelect(UserRole.PATIENT)}
-                        className="w-full text-left bg-[#111] hover:bg-[#1A1A1A] border border-neutral-800 hover:border-neutral-700 p-6 rounded-2xl transition-all group"
+                        className="w-full text-left bg-[#111] hover:bg-[#1A1A1A] border border-neutral-800 hover:border-neutral-700 p-6 rounded-2xl transition-all group shadow-xl"
                     >
-                        <h3 className="text-white font-bold text-xl mb-2 group-hover:text-primary transition-colors">Paciente</h3>
-                        <p className="text-base text-gray-400 leading-relaxed">Compartilhe registros específicos com seu terapeuta.</p>
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-white font-bold text-xl group-hover:text-primary transition-colors">{t.patientMode}</h3>
+                            <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded uppercase font-black">Clinical</span>
+                        </div>
+                        <p className="text-sm text-gray-400 leading-relaxed">{t.patDesc}</p>
                     </button>
 
                     <button
-                        onClick={() => onSelect(UserRole.DOCTOR)}
-                        className="w-full text-left bg-[#111] hover:bg-[#1A1A1A] border border-neutral-800 hover:border-neutral-700 p-6 rounded-2xl transition-all group"
+                        onClick={() => onSelect(UserRole.PROFESSIONAL)}
+                        className="w-full text-left bg-[#111] hover:bg-[#1A1A1A] border border-neutral-800 hover:border-neutral-700 p-6 rounded-2xl transition-all group shadow-xl"
                     >
-                        <h3 className="text-white font-bold text-xl mb-2 group-hover:text-primary transition-colors">Profissional</h3>
-                        <p className="text-base text-gray-400 leading-relaxed">Para terapeutas visualizarem dados de pacientes.</p>
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-white font-bold text-xl group-hover:text-primary transition-colors">{t.professional}</h3>
+                            <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded uppercase font-black">Professional</span>
+                        </div>
+                        <p className="text-sm text-gray-400 leading-relaxed">{t.docDesc}</p>
                     </button>
                 </div>
 
@@ -80,6 +79,7 @@ export default function App() {
     const [entryMode, setEntryMode] = useState<'mood' | 'voice' | 'diary'>('mood');
     const [lang, setLang] = useState<Language>('pt');
     const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([]);
+    const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
     useEffect(() => {
         const unsub = storageService.onAuthStateChanged((u) => {
@@ -102,16 +102,26 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (user && user.role !== UserRole.DOCTOR) {
+        if (user && user.role !== UserRole.PROFESSIONAL) {
             const unsub = storageService.subscribeEntries(user.id, (data) => {
                 setEntries(data);
             });
             const unsubNotes = storageService.subscribeNotes(undefined, user.id, (notes) => {
                 setDoctorNotes(notes);
             });
+
+            // Initial audit logs fetch
+            storageService.getAuditLogs(user.id).then(setAuditLogs);
+
             return () => { unsub(); unsubNotes(); }
         }
     }, [user]);
+
+    useEffect(() => {
+        if (view === 'settings' && user) {
+            storageService.getAuditLogs(user.id).then(setAuditLogs);
+        }
+    }, [view, user]);
 
     const handleRoleSelect = async (role: UserRole) => {
         if (!roleSelectionUser) return;
@@ -162,7 +172,7 @@ export default function App() {
     };
 
     const handleToggleLock = async (entry: MoodEntry) => {
-        if (!user || user.role === UserRole.DOCTOR) return;
+        if (!user || user.role === UserRole.PROFESSIONAL) return;
         const updatedEntry = { ...entry, isLocked: !entry.isLocked };
         setEntries(prev => prev.map(e => e.id === entry.id ? updatedEntry : e));
         try {
@@ -184,7 +194,8 @@ export default function App() {
 
         // If no doctor found in existing notes (first interaction), fetch from DB
         if (!targetDoctorId) {
-            targetDoctorId = (await storageService.getConnectedDoctor(user.id)) || '';
+            const connectedDocs = (await storageService.getConnectedDoctors(user.id)) || [];
+            targetDoctorId = connectedDocs[0]?.id || '';
         }
 
         if (!targetDoctorId) {
@@ -217,9 +228,9 @@ export default function App() {
     };
 
     if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div></div>;
-    if (roleSelectionUser) return <RoleSelectionScreen user={roleSelectionUser} onSelect={handleRoleSelect} onBack={storageService.logout} />;
+    if (roleSelectionUser) return <RoleSelectionScreen user={roleSelectionUser} onSelect={handleRoleSelect} onBack={storageService.logout} lang={lang} />;
     if (!user) return <Auth />;
-    if (user.role === UserRole.DOCTOR) return <DoctorPortal user={user} onLogout={storageService.logout} />;
+    if (user.role === UserRole.PROFESSIONAL) return <DoctorPortal user={user} onLogout={storageService.logout} />;
 
     const t = TRANSLATIONS[lang];
     const latestEntry = entries[0];
@@ -379,12 +390,19 @@ export default function App() {
                                                 </div>
                                                 <div className="flex gap-2">
                                                     {user.role === UserRole.PATIENT && (
-                                                        <button
-                                                            onClick={() => handleToggleLock(entry)}
-                                                            className={`text-[10px] px-2 py-1 rounded-full border font-bold flex items-center gap-1 transition-colors ${entry.isLocked ? 'bg-red-900/20 text-red-400 border-red-900/30' : 'bg-green-900/20 text-green-400 border-green-900/30'}`}
-                                                        >
-                                                            {entry.isLocked ? '🔒 Private' : '🔓 Shared'}
-                                                        </button>
+                                                        <div className="flex flex-wrap gap-1 justify-end">
+                                                            {entry.permissions && entry.permissions.length > 0 ? (
+                                                                entry.permissions.map(pid => (
+                                                                    <span key={pid} className="text-[9px] px-2 py-0.5 rounded-full bg-blue-900/20 text-blue-400 border border-blue-900/30 whitespace-nowrap">
+                                                                        👁️ Shared
+                                                                    </span>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-900/20 text-red-400 border border-red-900/30">
+                                                                    🔒 Private
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -394,8 +412,16 @@ export default function App() {
                                                 <div className="mt-4 space-y-3 bg-neutral-900/30 p-4 rounded-xl border border-white/5">
                                                     {doctorNotes.filter(n => n.entryId === entry.id).map(note => (
                                                         <div key={note.id} className={`flex flex-col ${note.authorRole === 'PATIENT' ? 'items-end' : 'items-start'}`}>
-                                                            <div className={`max-w-[90%] p-2 rounded-xl text-[11px] break-words overflow-hidden [overflow-wrap:anywhere] ${note.authorRole === 'PATIENT' ? 'bg-neutral-800 text-gray-400' : 'bg-blue-900/20 text-blue-100 border border-blue-900/20'}`}>
-                                                                <span className="font-bold block text-[9px] opacity-40 mb-1">{note.authorRole === 'PATIENT' ? 'Minha Resposta' : 'Dr. Note'}</span>
+                                                            <div className={`max-w-[90%] p-2 rounded-xl text-[11px] break-words overflow-hidden [overflow-wrap:anywhere] ${note.authorRole === 'PATIENT' ? 'bg-neutral-800 text-gray-400' : 'bg-blue-900/20 text-blue-100 border border-blue-900/20'} ${note.status === 'resolved' ? 'opacity-50 grayscale' : ''}`}>
+                                                                <div className="flex justify-between items-center gap-3 mb-1">
+                                                                    <span className="font-bold text-[9px] opacity-40">{note.authorRole === 'PATIENT' ? 'Minha Resposta' : 'Dr. Note'}</span>
+                                                                    {user.role === UserRole.PATIENT && note.authorRole === 'DOCTOR' && note.status !== 'resolved' && (
+                                                                        <div className="flex gap-1">
+                                                                            <button onClick={() => storageService.updateNoteStatus(note.id, 'resolved')} className="text-[8px] text-green-500 hover:underline">Resolver</button>
+                                                                            <button onClick={() => storageService.updateNoteStatus(note.id, 'hidden')} className="text-[8px] text-red-500 hover:underline">Ocultar</button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                                 {note.text}
                                                             </div>
                                                         </div>
@@ -406,19 +432,19 @@ export default function App() {
                                             {/* Reply Form (Diary) - Improved Responsiveness */}
                                             {commentingEntryId === entry.id ? (
                                                 <div className="mt-4 flex flex-col sm:flex-row gap-2 animate-in fade-in slide-in-from-top-1">
-                                                                                                         <textarea
-                                                         className="w-full sm:flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none shadow-inner min-h-[44px] max-h-[150px] resize-none"
-                                                         placeholder="Sua resposta para o doutor..."
-                                                         value={patientReply}
-                                                         onChange={ev => setPatientReply(ev.target.value)}
-                                                         onKeyDown={(e) => {
-                                                             if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
-                                                                 e.preventDefault();
-                                                                 handleSavePatientReply(entry.id);
-                                                             }
-                                                         }}
-                                                         autoFocus
-                                                     />
+                                                    <textarea
+                                                        className="w-full sm:flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none shadow-inner min-h-[44px] max-h-[150px] resize-none"
+                                                        placeholder="Sua resposta para o doutor..."
+                                                        value={patientReply}
+                                                        onChange={ev => setPatientReply(ev.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
+                                                                e.preventDefault();
+                                                                handleSavePatientReply(entry.id);
+                                                            }
+                                                        }}
+                                                        autoFocus
+                                                    />
                                                     <div className="flex gap-2 w-full sm:w-auto">
                                                         <Button className="flex-1 sm:flex-none h-10 px-6 bg-primary hover:bg-primaryDark text-white shadow-lg" onClick={() => handleSavePatientReply(entry.id)}>Enviar</Button>
                                                         <Button variant="ghost" className="flex-1 sm:flex-none h-10 px-4 text-gray-500" onClick={() => setCommentingEntryId(null)}>Cancelar</Button>
@@ -523,6 +549,50 @@ export default function App() {
                             <button onClick={() => { if (confirm(t.deleteConfirm)) storageService.deleteAccount(user.id); }} className="w-full mt-2 text-xs text-red-500 hover:text-red-400 py-2 opacity-60 hover:opacity-100 transition-opacity">
                                 {t.deleteAccount}
                             </button>
+                            <button
+                                onClick={() => alert("Gestão de consentimento granular em breve.")}
+                                className="w-full mt-1 text-[10px] text-gray-500 hover:text-white py-2 opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                                {t.consent}
+                            </button>
+                            <button
+                                onClick={() => storageService.downloadAccountData(user.id)}
+                                className="w-full mt-1 text-[10px] text-gray-500 hover:text-white py-2 opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                {t.downloadDataLGPD}
+                            </button>
+                        </div>
+
+                        {/* Audit & Transparency Section */}
+                        <div className="bg-[#111] p-6 rounded-xl border border-white/5 space-y-4">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-tight">
+                                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                                {t.auditTitle}
+                            </h3>
+                            <p className="text-xs text-gray-500 leading-relaxed">
+                                {t.dataAccessLog} - Transparência total sobre quem acessou seus dados clínicos.
+                            </p>
+
+                            <div className="space-y-2 mt-4">
+                                {auditLogs.length === 0 ? (
+                                    <p className="text-[10px] text-gray-600 italic">Nenhum acesso registrado.</p>
+                                ) : (
+                                    auditLogs.map((log, idx) => (
+                                        <div key={idx} className="flex justify-between items-center bg-black/40 p-3 rounded-lg border border-white/5">
+                                            <div className="flex flex-col">
+                                                <span className="text-[11px] text-gray-300 font-medium">Médico visualizou dashboard</span>
+                                                <span className="text-[9px] text-gray-600 uppercase font-mono mt-0.5">Ação: {log.action}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-[10px] text-primary font-bold block">{new Date(log.timestamp).toLocaleDateString()}</span>
+                                                <span className="text-[9px] text-gray-600">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

@@ -5,10 +5,11 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 
 // --- Helper to map DB User -> Application User ---
 const mapDbUserToUser = (dbUser: any, authName?: string): User => {
-    let role = UserRole.STANDARD;
-    if (dbUser.role === UserRole.DOCTOR || dbUser.role === 'medico') role = UserRole.DOCTOR;
-    if (dbUser.role === UserRole.PATIENT || dbUser.role === 'paciente') role = UserRole.PATIENT;
-    if (dbUser.role === UserRole.STANDARD || dbUser.role === 'pessoa') role = UserRole.STANDARD;
+    let role = UserRole.PATIENT;
+    if (dbUser.role === UserRole.PROFESSIONAL || dbUser.role === 'medico' || dbUser.role === 'professional') role = UserRole.PROFESSIONAL;
+    if (dbUser.role === UserRole.PSYCHOLOGIST || dbUser.role === 'psicologo') role = UserRole.PSYCHOLOGIST;
+    if (dbUser.role === UserRole.PSYCHIATRIST || dbUser.role === 'psiquiatra') role = UserRole.PSYCHIATRIST;
+    if (dbUser.role === UserRole.PATIENT || dbUser.role === 'paciente' || dbUser.role === 'pessoa') role = UserRole.PATIENT;
 
     // Prioritize DB name if it exists and isn't just "User" default, 
     // otherwise use Auth Metadata name, 
@@ -59,7 +60,7 @@ export const storageService = {
                         id: sessionUser.id,
                         email: sessionUser.email!,
                         name: sessionUser.user_metadata?.full_name || 'User',
-                        role: UserRole.STANDARD,
+                        role: UserRole.PATIENT,
                         language: 'pt',
                         roleConfirmed: false,
                         joinedAt: sessionUser.created_at || new Date().toISOString()
@@ -112,22 +113,22 @@ export const storageService = {
             id: data.user.id,
             email: data.user.email!,
             name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || 'User',
-            role: UserRole.STANDARD,
+            role: UserRole.PATIENT,
             language: 'pt',
             roleConfirmed: false,
             joinedAt: new Date().toISOString()
         };
     },
 
-    signupEmail: async (email: string, pass: string, name: string): Promise<void> => {
+    signupEmail: async (email: string, pass: string, name: string, role: UserRole): Promise<void> => {
         const { error } = await supabase.auth.signUp({
             email,
             password: pass,
             options: {
                 data: {
                     full_name: name,
-                    role: 'STANDARD', // Required by profiles table trigger
-                    type: 'pessoa'    // Required by users table trigger
+                    role: role,
+                    type: role === UserRole.PROFESSIONAL ? 'medico' : 'paciente'
                 }
             }
         });
@@ -173,7 +174,7 @@ export const storageService = {
 
         // 2. Sync to 'users' table (Portuguese Types)
         let dbType = 'pessoa';
-        if (user.role === UserRole.DOCTOR) dbType = 'medico';
+        if (user.role === UserRole.PROFESSIONAL) dbType = 'medico';
         if (user.role === UserRole.PATIENT) dbType = 'paciente';
 
         const { error: userError } = await supabase.from('users').upsert({
@@ -227,28 +228,44 @@ export const storageService = {
 
     subscribeEntries: (userId: string, callback: (entries: MoodEntry[]) => void) => {
         const fetchEntries = async () => {
-            const { data, error } = await supabase
+            // First get entries
+            const { data: entriesData, error: entriesError } = await supabase
                 .from('entries')
                 .select('*')
                 .eq('user_id', userId)
                 .order('date', { ascending: false });
 
-            if (error) {
-                console.error("Erro ao buscar registros: " + error.message);
+            if (entriesError) {
+                console.error("Erro ao buscar registros: " + entriesError.message);
+                return;
             }
-            if (!error && data) {
-                const mapped = data.map(row => ({
-                    ...row,
-                    userId: row.user_id,
-                    timestamp: new Date(row.date).getTime(), // Map 'date' to timestamp number
-                    moodLabel: row.mood_label,
-                    isLocked: row.is_locked,
-                    entryMode: row.ai_analysis?.entry_mode || (row.mood === null ? 'diary' : 'mood'), // Extract from JSONB with fallback
-                    aiAnalysis: row.ai_analysis
-                }));
+
+            if (entriesData) {
+                // Fetch permissions for all entries in one go (optional optimization, but let's keep it simple for now)
+                const entryIds = entriesData.map(e => e.id);
+                const { data: permissionsData } = await supabase
+                    .from('entry_permissions')
+                    .select('entry_id, doctor_id')
+                    .in('entry_id', entryIds)
+                    .eq('can_view', true);
+
+                const mapped = entriesData.map(row => {
+                    const entryPermissions = permissionsData
+                        ? permissionsData.filter(p => p.entry_id === row.id).map(p => p.doctor_id)
+                        : [];
+
+                    return {
+                        ...row,
+                        userId: row.user_id,
+                        timestamp: new Date(row.date).getTime(),
+                        moodLabel: row.mood_label,
+                        isLocked: row.is_locked,
+                        permissions: entryPermissions,
+                        entryMode: row.ai_analysis?.entry_mode || (row.mood === null ? 'diary' : 'mood'),
+                        aiAnalysis: row.ai_analysis
+                    };
+                });
                 callback(mapped as MoodEntry[]);
-            } else if (!error) {
-                console.log("Nenhum dado retornado (Data é nulo/vazio)");
             }
         };
 
@@ -257,6 +274,10 @@ export const storageService = {
         const channel = supabase
             .channel('entries-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${userId}` }, () => {
+                fetchEntries();
+            })
+            // Also listen for permission changes
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'entry_permissions' }, () => {
                 fetchEntries();
             })
             .subscribe();
@@ -277,12 +298,27 @@ export const storageService = {
             is_locked: entry.isLocked,
             ai_analysis: {
                 ...entry.aiAnalysis,
-                entry_mode: entry.entryMode // Store in JSONB
+                entry_mode: entry.entryMode
             }
         };
 
-        const { error } = await supabase.from('entries').insert(dbEntry);
-        if (error) console.error("Error adding entry:", error);
+        const { data, error } = await supabase.from('entries').insert(dbEntry).select();
+
+        if (error) {
+            console.error("Error adding entry:", error);
+            return;
+        }
+
+        // Handle Permissions
+        if (data && data[0] && entry.permissions && entry.permissions.length > 0) {
+            const entryId = data[0].id;
+            const permissionRows = entry.permissions.map(doctor_id => ({
+                entry_id: entryId,
+                doctor_id: doctor_id,
+                can_view: true
+            }));
+            await supabase.from('entry_permissions').insert(permissionRows);
+        }
     },
 
     updateEntry: async (userId: string, updatedEntry: MoodEntry) => {
@@ -295,12 +331,27 @@ export const storageService = {
             is_locked: updatedEntry.isLocked,
             ai_analysis: {
                 ...updatedEntry.aiAnalysis,
-                entry_mode: updatedEntry.entryMode // Store in JSONB
+                entry_mode: updatedEntry.entryMode
             }
         };
 
         const { error } = await supabase.from('entries').update(dbEntry).eq('id', updatedEntry.id);
-        if (error) console.error("Error updating entry:", error);
+        if (error) {
+            console.error("Error updating entry:", error);
+            return;
+        }
+
+        // Sync Permissions: Delete old, add new
+        await supabase.from('entry_permissions').delete().eq('entry_id', updatedEntry.id);
+
+        if (updatedEntry.permissions && updatedEntry.permissions.length > 0) {
+            const permissionRows = updatedEntry.permissions.map(doctor_id => ({
+                entry_id: updatedEntry.id,
+                doctor_id: doctor_id,
+                can_view: true
+            }));
+            await supabase.from('entry_permissions').insert(permissionRows);
+        }
     },
 
     deleteEntry: async (userId: string, entryId: string) => {
@@ -343,15 +394,17 @@ export const storageService = {
         return [];
     },
 
-    getConnectedDoctor: async (patientId: string): Promise<string | null> => {
+    getConnectedDoctors: async (patientId: string): Promise<{ id: string, name: string }[]> => {
         const { data, error } = await supabase
             .from('doctor_patients')
-            .select('doctor_id')
-            .eq('patient_id', patientId)
-            .limit(1);
+            .select('doctor_id, profiles!doctor_id(id, name)')
+            .eq('patient_id', patientId);
 
-        if (error || !data || data.length === 0) return null;
-        return data[0].doctor_id;
+        if (error || !data) return [];
+        return data.map((d: any) => ({
+            id: d.profiles.id,
+            name: d.profiles.name || 'Médico'
+        }));
     },
 
     connectPatient: async (doctorId: string, patientEmail: string): Promise<{ success: boolean; message: string }> => {
@@ -400,9 +453,12 @@ export const storageService = {
         const fetchNotes = async () => {
             let query = supabase.from('doctor_notes').select('*').eq('patient_id', patientId).order('created_at', { ascending: true });
 
-            // Se for paciente, filtrar apenas as compartilhadas (por segurança, embora o RLS já faça isso)
+            // Se for paciente, filtrar apenas as compartilhadas e não ocultas
             if (!doctorId) {
-                query = query.eq('is_shared', true);
+                query = query.eq('is_shared', true).neq('status', 'hidden');
+            } else {
+                // Se for médico, ver apenas as próprias notas (Isolamento Clínico)
+                query = query.eq('doctor_id', doctorId);
             }
 
             const { data } = await query;
@@ -458,5 +514,113 @@ export const storageService = {
             .eq('patient_id', patientId)
             .eq('author_role', targetAuthorRole)
             .eq('read', false);
+    },
+
+    logAudit: async (userId: string, action: string, targetId?: string, metadata?: any) => {
+        await supabase.from('audit_logs').insert({
+            user_id: userId,
+            action,
+            target_id: targetId,
+            metadata: metadata || {},
+            timestamp: new Date().toISOString()
+        });
+    },
+
+    getAuditLogs: async (userId: string) => {
+        const { data, error } = await supabase
+            .from('audit_logs')
+            .select('*')
+            .eq('target_id', userId)
+            .order('timestamp', { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error("Error fetching audit logs:", error);
+            return [];
+        }
+        return data;
+    },
+
+    // --- CLINIC MANAGEMENT ---
+    createClinic: async (name: string, ownerId: string) => {
+        const { data, error } = await supabase.from('clinics').insert({
+            name,
+            owner_id: ownerId
+        }).select().single();
+
+        if (error) throw error;
+
+        // Auto-add owner as admin member
+        await supabase.from('clinic_members').insert({
+            clinic_id: data.id,
+            doctor_id: ownerId,
+            role: 'admin'
+        });
+
+        return data;
+    },
+
+    getClinics: async (doctorId: string) => {
+        const { data, error } = await supabase
+            .from('clinic_members')
+            .select(`
+                role,
+                clinics (*)
+            `)
+            .eq('doctor_id', doctorId);
+
+        if (error) return [];
+        return data;
+    },
+
+    addDoctorToClinic: async (clinicId: string, doctorEmail: string, role: string = 'member') => {
+        // Find doctor
+        const { data: profiles, error: pError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', doctorEmail)
+            .eq('role', 'DOCTOR');
+
+        if (pError || !profiles || profiles.length === 0) throw new Error("Doctor not found");
+
+        const { error } = await supabase.from('clinic_members').insert({
+            clinic_id: clinicId,
+            doctor_id: profiles[0].id,
+            role
+        });
+
+        if (error) throw error;
+        return true;
+    },
+
+    // --- LGPD / COMPLIANCE ---
+    downloadAccountData: async (userId: string) => {
+        // Fetch everything relevant
+        const [entries, profile, logs] = await Promise.all([
+            supabase.from('entries').select('*').eq('user_id', userId),
+            supabase.from('profiles').select('*').eq('id', userId).single(),
+            supabase.from('audit_logs').select('*').eq('target_id', userId).or(`user_id.eq.${userId}`)
+        ]);
+
+        const fullData = {
+            profile: profile.data,
+            entries: entries.data,
+            securityLogs: logs.data,
+            exportedAt: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `moodflow_data_export_${userId}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    updateNoteStatus: async (noteId: string, status: 'active' | 'resolved' | 'hidden') => {
+        await supabase.from('doctor_notes').update({ status }).eq('id', noteId);
     }
 };

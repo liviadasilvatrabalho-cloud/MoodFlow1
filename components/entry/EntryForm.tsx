@@ -4,6 +4,7 @@ import { MOODS, ACTIVITIES, SYMPTOMS, TRANSLATIONS } from '../../constants';
 import { Button } from '../ui/Button';
 import { VoiceRecorder } from './VoiceRecorder';
 import { geminiService } from '../../services/geminiService';
+import { storageService } from '../../services/storageService';
 import { MoodEntry, UserRole, Language } from '../../types';
 
 interface EntryFormProps {
@@ -35,6 +36,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isLocked, setIsLocked] = useState(false);
     const [date, setDate] = useState(getLocalISOString());
+    const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string }[]>([]);
+    const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
+
+    // Fetch Doctors
+    React.useEffect(() => {
+        if (userId && userRole === UserRole.PATIENT) {
+            storageService.getConnectedDoctors(userId).then(setConnectedDoctors);
+        }
+    }, [userId, userRole]);
 
     // Voice Handler
     const handleVoiceTranscription = async (transcribedText: string) => {
@@ -78,7 +88,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                     energy: null,
                     text: analysis.transcription,
                     tags: analysis.detectedTags || [],
-                    isLocked: isLocked,
+                    isLocked: selectedDoctors.length === 0,
+                    permissions: selectedDoctors,
                     entryMode: 'voice',
                     aiAnalysis: {
                         sentiment: "Voice AI",
@@ -116,7 +127,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
             energy: mode === 'mood' ? energy : null,
             text,
             tags: mode === 'mood' ? selectedTags : [],
-            isLocked,
+            isLocked: selectedDoctors.length === 0,
+            permissions: selectedDoctors,
             entryMode: mode
         };
         onSave(newEntry);
@@ -258,24 +270,34 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                     />
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
-                        {userRole !== UserRole.DOCTOR && (
-                            <button
-                                type="button"
-                                onClick={() => setIsLocked(!isLocked)}
-                                className={`flex items-center justify-center gap-2 px-4 h-10 rounded-2xl transition-all border flex-1 md:flex-none ${isLocked
-                                    ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
-                                    : 'bg-green-500/10 border-green-500/30 text-green-400'
-                                    }`}
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    {isLocked ? (
-                                        <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    ) : (
-                                        <path d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                                    )}
-                                </svg>
-                                <span className="text-[10px] font-black uppercase tracking-wider">{isLocked ? 'Privado' : 'Visível'}</span>
-                            </button>
+                        {userRole === UserRole.PATIENT && connectedDoctors.length > 0 && (
+                            <div className="flex flex-wrap gap-2 items-center mr-auto">
+                                <span className="text-[10px] text-textMuted uppercase font-bold mr-1">Compartilhar com:</span>
+                                {connectedDoctors.map(doc => (
+                                    <button
+                                        key={doc.id}
+                                        type="button"
+                                        onClick={() => setSelectedDoctors(prev =>
+                                            prev.includes(doc.id) ? prev.filter(id => id !== doc.id) : [...prev, doc.id]
+                                        )}
+                                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${selectedDoctors.includes(doc.id)
+                                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                                            : 'bg-neutral-800 border-white/5 text-gray-500'
+                                            }`}
+                                    >
+                                        {doc.name}
+                                    </button>
+                                ))}
+                                {selectedDoctors.length === 0 && (
+                                    <span className="text-[9px] text-orange-400 bg-orange-400/10 px-2 py-1 rounded-md uppercase font-black">Privado</span>
+                                )}
+                            </div>
+                        )}
+                        {/* Remove legacy isLocked button - handled by doctor selection above */}
+                        {userRole === UserRole.PROFESSIONAL && (
+                            <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-2xl">
+                                <span className="text-[10px] font-black uppercase text-indigo-400">Modo Profissional</span>
+                            </div>
                         )}
 
                         <Button variant="ghost" onClick={onCancel} className="h-10 text-[11px] md:text-sm">{t.cancel}</Button>

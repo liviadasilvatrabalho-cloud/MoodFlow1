@@ -10,6 +10,7 @@ export default function Auth() {
     const [password, setPassword] = useState('')
     const [isSignUp, setIsSignUp] = useState(false)
     const [fullName, setFullName] = useState('')
+    const [role, setRole] = useState<UserRole>(UserRole.PATIENT)
     const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
     const handleAuth = async (e: React.FormEvent) => {
@@ -19,7 +20,7 @@ export default function Auth() {
 
         try {
             if (isSignUp) {
-                await storageService.signupEmail(email, password, fullName);
+                await storageService.signupEmail(email, password, fullName, role);
                 setMessage({ type: 'success', text: 'Conta criada! Verifique seu email ou faça login.' })
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
@@ -48,16 +49,44 @@ export default function Auth() {
 
                 <form onSubmit={handleAuth} className="space-y-6">
                     {isSignUp && (
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nome Completo</label>
-                            <input
-                                type="text"
-                                placeholder="Seu nome"
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                className="w-full px-4 py-3 bg-[#1A1A1A] border border-neutral-800 rounded-xl text-white placeholder-gray-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
-                                required
-                            />
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nome Completo</label>
+                                <input
+                                    type="text"
+                                    placeholder="Seu nome"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    className="w-full px-4 py-3 bg-[#1A1A1A] border border-neutral-800 rounded-xl text-white placeholder-gray-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tipo de Conta</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole(UserRole.PATIENT)}
+                                        className={`py-3 px-4 rounded-xl text-sm font-bold border transition-all ${role === UserRole.PATIENT
+                                            ? 'bg-indigo-600 border-indigo-500 text-white'
+                                            : 'bg-[#1A1A1A] border-neutral-800 text-gray-400'
+                                            }`}
+                                    >
+                                        Paciente
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole(UserRole.PROFESSIONAL)}
+                                        className={`py-3 px-4 rounded-xl text-sm font-bold border transition-all ${role === UserRole.PROFESSIONAL
+                                            ? 'bg-indigo-600 border-indigo-500 text-white'
+                                            : 'bg-[#1A1A1A] border-neutral-800 text-gray-400'
+                                            }`}
+                                    >
+                                        Profissional
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
 

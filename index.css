@@ -1,0 +1,71 @@
+/* Base styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Clinical Report Print Styles */
+@media print {
+    @page {
+        size: A4;
+        margin: 20mm;
+    }
+
+    body {
+        background-color: white !important;
+        color: black !important;
+        font-size: 11pt;
+    }
+
+    /* Hide UI elements */
+    .print\:hidden,
+    aside,
+    nav,
+    button,
+    .no-print {
+        display: none !important;
+    }
+
+    /* Professional Header */
+    .report-header {
+        display: block !important;
+        border-bottom: 2pt solid #7c3aed;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+    }
+
+    .report-logo {
+        font-weight: 900;
+        font-size: 24pt;
+        color: #7c3aed !important;
+    }
+
+    /* Adjust Layout */
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+
+    .bg-surface,
+    .bg-neutral-900,
+    .bg-black\/40 {
+        background: none !important;
+        border: 1px solid #eee !important;
+        color: black !important;
+    }
+
+    canvas, .recharts-responsive-container {
+        filter: grayscale(1) !important;
+    }
+
+    h1, h2, h3, h4 {
+        color: black !important;
+    }
+}
+
+/* Ensure report header is hidden on screen */
+.report-header {
+    display: none;
+}

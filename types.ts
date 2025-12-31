@@ -1,8 +1,9 @@
 
 export enum UserRole {
-  STANDARD = 'STANDARD', // Regular user, no doctor features
-  PATIENT = 'PATIENT',   // Has doctor sharing features
-  DOCTOR = 'DOCTOR',     // Professional view
+  PATIENT = 'PATIENT',
+  PROFESSIONAL = 'PROFESSIONAL',
+  PSYCHOLOGIST = 'PSYCHOLOGIST',
+  PSYCHIATRIST = 'PSYCHIATRIST',
 }
 
 export type Language = 'pt' | 'en' | 'es' | 'fr';
@@ -14,7 +15,7 @@ export interface User {
   role: UserRole;
   language: Language;
   roleConfirmed: boolean;
-  type?: 'medico' | 'paciente' | 'pessoa';
+  type?: 'medico' | 'paciente' | 'pessoa' | 'psicologo' | 'psiquiatra';
   joinedAt: string;
 }
 
@@ -30,6 +31,7 @@ export interface MoodEntry {
   tags: string[]; // Activities/Symptoms
   isLocked: boolean; // Privacy for doctor view
   entryMode?: 'mood' | 'voice' | 'diary';
+  permissions?: string[]; // List of doctor IDs who can view this entry
   aiAnalysis?: {
     sentiment: string;
     triggers: string[];
@@ -44,8 +46,9 @@ export interface DoctorNote {
   entryId?: string; // Optional: Link to a specific mood entry
   text: string;
   isShared: boolean; // true = visible to patient, false = private clinical note
-  authorRole: 'DOCTOR' | 'PATIENT'; // Who wrote this note?
+  authorRole: 'PROFESSIONAL' | 'PATIENT'; // Who wrote this note?
   read: boolean; // For notifications
+  status?: 'active' | 'resolved' | 'hidden'; // For patient thread management
   createdAt: string;
 }
 
