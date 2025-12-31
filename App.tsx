@@ -1,3 +1,4 @@
+// MoodFlow v2.0.1 - High Fidelity Update
 import React, { useState, useEffect } from 'react';
 import { User, MoodEntry, UserRole, Language, DoctorNote } from './types';
 import { storageService } from './services/storageService';
