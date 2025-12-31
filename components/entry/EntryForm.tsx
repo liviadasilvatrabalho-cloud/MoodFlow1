@@ -48,30 +48,19 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
     // Voice Handler
     const handleVoiceTranscription = async (transcribedText: string) => {
         setIsAnalyzing(true);
-
         const analysis = await aiService.analyzeEntry(transcribedText);
 
         if (analysis) {
             setText(analysis.transcription || transcribedText);
-
             if (analysis.moodScore) setMood(analysis.moodScore);
             if (analysis.energyLevel) setEnergy(analysis.energyLevel);
-
             if (analysis.detectedTags && Array.isArray(analysis.detectedTags)) {
                 setSelectedTags(prev => Array.from(new Set([...prev, ...analysis.detectedTags])));
             }
-
-            if (analysis.mode === 'diary') {
-                setMode('diary');
-            } else if (analysis.mode === 'mood') {
-                setMode('mood');
-            }
+            if (analysis.mode === 'diary') setMode('diary');
+            else if (analysis.mode === 'mood') setMode('mood');
 
             if (analysis.intentToSave) {
-                const detectedMoodVal = analysis.moodScore || 3;
-                let finalMood: number | null = detectedMoodVal;
-                let finalLabel = MOODS.find(m => m.value === detectedMoodVal)?.label || 'Okay';
-
                 const entryDate = new Date(date);
                 const now = new Date();
                 const isCurrentMinute = Math.abs(now.getTime() - entryDate.getTime()) < 60000;
@@ -82,7 +71,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                     userId,
                     date: entryDate.toISOString(),
                     timestamp: finalTimestamp,
-                    mood: null, // Voice AI entries are diary by default now
+                    mood: null,
                     moodLabel: 'Diário',
                     energy: null,
                     text: analysis.transcription,
@@ -113,9 +102,6 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
         const isCurrentMinute = Math.abs(now.getTime() - entryDate.getTime()) < 60000;
         const finalTimestamp = isCurrentMinute ? now.getTime() : entryDate.getTime();
 
-        let finalMood: number | null = mood;
-        let finalLabel = MOODS.find(m => m.value === mood)?.label || 'Okay';
-
         const newEntry: MoodEntry = {
             id: crypto.randomUUID(),
             userId,
@@ -137,119 +123,135 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
         setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
     };
 
-    return (
-        <div className="bg-neutral-900/95 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl w-full max-w-xl mx-auto animate-in zoom-in-95 duration-200 h-[92vh] md:h-auto md:max-h-[95vh] flex flex-col">
+    const formatDateForDisplay = (isoString: string) => {
+        const d = new Date(isoString);
+        return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
 
-            {/* Tab Switcher */}
-            <div className="px-4 pt-4 pb-2 shrink-0 border-b border-white/5">
-                <div className="flex p-1 bg-black/40 backdrop-blur-md rounded-2xl relative z-10 w-full overflow-hidden">
+    return (
+        <div className="bg-[#111] backdrop-blur-xl border border-white/10 rounded-[32px] overflow-hidden shadow-2xl w-full max-w-xl mx-auto flex flex-col h-[90vh] md:h-auto animate-in zoom-in-95 duration-300">
+
+            {/* Nav Header */}
+            <div className="px-6 pt-6 pb-2 shrink-0">
+                <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5 relative z-10 w-full">
                     {(['mood', 'diary', 'voice'] as const).map((m) => (
                         <button
                             key={m}
                             type="button"
                             onClick={() => setMode(m)}
-                            className={`flex - 1 py - 2 text - [11px] md: text - sm font - bold rounded - xl transition - all duration - 300 ${mode === m
-                                    ? 'bg-gradient-to-br from-primary to-primaryDark text-white shadow-lg'
-                                    : 'text-textMuted hover:text-white'
-                                } `}
+                            className={`flex-1 py-2.5 text-[12px] font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${mode === m
+                                    ? 'bg-gradient-to-br from-[#7733ff] to-[#5522cc] text-white shadow-[0_5px_15px_-5px_rgba(119,51,255,0.4)]'
+                                    : 'text-gray-500 hover:text-white'
+                                }`}
                         >
-                            {m === 'mood' && t.tabMood}
-                            {m === 'diary' && t.tabDiary}
-                            {m === 'voice' && t.tabVoice}
+                            {m === 'mood' && <span>📊 Humor</span>}
+                            {m === 'diary' && <span>📖 Diário</span>}
+                            {m === 'voice' && <span>🎙️ Voz IA</span>}
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div className="p-4 md:p-6 overflow-y-auto custom-scrollbar flex-1 w-full space-y-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
                 {mode === 'voice' ? (
-                    <div className="flex flex-col items-center justify-center h-full min-h-[300px] py-4">
-                        <h3 className="text-white font-bold mb-2 text-lg text-center">{t.listening}</h3>
-                        <p className="text-textMuted text-xs md:text-sm text-center mb-6 px-4">
-                            {t.voicePrompt}
-                        </p>
-                        <VoiceRecorder onTranscription={handleVoiceTranscription} isProcessing={isAnalyzing} />
+                    <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center space-y-6">
+                        <div className="space-y-2">
+                            <h3 className="text-white font-bold text-xl tracking-tight">Estou ouvindo...</h3>
+                            <p className="text-gray-400 text-sm max-w-[280px]">
+                                Conte sobre seu dia ou como se sente. A IA detectará seu humor e escreverá no diário.
+                            </p>
+                        </div>
+
+                        <div className="w-full bg-black/30 rounded-2xl border border-white/5 p-6 h-48 flex items-center justify-center relative group">
+                            <p className="text-gray-600 italic text-sm text-center">
+                                {isAnalyzing ? 'Processando áudio...' : (text || 'O texto aparecerá aqui enquanto você fala...')}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-4">
+                            <VoiceRecorder onTranscription={handleVoiceTranscription} isProcessing={isAnalyzing} />
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Toque para gravar</span>
+                        </div>
                     </div>
                 ) : (
-                    <form id="entry-form" onSubmit={handleSubmit} className="space-y-6">
+                    <form id="entry-form" onSubmit={handleSubmit} className="space-y-8">
 
-                        {/* Mood Selection - Only show in mood mode */}
-                        {mode !== 'diary' && (
-                            <div className="space-y-3">
-                                <label className="text-[10px] md:text-xs text-textMuted uppercase tracking-widest font-bold ml-1">{t.howAreYou}</label>
-                                <div className="grid grid-cols-5 gap-1.5 md:gap-2 w-full">
-                                    {MOODS.map((m) => {
-                                        const isSelected = mood === m.value;
-                                        return (
+                        {mode === 'mood' && (
+                            <>
+                                {/* Mood Grid */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] text-gray-400 uppercase tracking-[0.1em] font-black ml-1">COMO VOCÊ ESTÁ SE SENTINDO?</label>
+                                    <div className="grid grid-cols-5 gap-3">
+                                        {MOODS.map((m) => {
+                                            const isSelected = mood === m.value;
+                                            return (
+                                                <button
+                                                    key={m.value}
+                                                    type="button"
+                                                    onClick={() => setMood(m.value)}
+                                                    className={`aspect-square flex flex-col items-center justify-center rounded-2xl transition-all duration-300 border-2 ${isSelected
+                                                            ? 'bg-white/5 border-white/20 ring-2 ring-primary ring-offset-4 ring-offset-[#111]'
+                                                            : 'bg-white/5 border-transparent opacity-40 hover:opacity-100'
+                                                        }`}
+                                                >
+                                                    <span className="text-2xl md:text-3xl mb-1">{m.emoji}</span>
+                                                    {isSelected && <span className="text-[9px] font-black uppercase text-white tracking-tighter">{m.label}</span>}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Energy Slider */}
+                                <div className="space-y-4 bg-black/20 p-6 rounded-[24px] border border-white/5 shadow-inner">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[10px] text-gray-400 uppercase tracking-[0.1em] font-black">NÍVEL DE ENERGIA</label>
+                                        <span className="text-yellow-400 font-black text-xl">{energy}<span className="text-gray-600 text-xs font-bold"> /10</span></span>
+                                    </div>
+                                    <div className="relative h-2 w-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full">
+                                        <input
+                                            type="range" min="1" max="10" value={energy}
+                                            onChange={(e) => setEnergy(Number(e.target.value))}
+                                            className="absolute inset-0 w-full h-2 bg-transparent appearance-none cursor-pointer accent-primary"
+                                        />
+                                        <div
+                                            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-primary border-2 border-white rounded-full pointer-events-none"
+                                            style={{ left: `${(energy - 1) * 10}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Tags */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] text-gray-400 uppercase tracking-[0.1em] font-black ml-1">TAGS</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[...ACTIVITIES, ...SYMPTOMS].map(tag => (
                                             <button
-                                                key={m.value}
+                                                key={tag}
                                                 type="button"
-                                                onClick={() => setMood(m.value)}
-                                                className={`flex flex - col items - center justify - center py - 2.5 md: py - 3 rounded - 2xl transition - all duration - 300 border ${isSelected
-                                                        ? `${m.bg} ${m.border} scale-105 shadow-xl`
-                                                        : 'bg-white/5 border-transparent opacity-60'
-                                                    } `}
+                                                onClick={() => toggleTag(tag)}
+                                                className={`px-4 py-2 rounded-xl text-[11px] font-bold transition-all border ${selectedTags.includes(tag)
+                                                        ? 'bg-white/10 border-white/20 text-white shadow-lg'
+                                                        : 'bg-white/5 border-white/5 text-gray-500 hover:text-gray-300'
+                                                    }`}
                                             >
-                                                <span className="text-xl md:text-3xl drop-shadow-md mb-0.5">{m.emoji}</span>
-                                                {isSelected && (
-                                                    <span className={`text - [7px] md: text - [9px] font - black uppercase tracking - tighter ${m.color} `}>
-                                                        {m.label}
-                                                    </span>
-                                                )}
+                                                {tag}
                                             </button>
-                                        )
-                                    })}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
 
-                        {/* Energy Slider - Only show in mood mode */}
-                        {mode !== 'diary' && (
-                            <div className="space-y-3 bg-black/30 p-4 rounded-3xl border border-white/5">
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className="text-[10px] text-textMuted uppercase tracking-widest font-bold">{t.energy}</label>
-                                    <span className={`text - xl font - black tabular - nums ${energy > 7 ? 'text-green-400' : energy > 4 ? 'text-yellow-400' : 'text-red-400'} `}>
-                                        {energy}<span className="text-xs text-gray-500 font-normal ml-1">/10</span>
-                                    </span>
-                                </div>
-                                <input
-                                    type="range" min="1" max="10" value={energy}
-                                    onChange={(e) => setEnergy(Number(e.target.value))}
-                                    className="w-full h-3 rounded-full appearance-none cursor-pointer bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                                />
-                            </div>
-                        )}
-
-                        {/* Tags - Only show in mood mode */}
-                        {mode !== 'diary' && (
-                            <div className="space-y-3">
-                                <label className="text-[10px] text-textMuted uppercase tracking-widest font-bold ml-1">{t.tags}</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {[...ACTIVITIES, ...SYMPTOMS].map(tag => (
-                                        <button
-                                            key={tag}
-                                            type="button"
-                                            onClick={() => toggleTag(tag)}
-                                            className={`px - 4 py - 2.5 rounded - xl text - [11px] md: text - sm font - bold transition - all border ${selectedTags.includes(tag)
-                                                    ? 'bg-white text-black border-white shadow-md'
-                                                    : 'bg-neutral-800/50 border-white/5 text-gray-400 hover:text-white'
-                                                } `}
-                                        >
-                                            {tag}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Notes Area - Always visible */}
-                        <div className="space-y-3 pt-2">
-                            <label className="text-[10px] text-textMuted uppercase tracking-widest font-bold ml-1">
-                                {mode === 'diary' ? 'Querido Diário...' : t.notesTitle}
+                        {/* Notes Area */}
+                        <div className="space-y-4">
+                            <label className="text-[10px] text-gray-400 uppercase tracking-[0.1em] font-black ml-1 flex items-center gap-2">
+                                📝 {mode === 'diary' ? 'DIÁRIO' : 'NOTAS'}
                             </label>
                             <textarea
-                                className={`w - full bg - black / 40 border border - white / 10 rounded - 2xl p - 4 text - gray - 200 placeholder - gray - 700 focus: outline - none focus: border - primary transition - all resize - none ${mode === 'diary' ? 'h-48 md:h-64' : 'h-24'} `}
-                                placeholder={mode === 'diary' ? t.placeholderDiary : t.placeholderMood}
+                                className={`w-full bg-black/20 border border-white/5 rounded-2xl p-6 text-gray-200 placeholder-gray-700 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all resize-none shadow-inner ${mode === 'diary' ? 'h-64' : 'h-32'
+                                    }`}
+                                placeholder={mode === 'diary' ? 'Escreva sobre seu dia...' : 'Algo a acrescentar?'}
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
                             />
@@ -258,65 +260,64 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                 )}
             </div>
 
-            {/* Footer Fixed */}
-            <div className="px-4 py-4 md:px-6 md:py-6 border-t border-white/5 bg-neutral-900/50 shrink-0">
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <input
-                        type="datetime-local"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="bg-transparent text-textMuted text-[10px] font-bold focus:outline-none"
-                    />
+            {/* Footer */}
+            <div className="p-6 border-t border-white/5 bg-black/20 shrink-0">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4 text-gray-500 font-bold text-[11px]">
+                        <span className="flex items-center gap-2">
+                            {formatDateForDisplay(date)}
+                            <button type="button" onClick={() => { }} className="text-gray-400 hover:text-white">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            </button>
+                        </span>
 
-                    <div className="flex items-center gap-2 w-full md:w-auto">
-                        {userRole === UserRole.PATIENT && connectedDoctors.length > 0 && (
-                            <div className="flex flex-wrap gap-2 items-center mr-auto">
-                                <span className="text-[10px] text-textMuted uppercase font-bold mr-1">Compartilhar com:</span>
-                                {connectedDoctors.map(doc => (
-                                    <button
-                                        key={doc.id}
-                                        type="button"
-                                        onClick={() => setSelectedDoctors(prev =>
-                                            prev.includes(doc.id) ? prev.filter(id => id !== doc.id) : [...prev, doc.id]
-                                        )}
-                                        className={`px - 3 py - 1.5 rounded - full text - [10px] font - bold transition - all border ${selectedDoctors.includes(doc.id)
-                                                ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                                                : 'bg-neutral-800 border-white/5 text-gray-500'
-                                            } `}
-                                    >
-                                        {doc.name}
-                                    </button>
-                                ))}
-                                {selectedDoctors.length === 0 && (
-                                    <span className="text-[9px] text-orange-400 bg-orange-400/10 px-2 py-1 rounded-md uppercase font-black">Privado</span>
-                                )}
-                            </div>
-                        )}
-                        {/* Remove legacy isLocked button - handled by doctor selection above */}
-                        {userRole === UserRole.PROFESSIONAL && (
-                            <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-2xl">
-                                <span className="text-[10px] font-black uppercase text-indigo-400">Modo Profissional</span>
-                            </div>
-                        )}
+                        <button
+                            type="button"
+                            onClick={() => setIsLocked(!isLocked)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${isLocked
+                                    ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                    : 'bg-green-500/10 border-green-500/20 text-green-400'
+                                }`}
+                        >
+                            {isLocked ? (
+                                <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg> PRIVADO</>
+                            ) : (
+                                <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg> VISÍVEL</>
+                            )}
+                        </button>
+                    </div>
 
-                        <Button variant="ghost" onClick={onCancel} className="h-10 text-[11px] md:text-sm">{t.cancel}</Button>
-                        <Button
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            className="flex-1 md:flex-none py-3 px-6 text-sm font-bold text-gray-400 hover:text-white transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
                             form="entry-form"
                             type="submit"
-                            className="bg-primary hover:bg-primaryDark text-white h-10 px-6 text-[11px] md:text-sm shadow-xl flex-1 md:flex-none"
-                            onClick={mode === 'voice' ? undefined : (e) => {
-                                // Prevent default if not using form submission (button is outside form in voice mode)
-                                if (mode === 'voice') {
-                                    e.preventDefault();
-                                    // Logic would be handled by VoiceRecorder, but we need to trigger save if text exists
-                                }
-                            }}
+                            className="flex-1 md:flex-none py-3 px-8 bg-gradient-to-br from-[#7733ff] to-[#5522cc] text-white text-sm font-bold rounded-2xl shadow-[0_5px_20px_-5px_rgba(119,51,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all"
                         >
-                            {t.save}
-                        </Button>
+                            Salvar Registro
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 20px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
+                input[type='range']::-webkit-slider-thumb {
+                    appearance: none;
+                    width: 0;
+                    height: 0;
+                }
+            `}} />
         </div>
     );
 };
