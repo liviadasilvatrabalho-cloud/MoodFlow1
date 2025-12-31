@@ -22,7 +22,7 @@ export default function App() {
     const [lang, setLang] = useState<Language>('pt');
     const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([]);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
-    const [connectedDoctors, setConnectedDoctors] = useState<string[]>([]);
+    const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string, role?: string }[]>([]);
 
     useEffect(() => {
         const unsub = storageService.onAuthStateChanged((u) => {

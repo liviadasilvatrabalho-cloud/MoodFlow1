@@ -386,16 +386,17 @@ export const storageService = {
         return [];
     },
 
-    getConnectedDoctors: async (patientId: string): Promise<{ id: string, name: string }[]> => {
+    getConnectedDoctors: async (patientId: string): Promise<{ id: string, name: string, role?: string }[]> => {
         const { data, error } = await supabase
             .from('doctor_patients')
-            .select('doctor_id, profiles!doctor_id(id, name)')
+            .select('doctor_id, profiles!doctor_id(id, name, role)')
             .eq('patient_id', patientId);
 
         if (error || !data) return [];
         return data.map((d: any) => ({
             id: d.profiles.id,
-            name: d.profiles.name || 'Médico'
+            name: d.profiles.name || 'Médico',
+            role: d.profiles.role
         }));
     },
 
@@ -522,7 +523,8 @@ export const storageService = {
             text: note.text,
             is_shared: note.isShared,
             author_role: note.authorRole,
-            read: note.read
+            read: note.read,
+            status: 'active' // Ensure default status for visibility
             // created_at auto
         };
         const { error } = await supabase.from('doctor_notes').insert(dbNote);

@@ -13,7 +13,7 @@ interface EntryFormProps {
     onCancel: () => void;
     initialMode?: 'mood' | 'voice' | 'diary';
     lang: Language;
-    connectedDoctorIds: string[];
+    connectedDoctors?: { id: string, name: string, role?: string }[];
 }
 
 const getLocalISOString = () => {
@@ -22,20 +22,23 @@ const getLocalISOString = () => {
     return (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
 };
 
-export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, onCancel, initialMode = 'mood', lang, connectedDoctorIds }) => {
+export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, onCancel, initialMode = 'mood', lang, connectedDoctors = [] }) => {
     const [mode, setMode] = useState<'mood' | 'voice' | 'diary'>(initialMode);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     // Translations
-    const t = TRANSLATIONS[lang] || TRANSLATIONS['pt'];
+    const t = TRANSLATIONS[lang];
 
     // Form State
-    const [mood, setMood] = useState<number>(3);
+    const [mood, setMood] = useState<number | null>(3);
     const [energy, setEnergy] = useState<number>(5);
     const [text, setText] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isLocked, setIsLocked] = useState(false);
     const [date, setDate] = useState(getLocalISOString());
+    // New state for granular permissions
+    // Default to sharing with all doctors if not locked.
+    const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>(connectedDoctors.map(d => d.id));
 
     // Voice Handler
     const handleVoiceTranscription = async (transcribedText: string) => {
@@ -60,10 +63,19 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Voice/Diary Mode: simple payload
+        // Mood Mode check
+        if ((mode === 'mood' && mood === null)) {
+            alert(t.selectMood);
+            return;
+        }
+
         const entryDate = new Date(date);
-        const now = new Date();
-        const isCurrentMinute = Math.abs(now.getTime() - entryDate.getTime()) < 60000;
-        const finalTimestamp = isCurrentMinute ? now.getTime() : entryDate.getTime();
+        const finalTimestamp = new Date(getLocalISOString()).getTime();
+
+        // Use selectedDoctorIds directly for permissions
+        const permissionsToSave = selectedDoctorIds;
 
         const newEntry: MoodEntry = {
             id: crypto.randomUUID(),
@@ -75,11 +87,32 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
             energy: mode === 'mood' ? energy : undefined,
             text,
             tags: mode === 'mood' ? selectedTags : [],
-            isLocked: isLocked,
-            permissions: isLocked ? [] : connectedDoctorIds,
+            isLocked: permissionsToSave.length === 0, // If no doctors selected, it's private/locked
+            permissions: permissionsToSave,
             entryMode: mode
         };
-        onSave(newEntry);
+
+        setIsAnalyzing(true);
+
+        // Simulating AI analysis for now or calling real service if available
+        setTimeout(async () => {
+            if (newEntry.text.length > 5) {
+                try {
+                    // const analysis = await aiService.analyzeEntry(newEntry.text);
+                    // newEntry.aiAnalysis = analysis;
+                } catch (err) { console.warn("AI fail", err); }
+            }
+            onSave(newEntry);
+            setIsAnalyzing(false);
+        }, mode === 'voice' ? 1500 : 500);
+    };
+
+    const handleToggleDoctor = (docId: string) => {
+        setSelectedDoctorIds(prev =>
+            prev.includes(docId)
+                ? prev.filter(id => id !== docId)
+                : [...prev, docId]
+        );
     };
 
     const toggleTag = (tag: string) => {
@@ -231,6 +264,36 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                 onChange={(e) => setText(e.target.value)}
                             />
                         </div>
+
+                        {/* Permission Sharing (Granular) */}
+                        {connectedDoctors.length > 0 && (
+                            <div className="space-y-4 pt-4 animate-in fade-in duration-500">
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black opacity-90">COMPARTILHAR COM</span>
+                                    <span className="text-[9px] text-indigo-400 font-mono font-bold">{selectedDoctorIds.length === 0 ? 'PRIVADO' : selectedDoctorIds.length === connectedDoctors.length ? 'TODOS' : 'PERSONALIZADO'}</span>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {connectedDoctors.map(doc => (
+                                        <button
+                                            key={doc.id}
+                                            type="button"
+                                            onClick={() => handleToggleDoctor(doc.id)}
+                                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300 group ${selectedDoctorIds.includes(doc.id) ? 'bg-[#1e1b4b] border-indigo-500/50 shadow-lg' : 'bg-[#0A0A0A] border-white/5 hover:border-white/10'}`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-300 ${selectedDoctorIds.includes(doc.id) ? 'bg-indigo-500 border-indigo-500 scale-110' : 'border-neutral-600 group-hover:border-neutral-500'}`}>
+                                                    {selectedDoctorIds.includes(doc.id) && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>}
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className={`text-sm font-bold ${selectedDoctorIds.includes(doc.id) ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}`}>{doc.name}</div>
+                                                    {doc.role && <div className="text-[10px] font-black uppercase tracking-wider text-indigo-400/80 mt-0.5">{doc.role === 'PSYCHOLOGIST' ? 'Psicólogo' : doc.role === 'PSYCHIATRIST' ? 'Psiquiatra' : doc.role}</div>}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </form>
                 )}
             </div>
