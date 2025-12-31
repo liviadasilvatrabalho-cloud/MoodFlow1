@@ -566,18 +566,26 @@ export const storageService = {
     },
 
     // --- CLINIC MANAGEMENT ---
-    createClinic: async (name: string, ownerId: string) => {
+    createClinic: async (name: string, ownerId: string) => { // ownerId ignored in favor of auth.getUser()
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) throw new Error("User not authenticated");
+
         const { data, error } = await supabase.from('clinics').insert({
             name,
-            owner_id: ownerId
+            admin_id: user.id, // Correct column per schema
+            plan_type: 'enterprise'
         }).select().single();
 
-        if (error) throw error;
+        if (error) {
+            console.error("Erro de permissão:", error.message);
+            throw error;
+        }
 
         // Auto-add owner as admin member
         await supabase.from('clinic_members').insert({
             clinic_id: data.id,
-            doctor_id: ownerId,
+            doctor_id: user.id,
             role: 'admin'
         });
 
