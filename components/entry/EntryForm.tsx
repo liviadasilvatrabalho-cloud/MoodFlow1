@@ -235,56 +235,77 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                 )}
             </div>
 
-            {/* Premium Sticky Footer */}
-            <div className="p-8 border-t border-white/5 bg-[#0A0A0A] shrink-0 shadow-[0_-20px_40px_rgba(0,0,0,0.4)]">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            {/* Premium Sticky Footer - Enhanced Responsiveness */}
+            <div className="p-6 sm:p-8 border-t border-white/5 bg-[#0A0A0A] shrink-0 shadow-[0_-20px_40px_rgba(0,0,0,0.4)]">
+                <div className="flex flex-col gap-6">
 
-                    {/* Meta Controls */}
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3 bg-white/5 px-5 py-3 rounded-2xl border border-white/10 shadow-sm relative group overflow-hidden">
-                            <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <span className="text-gray-400 font-black text-[13px] tracking-tight">{formatDateForDisplay(date)}</span>
-                            <button type="button" className="text-gray-500 hover:text-white transition-colors">
-                                <svg className="w-5 h-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        {/* Meta Controls */}
+                        <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto overflow-x-auto no-scrollbar">
+                            <div className="flex items-center gap-2 sm:gap-3 bg-white/5 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-white/10 shadow-sm relative group shrink-0">
+                                <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <span className="text-gray-400 font-black text-[12px] sm:text-[13px] tracking-tight whitespace-nowrap">{formatDateForDisplay(date)}</span>
+                                <button type="button" className="text-gray-500 hover:text-white transition-colors">
+                                    <svg className="w-4 h-4 sm:w-5 sm:h-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setIsLocked(!isLocked)}
+                                className={`flex items-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl border-2 transition-all duration-500 font-black tracking-widest text-[10px] sm:text-[11px] shadow-sm transform active:scale-95 shrink-0 ${!isLocked
+                                    ? 'bg-[#065F46]/20 border-[#059669]/30 text-[#10B981]'
+                                    : 'bg-[#7F1D1D]/20 border-[#DC2626]/30 text-[#EF4444]'
+                                    }`}
+                            >
+                                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    {isLocked ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                                    )}
+                                </svg>
+                                {isLocked ? 'PRIVADO' : 'VISÍVEL'}
                             </button>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={() => setIsLocked(!isLocked)}
-                            className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl border-2 transition-all duration-500 font-black tracking-widest text-[11px] shadow-sm transform active:scale-95 ${!isLocked
-                                ? 'bg-[#065F46]/20 border-[#059669]/30 text-[#10B981]'
-                                : 'bg-[#7F1D1D]/20 border-[#DC2626]/30 text-[#EF4444]'
-                                }`}
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                {isLocked ? (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                ) : (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                                )}
-                            </svg>
-                            {isLocked ? 'PRIVADO' : 'VISÍVEL'}
-                        </button>
+                        {/* Action Buttons - Desktop */}
+                        <div className="hidden sm:flex items-center gap-4">
+                            <button
+                                type="button"
+                                onClick={onCancel}
+                                className="py-4 px-6 text-[14px] font-black text-gray-400 hover:text-white transition-all transform hover:translate-x-[-2px]"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                form="entry-form"
+                                type="submit"
+                                className="py-4 px-10 bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white text-[14px] font-black rounded-[22px] shadow-[0_12px_44px_rgba(109,40,217,0.4)] hover:shadow-[0_16px_56px_rgba(109,40,217,0.5)] hover:scale-[1.03] active:scale-[0.97] transition-all transform tracking-tight"
+                            >
+                                Salvar Registro
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-6 w-full md:w-auto">
+                    {/* Action Buttons - Mobile Only */}
+                    <div className="flex sm:hidden items-center gap-3">
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="flex-1 md:flex-none py-4 px-8 text-[14px] font-black text-gray-400 hover:text-white transition-all transform hover:translate-x-[-2px]"
+                            className="flex-1 py-4 text-[13px] font-black text-gray-400 bg-white/5 rounded-2xl border border-white/5 active:bg-white/10"
                         >
                             Cancelar
                         </button>
                         <button
                             form="entry-form"
                             type="submit"
-                            className="flex-1 md:flex-none py-4.5 px-12 bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white text-[15px] font-black rounded-[24px] shadow-[0_12px_44px_rgba(109,40,217,0.4)] hover:shadow-[0_16px_56px_rgba(109,40,217,0.5)] hover:scale-[1.03] active:scale-[0.97] transition-all transform tracking-tight"
+                            className="flex-[1.5] py-4 bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white text-[13px] font-black rounded-2xl shadow-lg active:scale-[0.98] transition-all"
                         >
                             Salvar Registro
                         </button>
                     </div>
+
                 </div>
             </div>
 
