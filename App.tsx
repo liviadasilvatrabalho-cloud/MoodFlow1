@@ -22,6 +22,7 @@ export default function App() {
     const [lang, setLang] = useState<Language>('pt');
     const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([]);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
+    const [connectedDoctors, setConnectedDoctors] = useState<string[]>([]);
 
     useEffect(() => {
         const unsub = storageService.onAuthStateChanged((u) => {
@@ -41,6 +42,7 @@ export default function App() {
             const unsub = storageService.subscribeEntries(user.id, (data) => setEntries(data));
             const unsubNotes = storageService.subscribeNotes(undefined, user.id, (notes) => setDoctorNotes(notes));
             storageService.getAuditLogs(user.id).then(setAuditLogs);
+            storageService.getConnectedDoctors(user.id).then(docs => setConnectedDoctors(docs.map(d => d.id)));
             return () => { unsub(); unsubNotes(); }
         }
     }, [user]);
@@ -294,6 +296,7 @@ export default function App() {
                         onCancel={() => setShowEntryForm(false)}
                         initialMode={entryMode}
                         lang={lang}
+                        connectedDoctorIds={connectedDoctors}
                     />
                 </div>
             )}

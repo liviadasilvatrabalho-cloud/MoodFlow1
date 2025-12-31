@@ -13,6 +13,7 @@ interface EntryFormProps {
     onCancel: () => void;
     initialMode?: 'mood' | 'voice' | 'diary';
     lang: Language;
+    connectedDoctorIds: string[];
 }
 
 const getLocalISOString = () => {
@@ -21,7 +22,7 @@ const getLocalISOString = () => {
     return (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
 };
 
-export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, onCancel, initialMode = 'mood', lang }) => {
+export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, onCancel, initialMode = 'mood', lang, connectedDoctorIds }) => {
     const [mode, setMode] = useState<'mood' | 'voice' | 'diary'>(initialMode);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -71,11 +72,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
             timestamp: finalTimestamp,
             mood: mode === 'mood' ? mood : null,
             moodLabel: mode === 'mood' ? (MOODS.find(m => m.value === mood)?.label || 'Okay') : t.diary,
-            energy: mode === 'mood' ? energy : null,
+            energy: mode === 'mood' ? energy : undefined,
             text,
             tags: mode === 'mood' ? selectedTags : [],
             isLocked: isLocked,
-            permissions: isLocked ? [] : (storageService.getUser(userId) as any)?.connections || [],
+            permissions: isLocked ? [] : connectedDoctorIds,
             entryMode: mode
         };
         onSave(newEntry);
@@ -104,8 +105,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                 type="button"
                                 onClick={() => setMode(m)}
                                 className={`flex-1 py-3.5 text-[14px] font-black rounded-[18px] transition-all duration-300 flex items-center justify-center gap-2 tracking-tight ${isSelected
-                                        ? 'bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white shadow-[0_8px_24px_rgba(109,40,217,0.4)] scale-[1.02]'
-                                        : 'text-[#6B7280] hover:text-white hover:bg-white/5'
+                                    ? 'bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white shadow-[0_8px_24px_rgba(109,40,217,0.4)] scale-[1.02]'
+                                    : 'text-[#6B7280] hover:text-white hover:bg-white/5'
                                     }`}
                             >
                                 {m === 'mood' && <span>📊 Humor</span>}
@@ -158,8 +159,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                                     type="button"
                                                     onClick={() => setMood(m.value)}
                                                     className={`aspect-square flex flex-col items-center justify-center rounded-[28px] transition-all duration-400 border-[2px] ${isSelected
-                                                            ? 'bg-[#1A1A1A] border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.6)] scale-105 z-10'
-                                                            : 'bg-white/5 border-transparent opacity-30 hover:opacity-100 hover:scale-[1.02]'
+                                                        ? 'bg-[#1A1A1A] border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.6)] scale-105 z-10'
+                                                        : 'bg-white/5 border-transparent opacity-30 hover:opacity-100 hover:scale-[1.02]'
                                                         }`}
                                                 >
                                                     <span className={`text-4xl md:text-5xl mb-2 select-none transform transition-all ${isSelected ? 'scale-110 drop-shadow-lg' : ''}`}>{m.emoji}</span>
@@ -201,8 +202,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                                 type="button"
                                                 onClick={() => toggleTag(tag)}
                                                 className={`px-6 py-3 rounded-2xl text-[13px] font-black transition-all border-2 duration-300 ${selectedTags.includes(tag)
-                                                        ? 'bg-white text-black border-white shadow-[0_8px_20px_rgba(255,255,255,0.2)]'
-                                                        : 'bg-[#1A1A1A] border-white/5 text-[#9CA3AF] hover:text-white hover:border-white/20'
+                                                    ? 'bg-white text-black border-white shadow-[0_8px_20px_rgba(255,255,255,0.2)]'
+                                                    : 'bg-[#1A1A1A] border-white/5 text-[#9CA3AF] hover:text-white hover:border-white/20'
                                                     }`}
                                             >
                                                 {tag}
@@ -252,8 +253,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                             type="button"
                             onClick={() => setIsLocked(!isLocked)}
                             className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl border-2 transition-all duration-500 font-black tracking-widest text-[11px] shadow-sm transform active:scale-95 ${!isLocked
-                                    ? 'bg-[#065F46]/20 border-[#059669]/30 text-[#10B981]'
-                                    : 'bg-[#7F1D1D]/20 border-[#DC2626]/30 text-[#EF4444]'
+                                ? 'bg-[#065F46]/20 border-[#059669]/30 text-[#10B981]'
+                                : 'bg-[#7F1D1D]/20 border-[#DC2626]/30 text-[#EF4444]'
                                 }`}
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
