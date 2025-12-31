@@ -262,10 +262,18 @@ export const storageService = {
         return () => { supabase.removeChannel(channel); };
     },
 
-    addEntry: async (userId: string, entry: MoodEntry) => {
+    addEntry: async (userId: string, entry: MoodEntry) => { // userId arg kept for interface compatibility but we use auth user
+        // 1. Force fetch authenticated user to prevent ID spoofing/mismatch
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            console.error("Critical: No authenticated user found during save.");
+            throw new Error("User not authenticated");
+        }
+
         // Map helper
         const dbEntry = {
-            user_id: userId,
+            user_id: user.id, // Explicitly use the auth token's user ID
             date: new Date(entry.timestamp).toISOString(),
             mood: entry.mood,
             mood_label: entry.moodLabel,
@@ -353,16 +361,23 @@ export const storageService = {
 
     // Instead of getDoctorPatients, utilize the View
     getMedicalDashboard: async (doctorId: string): Promise<any[]> => {
+        // CHANGED: Query tables directly to avoid "relation does not exist" on view
         const { data, error } = await supabase
-            .from('medical_dashboard')
-            .select('*')
+            .from('doctor_patients')
+            .select('patient_id, profiles!patient_id(name, email)')
             .eq('doctor_id', doctorId);
 
         if (error) {
-            console.error('Error fetching dashboard:', error);
+            console.error('Error fetching dashboard patients:', error);
             return [];
         }
-        return data || [];
+
+        // Map to match the expected format for DoctorPortal
+        return data.map((row: any) => ({
+            patient_id: row.patient_id,
+            patient_name: row.profiles?.name || 'Unknown',
+            patient_email: row.profiles?.email || 'No Email'
+        })) || [];
     },
 
     // Legacy method optional, or remove if unused. Kept for safety but unimplemented effectively.
