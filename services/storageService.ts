@@ -436,6 +436,38 @@ export const storageService = {
         return data || [];
     },
 
+    getPatientConnections: async (patientId: string) => {
+        const { data, error } = await supabase
+            .from('doctor_patients')
+            .select('doctor_id, created_at, profiles!doctor_id(name, email)')
+            .eq('patient_id', patientId);
+
+        if (error) throw error;
+        return data.map((d: any) => ({
+            doctor_id: d.doctor_id,
+            doctor_name: d.profiles.name,
+            doctor_email: d.profiles.email,
+            created_at: d.created_at
+        }));
+    },
+
+    disconnectDoctor: async (patientId: string, doctorId: string) => {
+        const { error } = await supabase
+            .from('doctor_patients')
+            .delete()
+            .eq('patient_id', patientId)
+            .eq('doctor_id', doctorId);
+
+        if (error) throw error;
+
+        // Also remove specific entry permissions for this doctor
+        await supabase
+            .from('entry_permissions')
+            .delete()
+            .eq('doctor_id', doctorId)
+            .in('entry_id', (await supabase.from('entries').select('id').eq('user_id', patientId)).data?.map(e => e.id) || []);
+    },
+
     // --- NOTES ---
 
     subscribeNotes: (doctorId: string | undefined, patientId: string, callback: (notes: DoctorNote[]) => void) => {

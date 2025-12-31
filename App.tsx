@@ -9,6 +9,7 @@ import { Button } from './components/ui/Button';
 import { Sidebar } from './components/ui/Sidebar';
 import { BottomNav } from './components/ui/BottomNav';
 import Auth from './components/Auth';
+import { ConsentSettings } from './components/settings/ConsentSettings';
 
 
 // --- Main App ---
@@ -17,7 +18,7 @@ export default function App() {
 
     const [entries, setEntries] = useState<MoodEntry[]>([]);
     const [loading, setLoading] = useState(true);
-    const [view, setView] = useState<'home' | 'diary' | 'stats' | 'settings'>('home');
+    const [view, setView] = useState<'home' | 'diary' | 'stats' | 'settings' | 'consent'>('home');
     const [showEntryForm, setShowEntryForm] = useState(false);
     const [entryMode, setEntryMode] = useState<'mood' | 'voice' | 'diary'>('mood');
     const [lang, setLang] = useState<Language>('pt');
@@ -407,7 +408,7 @@ export default function App() {
                     </div>
                 )}
 
-                {view === 'settings' && (
+                {view === 'settings' && user && (
                     <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-8 animate-in fade-in duration-300">
                         <h2 className="text-2xl font-bold text-white">{t.accountSettings}</h2>
                         <div className="bg-[#111] p-6 rounded-xl border border-white/5">
@@ -428,7 +429,7 @@ export default function App() {
                         <div className="bg-[#111] p-6 rounded-xl border border-white/5">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-12 h-12 rounded-full bg-[#8b5cf6] flex items-center justify-center text-white font-bold text-xl">
-                                    {user.name[0].toUpperCase()}
+                                    {(user.name || '?')[0].toUpperCase()}
                                 </div>
                                 <div>
                                     {isEditingName ? (
@@ -473,11 +474,11 @@ export default function App() {
                                 {t.deleteAccount}
                             </button>
                             <button
-                                onClick={() => alert("Gestão de consentimento granular em breve.")}
-                                className="w-full mt-1 text-[10px] text-gray-500 hover:text-white py-2 opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
+                                onClick={() => setView('consent')}
+                                className="w-full mt-1 text-[10px] text-primary hover:text-white py-2 opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
                             >
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                                {t.consent}
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                {t.consentManagement}
                             </button>
                             <button
                                 onClick={() => storageService.downloadAccountData(user.id)}
@@ -492,10 +493,10 @@ export default function App() {
                         <div className="bg-[#111] p-6 rounded-xl border border-white/5 space-y-4">
                             <h3 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-tight">
                                 <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                                {t.auditTitle}
+                                Histórico de Segurança
                             </h3>
                             <p className="text-xs text-gray-500 leading-relaxed">
-                                {t.dataAccessLog} - Transparência total sobre quem acessou seus dados clínicos.
+                                Transparência total sobre quem acessou seus dados clínicos.
                             </p>
 
                             <div className="space-y-2 mt-4">
@@ -517,6 +518,16 @@ export default function App() {
                                 )}
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {view === 'consent' && user && (
+                    <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-8 animate-in slide-in-from-right duration-300">
+                        <button onClick={() => setView('settings')} className="text-xs text-gray-500 hover:text-white flex items-center gap-2 mb-4">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                            {t.back}
+                        </button>
+                        <ConsentSettings user={user} />
                     </div>
                 )}
             </main>

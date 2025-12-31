@@ -5,6 +5,9 @@ import { aiService } from '../../services/aiService';
 import { MoodEntry, User, DoctorNote, Language, UserRole } from '../../types';
 import { Button } from '../ui/Button';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface DoctorPortalProps {
     user: User;
@@ -276,7 +279,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
         }
     };
 
-    const handleExportData = () => {
+    const handleExportDataCsv = () => {
         if (!selectedPatientId) return;
         const entriesToExport = patientEntries;
 
@@ -300,36 +303,86 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
         link.click();
     };
 
+    const handleExportPDF = () => {
+        if (!selectedPatientId) return;
+        const patient = patients.find(p => p.id === selectedPatientId);
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(22);
+        doc.setTextColor(124, 58, 237); // Brand Primary
+        doc.text('MoodFlow Enterprise', 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Relatório Clínico de Evolução - ${new Date().toLocaleDateString()}`, 14, 30);
+
+        doc.setDrawColor(200);
+        doc.line(14, 35, 196, 35);
+
+        // Patient Info
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Paciente: ${patient?.name || 'N/A'}`, 14, 45);
+        doc.setFontSize(10);
+        doc.text(`Email: ${patient?.email || 'N/A'}`, 14, 50);
+        doc.text(`Responsável: Dr(a). ${user.name}`, 14, 55);
+
+        // Summary if available
+        let startY = 65;
+        if (aiSummary) {
+            doc.setFontSize(11);
+            doc.setTextColor(124, 58, 237);
+            doc.text('Resumo Clínico (AI):', 14, startY);
+            doc.setFontSize(9);
+            doc.setTextColor(50);
+            const splitSummary = doc.splitTextToSize(aiSummary.summaryText, 180);
+            doc.text(splitSummary, 14, startY + 7);
+            startY += (splitSummary.length * 5) + 15;
+        }
+
+        // Table
+        const tableColumn = ["Data", "Humor", "Energia", "Tags", "Relato"];
+        const tableRows = patientEntries.map(e => [
+            new Date(e.timestamp).toLocaleDateString(),
+            e.moodLabel || e.mood || '-',
+            e.energy || '-',
+            e.tags.join(', '),
+            e.text.length > 50 ? e.text.substring(0, 47) + '...' : e.text
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: startY,
+            theme: 'striped',
+            headStyles: { fillColor: [124, 58, 237] },
+            styles: { fontSize: 8 },
+            columnStyles: {
+                4: { cellWidth: 80 }
+            }
+        });
+
+        doc.save(`relatorio_${patient?.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    };
+
     const handleExportXLSX = () => {
         if (!selectedPatientId) return;
-        const entriesToExport = patientEntries;
+        const patient = patients.find(p => p.id === selectedPatientId);
 
-        // Simple HTML-based Excel export (XLSX Trick)
-        let html = `
-            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-            <head><meta charset="utf-8" /></head>
-            <body>
-                <table>
-                    <tr><th>Data</th><th>Humor</th><th>Energia</th><th>Texto</th><th>Tags</th></tr>
-                    ${entriesToExport.map(e => `
-                        <tr>
-                            <td>${new Date(e.timestamp).toLocaleDateString()}</td>
-                            <td>${e.mood || '-'}</td>
-                            <td>${e.energy || '-'}</td>
-                            <td>${e.text}</td>
-                            <td>${e.tags.join(', ')}</td>
-                        </tr>
-                    `).join('')}
-                </table>
-            </body>
-            </html>
-        `;
+        const data = patientEntries.map(e => ({
+            'Data': new Date(e.timestamp).toLocaleDateString(),
+            'Humor': e.moodLabel || e.mood || '-',
+            'Energia': e.energy || '-',
+            'Tags': e.tags.join(', '),
+            'Relato': e.text
+        }));
 
-        const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `relatorio_paciente_${selectedPatientId}.xls`;
-        link.click();
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Registros");
+
+        XLSX.writeFile(wb, `relatorio_${patient?.name.replace(/\s+/g, '_')}.xlsx`);
     };
 
 
@@ -589,10 +642,20 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                             <div className="text-[10px] font-bold text-textMuted uppercase tracking-wider">{t.visibleEntries}</div>
                                             <div className="text-2xl md:text-3xl font-light text-white">{patientEntries.length}</div>
                                         </div>
-                                        <Button variant="ghost" onClick={handleExportData} className="self-center h-10 gap-2 border-neutral-800">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                            Exportar CSV
-                                        </Button>
+                                        <div className="flex flex-wrap gap-2 self-center print:hidden">
+                                            <Button variant="ghost" onClick={handleExportDataCsv} className="h-10 gap-2 border-neutral-800 text-[10px] uppercase font-bold">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                                CSV
+                                            </Button>
+                                            <Button variant="ghost" onClick={handleExportXLSX} className="h-10 gap-2 border-neutral-800 text-[10px] uppercase font-bold text-green-500">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                                Excel
+                                            </Button>
+                                            <Button variant="ghost" onClick={handleExportPDF} className="h-10 gap-2 border-neutral-800 text-[10px] uppercase font-bold text-red-500">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                                PDF
+                                            </Button>
+                                        </div>
                                     </div>
                                 )}
                             </div>

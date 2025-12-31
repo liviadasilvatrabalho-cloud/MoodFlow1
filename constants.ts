@@ -145,7 +145,10 @@ export const TRANSLATIONS = {
     recentNotifications: 'Recent Notifications',
     sentReply: 'replied to a note',
     viewConversation: 'View Conversation',
-    deleteConfirm: 'Are you sure? This cannot be undone.'
+    deleteConfirm: 'Are you sure? This cannot be undone.',
+    confirmDisconnect: 'Are you sure you want to revoke this professional\'s access?',
+    disconnectSuccess: 'Access revoked successfully.',
+    consentManagement: 'Consent Management'
   },
   pt: {
     home: 'Início',
@@ -273,7 +276,10 @@ export const TRANSLATIONS = {
     recentNotifications: 'Notificações Recentes',
     sentReply: 'respondeu a uma nota',
     viewConversation: 'Ver Conversa',
-    deleteConfirm: 'Tem certeza? Isso não pode ser desfeito.'
+    deleteConfirm: 'Tem certeza? Isso não pode ser desfeito.',
+    confirmDisconnect: 'Tem certeza que deseja revogar o acesso deste profissional?',
+    disconnectSuccess: 'Acesso revogado com sucesso.',
+    consentManagement: 'Gestão de Consentimento'
   },
   es: {
     home: 'Inicio',
@@ -404,7 +410,10 @@ export const TRANSLATIONS = {
     recentNotifications: 'Notificaciones',
     sentReply: 'respondió',
     viewConversation: 'Ver',
-    deleteConfirm: '¿Seguro?'
+    deleteConfirm: '¿Seguro?',
+    confirmDisconnect: '¿Está seguro de que desea revocar el acceso de este profesional?',
+    disconnectSuccess: 'Acceso revocado con éxito.',
+    consentManagement: 'Gestión de Consentimiento'
   },
   fr: {
     home: 'Accueil',
@@ -535,6 +544,9 @@ export const TRANSLATIONS = {
     recentNotifications: 'Notifications',
     sentReply: 'a répondu',
     viewConversation: 'Voir',
-    deleteConfirm: 'Sûr ?'
+    deleteConfirm: 'Sûr ?',
+    confirmDisconnect: 'Êtes-vous sûr de vouloir révoquer l\'accès de ce professionnel ?',
+    disconnectSuccess: 'Accès révoqué avec succès.',
+    consentManagement: 'Gestion du Consentement'
   }
 };
