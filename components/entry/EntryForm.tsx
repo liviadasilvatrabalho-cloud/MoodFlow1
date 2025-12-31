@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { MOODS, ACTIVITIES, SYMPTOMS, TRANSLATIONS } from '../../constants';
 import { Button } from '../ui/Button';
 import { VoiceRecorder } from './VoiceRecorder';
-import { geminiService } from '../../services/geminiService';
+import { aiService } from '../../services/aiService';
 import { storageService } from '../../services/storageService';
 import { MoodEntry, UserRole, Language } from '../../types';
 
@@ -50,7 +49,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
     const handleVoiceTranscription = async (transcribedText: string) => {
         setIsAnalyzing(true);
 
-        const analysis = await geminiService.analyzeEntry(transcribedText);
+        const analysis = await aiService.analyzeEntry(transcribedText);
 
         if (analysis) {
             setText(analysis.transcription || transcribedText);
@@ -149,10 +148,10 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                             key={m}
                             type="button"
                             onClick={() => setMode(m)}
-                            className={`flex-1 py-2 text-[11px] md:text-sm font-bold rounded-xl transition-all duration-300 ${mode === m
-                                ? 'bg-gradient-to-br from-primary to-primaryDark text-white shadow-lg'
-                                : 'text-textMuted hover:text-white'
-                                }`}
+                            className={`flex - 1 py - 2 text - [11px] md: text - sm font - bold rounded - xl transition - all duration - 300 ${mode === m
+                                    ? 'bg-gradient-to-br from-primary to-primaryDark text-white shadow-lg'
+                                    : 'text-textMuted hover:text-white'
+                                } `}
                         >
                             {m === 'mood' && t.tabMood}
                             {m === 'diary' && t.tabDiary}
@@ -186,14 +185,14 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                                 key={m.value}
                                                 type="button"
                                                 onClick={() => setMood(m.value)}
-                                                className={`flex flex-col items-center justify-center py-2.5 md:py-3 rounded-2xl transition-all duration-300 border ${isSelected
-                                                    ? `${m.bg} ${m.border} scale-105 shadow-xl`
-                                                    : 'bg-white/5 border-transparent opacity-60'
-                                                    }`}
+                                                className={`flex flex - col items - center justify - center py - 2.5 md: py - 3 rounded - 2xl transition - all duration - 300 border ${isSelected
+                                                        ? `${m.bg} ${m.border} scale-105 shadow-xl`
+                                                        : 'bg-white/5 border-transparent opacity-60'
+                                                    } `}
                                             >
                                                 <span className="text-xl md:text-3xl drop-shadow-md mb-0.5">{m.emoji}</span>
                                                 {isSelected && (
-                                                    <span className={`text-[7px] md:text-[9px] font-black uppercase tracking-tighter ${m.color}`}>
+                                                    <span className={`text - [7px] md: text - [9px] font - black uppercase tracking - tighter ${m.color} `}>
                                                         {m.label}
                                                     </span>
                                                 )}
@@ -209,7 +208,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                             <div className="space-y-3 bg-black/30 p-4 rounded-3xl border border-white/5">
                                 <div className="flex justify-between items-center mb-1">
                                     <label className="text-[10px] text-textMuted uppercase tracking-widest font-bold">{t.energy}</label>
-                                    <span className={`text-xl font-black tabular-nums ${energy > 7 ? 'text-green-400' : energy > 4 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                    <span className={`text - xl font - black tabular - nums ${energy > 7 ? 'text-green-400' : energy > 4 ? 'text-yellow-400' : 'text-red-400'} `}>
                                         {energy}<span className="text-xs text-gray-500 font-normal ml-1">/10</span>
                                     </span>
                                 </div>
@@ -231,10 +230,10 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                             key={tag}
                                             type="button"
                                             onClick={() => toggleTag(tag)}
-                                            className={`px-4 py-2.5 rounded-xl text-[11px] md:text-sm font-bold transition-all border ${selectedTags.includes(tag)
-                                                ? 'bg-white text-black border-white shadow-md'
-                                                : 'bg-neutral-800/50 border-white/5 text-gray-400 hover:text-white'
-                                                }`}
+                                            className={`px - 4 py - 2.5 rounded - xl text - [11px] md: text - sm font - bold transition - all border ${selectedTags.includes(tag)
+                                                    ? 'bg-white text-black border-white shadow-md'
+                                                    : 'bg-neutral-800/50 border-white/5 text-gray-400 hover:text-white'
+                                                } `}
                                         >
                                             {tag}
                                         </button>
@@ -249,7 +248,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                 {mode === 'diary' ? 'Querido Diário...' : t.notesTitle}
                             </label>
                             <textarea
-                                className={`w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-gray-200 placeholder-gray-700 focus:outline-none focus:border-primary transition-all resize-none ${mode === 'diary' ? 'h-48 md:h-64' : 'h-24'}`}
+                                className={`w - full bg - black / 40 border border - white / 10 rounded - 2xl p - 4 text - gray - 200 placeholder - gray - 700 focus: outline - none focus: border - primary transition - all resize - none ${mode === 'diary' ? 'h-48 md:h-64' : 'h-24'} `}
                                 placeholder={mode === 'diary' ? t.placeholderDiary : t.placeholderMood}
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
@@ -280,10 +279,10 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                         onClick={() => setSelectedDoctors(prev =>
                                             prev.includes(doc.id) ? prev.filter(id => id !== doc.id) : [...prev, doc.id]
                                         )}
-                                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${selectedDoctors.includes(doc.id)
-                                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                                            : 'bg-neutral-800 border-white/5 text-gray-500'
-                                            }`}
+                                        className={`px - 3 py - 1.5 rounded - full text - [10px] font - bold transition - all border ${selectedDoctors.includes(doc.id)
+                                                ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                                                : 'bg-neutral-800 border-white/5 text-gray-500'
+                                            } `}
                                     >
                                         {doc.name}
                                     </button>

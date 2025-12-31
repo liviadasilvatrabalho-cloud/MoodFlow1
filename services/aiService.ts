@@ -69,13 +69,13 @@ const clinicalSummarySchema = {
   required: ["patterns", "riskLevel", "recommendations", "summaryText"]
 };
 
-export const geminiService = {
+export const aiService = {
   analyzeEntry: async (text: string) => {
     try {
       if (!process.env.API_KEY) throw new Error("API Key missing");
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash',
         contents: `Atue como um especialista em transcrição e correção de texto para o app 'MoodFlow'.
         
         Sua tarefa é limpar e analisar o texto capturado via microfone.
@@ -89,7 +89,7 @@ export const geminiService = {
         config: {
           responseMimeType: "application/json",
           responseSchema: voiceAnalysisSchema,
-          temperature: 0.1, // Baixa temperatura para manter a precisão gramatical
+          temperature: 0.1,
           topP: 0.95,
           topK: 40
         }
@@ -99,7 +99,7 @@ export const geminiService = {
       if (!resultText) return null;
       return JSON.parse(resultText);
     } catch (error) {
-      console.error("Gemini Analysis Error:", error);
+      console.error("AI Analysis Error:", error);
       return null;
     }
   },
@@ -108,7 +108,6 @@ export const geminiService = {
     try {
       if (!process.env.API_KEY) throw new Error("API Key missing");
 
-      // Preparing text for LLM
       const historyText = entries.map(e => `[${new Date(e.date).toLocaleDateString()}] Humor: ${e.mood}/5, Energia: ${e.energy}/10. Texto: ${e.text}`).join('\n---\n');
 
       const response = await ai.models.generateContent({
@@ -135,7 +134,7 @@ export const geminiService = {
       if (!resultText) return null;
       return JSON.parse(resultText);
     } catch (error) {
-      console.error("Gemini Summary Error:", error);
+      console.error("AI Summary Error:", error);
       return null;
     }
   }

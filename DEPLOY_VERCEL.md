@@ -17,7 +17,7 @@ Clique na seção **Environment Variables** e adicione estas três chaves (copie
 | :--- | :--- |
 | `VITE_SUPABASE_URL` | *Cole o valor do seu .env* |
 | `VITE_SUPABASE_ANON_KEY` | *Cole o valor do seu .env* |
-| `GEMINI_API_KEY` | *Cole o valor da sua chave Gemini* |
+| `VITE_AI_API_KEY` | *Cole o valor da sua chave AI (Ex: Gemini)* |
 
 > **Dica:** Você pode copiar o conteúdo inteiro do arquivo `.env` e colar na primeira caixa da Vercel para adicionar todas de uma vez (a Vercel costuma aceitar o formato de arquivo).
 

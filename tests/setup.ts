@@ -1,16 +1,15 @@
-
-import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import { aiService } from '../services/aiService';
 
 // Mock Supabase
-vi.mock('@supabase/supabase-js', () => ({
-    createClient: () => ({
+vi.mock('../services/supabaseClient', () => ({
+    supabase: {
         auth: {
-            getSession: vi.fn(),
-            onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
             signInWithPassword: vi.fn(),
             signUp: vi.fn(),
             signOut: vi.fn(),
+            onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+            getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
         },
         from: vi.fn(() => ({
             select: vi.fn().mockReturnThis(),
@@ -21,14 +20,36 @@ vi.mock('@supabase/supabase-js', () => ({
             single: vi.fn().mockReturnThis(),
             order: vi.fn().mockReturnThis(),
         })),
-    }),
-}));
-
-// Mock Gemini Service
-vi.mock('../services/geminiService', () => ({
-    geminiService: {
-        summarizeHistory: vi.fn(),
-        generateResponse: vi.fn(),
-        detectMood: vi.fn(),
     },
 }));
+
+// Mock AI Service
+vi.mock('../services/aiService', () => ({
+    aiService: {
+        analyzeEntry: vi.fn().mockResolvedValue({
+            transcription: 'Mocked entry',
+            mode: 'mood',
+            moodScore: 4,
+            energyLevel: 8,
+            detectedTags: ['Test'],
+            intentToSave: true
+        }),
+        summarizeHistory: vi.fn().mockResolvedValue({
+            patterns: ['Pattern A'],
+            riskLevel: 'low',
+            recommendations: ['Rec A'],
+            summaryText: 'Summary A'
+        })
+    }
+}));
+
+// Mock window.crypto for UUIDs in tests
+Object.defineProperty(window, 'crypto', {
+    value: {
+        randomUUID: () => 'test-uuid'
+    }
+});
+
+// Mock URL and Blob for exports
+global.URL.createObjectURL = vi.fn();
+global.Blob = vi.fn();

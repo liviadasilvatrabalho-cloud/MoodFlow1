@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { MOODS, TRANSLATIONS } from '../../constants';
 import { storageService } from '../../services/storageService';
-import { geminiService } from '../../services/geminiService';
+import { aiService } from '../../services/aiService';
 import { MoodEntry, User, DoctorNote, Language, UserRole } from '../../types';
 import { Button } from '../ui/Button';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -217,7 +216,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
             patientId: selectedPatientId,
             text: newNote,
             isShared: false,
-            authorRole: 'DOCTOR',
+            authorRole: UserRole.PROFESSIONAL,
             read: true,
             createdAt: new Date().toISOString()
         };
@@ -244,7 +243,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
             entryId: entryId,
             text: entryComment,
             isShared: true,
-            authorRole: 'DOCTOR',
+            authorRole: UserRole.PROFESSIONAL,
             read: false,
             createdAt: new Date().toISOString()
         };
@@ -369,7 +368,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
         if (!patientEntries.length || !selectedPatientId) return;
         setIsGeneratingSummary(true);
         try {
-            const summary = await geminiService.summarizeHistory(patientEntries.slice(0, 30));
+            const summary = await aiService.summarizeHistory(patientEntries);
             setAiSummary(summary);
             storageService.logAudit(user.id, 'GENERATE_AI_SUMMARY', selectedPatientId);
         } catch (error) {
