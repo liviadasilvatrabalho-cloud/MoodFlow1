@@ -282,8 +282,8 @@ export const storageService = {
         const { data, error } = await supabase.from('entries').insert(dbEntry).select();
 
         if (error) {
-            console.error("Error adding entry:", error);
-            return;
+            console.error("Error adding entry to Supabase:", error.message, error.details);
+            throw error;
         }
 
         // Handle Permissions
@@ -314,8 +314,8 @@ export const storageService = {
 
         const { error } = await supabase.from('entries').update(dbEntry).eq('id', updatedEntry.id);
         if (error) {
-            console.error("Error updating entry:", error);
-            return;
+            console.error("Error updating entry in Supabase:", error.message, error.details);
+            throw error;
         }
 
         // Sync Permissions: Delete old, add new

@@ -49,12 +49,23 @@ export default function App() {
 
     const handleSaveEntry = async (entry: MoodEntry) => {
         if (!user) return;
+
+        // Optimistic update
+        const previousEntries = [...entries];
         setEntries(prev => [entry, ...prev]);
         setShowEntryForm(false);
+
         try {
             await storageService.addEntry(user.id, entry);
-        } catch (error) {
-            console.error("Error saving entry:", error);
+            console.log("Entry saved successfully to Supabase");
+        } catch (error: any) {
+            console.error("CRITICAL: Failed to persist entry:", error);
+            // Revert optimistic update
+            setEntries(previousEntries);
+            alert("Erro ao salvar no banco de dados. Verifique sua conexão. Detalhes: " + (error.message || "Erro desconhecido"));
+            // Keep the form open if it's a critical failure? 
+            // Or at least allow the user to try again.
+            setShowEntryForm(true);
         }
     };
 
