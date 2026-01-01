@@ -38,7 +38,7 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (user && user.role !== UserRole.PROFESSIONAL) {
+        if (user && user.role === UserRole.PATIENT) {
             const unsub = storageService.subscribeEntries(user.id, (data) => setEntries(data));
             const unsubNotes = storageService.subscribeNotes(undefined, user.id, (notes) => {
                 console.log("Notes received:", notes.length);
@@ -87,7 +87,7 @@ export default function App() {
     );
 
     if (!user) return <Auth />;
-    if (user.role === UserRole.PROFESSIONAL) return <DoctorPortal user={user} onLogout={storageService.logout} />;
+    if (user.role === UserRole.PROFESSIONAL || user.role === UserRole.PSYCHOLOGIST || user.role === UserRole.PSYCHIATRIST) return <DoctorPortal user={user} onLogout={storageService.logout} />;
 
     const t = TRANSLATIONS[lang] || TRANSLATIONS['pt'];
     const latestEntry = entries[0];
