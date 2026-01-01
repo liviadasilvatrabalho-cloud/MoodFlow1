@@ -236,10 +236,15 @@ export default function App() {
                                         <button
                                             onClick={() => {
                                                 const newStatus = !entry.isLocked;
-                                                setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isLocked: newStatus } : e));
-                                                storageService.updateEntry(entry.id, { isLocked: newStatus } as any).catch(err => {
+                                                const updatedEntry = { ...entry, isLocked: newStatus };
+
+                                                // Optimistic Update
+                                                setEntries(prev => prev.map(e => e.id === entry.id ? updatedEntry : e));
+
+                                                // Database Update
+                                                storageService.updateEntry(entry.id, updatedEntry).catch(err => {
                                                     console.error("Failed to toggle lock:", err);
-                                                    setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isLocked: !newStatus } : e));
+                                                    setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isLocked: !newStatus } : e)); // Rollback
                                                 });
                                             }}
                                             className={`px-3 py-1 rounded-full text-[9px] font-black border uppercase tracking-widest transition-all hover:scale-105 active:scale-95 ${entry.isLocked ? 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20' : 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20'}`}
