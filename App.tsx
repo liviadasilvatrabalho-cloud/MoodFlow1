@@ -230,6 +230,23 @@ export default function App() {
                                     <p className="text-[#e5e5e5] text-base leading-relaxed font-medium tracking-tight whitespace-pre-wrap">
                                         {entry.text}
                                     </p>
+
+                                    {/* DOCTOR NOTES SECTION */}
+                                    {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active').length > 0 && (
+                                        <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
+                                            {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active').map(note => (
+                                                <div key={note.id} className="bg-[#1A1A1A] rounded-2xl p-4 border border-[#7c3aed]/20 relative">
+                                                    <div className="absolute -top-3 left-4 bg-[#7c3aed] text-white text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-widest shadow-lg">
+                                                        Mensagem do Dr.
+                                                    </div>
+                                                    <p className="text-gray-300 text-sm mt-2">{note.text}</p>
+                                                    <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
+                                                        {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                     {entry.energy && (
                                         <div className="flex items-center gap-2 text-yellow-500/80 font-black text-[11px] uppercase tracking-widest pt-4 border-t border-white/5">
                                             <span>⚡ Energia: {entry.energy}/10</span>
