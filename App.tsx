@@ -241,13 +241,13 @@ export default function App() {
                                         {entry.text}
                                     </p>
 
-                                    {/* DOCTOR NOTES SECTION */}
+                                    {/* DOCTOR NOTES & REPLIES SECTION */}
                                     {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active').length > 0 && (
                                         <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
                                             {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active').map(note => (
-                                                <div key={note.id} className="bg-[#1A1A1A] rounded-2xl p-4 border border-[#7c3aed]/20 relative">
-                                                    <div className="absolute -top-3 left-4 bg-[#7c3aed] text-white text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-widest shadow-lg">
-                                                        Mensagem do Dr.
+                                                <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFESSIONAL' ? 'bg-[#1A1A1A] border-[#7c3aed]/20 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                    <div className={`absolute -top-3 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#7c3aed]' : 'right-4 bg-[#2563eb]'} text-white text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                        {note.authorRole === 'PROFESSIONAL' ? 'Mensagem do Dr.' : 'Sua Resposta'}
                                                     </div>
                                                     <p className="text-gray-300 text-sm mt-2">{note.text}</p>
                                                     <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
@@ -255,6 +255,48 @@ export default function App() {
                                                     </span>
                                                 </div>
                                             ))}
+
+                                            {/* REPLY INPUT */}
+                                            <div className="pt-2 flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Responder ao médico..."
+                                                    className="flex-1 bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#7c3aed] outline-none transition-colors"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            const val = e.currentTarget.value.trim();
+                                                            if (val) {
+                                                                // Find the doctor ID from the existing notes in this thread
+                                                                const projectThread = doctorNotes.filter(n => n.entryId === entry.id && n.authorRole === 'PROFESSIONAL');
+                                                                const targetDoctorId = projectThread.length > 0 ? projectThread[0].doctorId : undefined;
+
+                                                                if (!targetDoctorId) {
+                                                                    alert("Erro: Não foi possível identificar o médico para responder.");
+                                                                    return;
+                                                                }
+
+                                                                const newNote = {
+                                                                    id: crypto.randomUUID(),
+                                                                    doctorId: targetDoctorId,
+                                                                    patientId: user.id,
+                                                                    entryId: entry.id,
+                                                                    text: val,
+                                                                    isShared: true,
+                                                                    authorRole: 'PATIENT',
+                                                                    read: false,
+                                                                    status: 'active',
+                                                                    createdAt: new Date().toISOString()
+                                                                };
+                                                                storageService.saveDoctorNote(newNote as any).then(() => {
+                                                                    // Optimistic update handled by subscription mostly, but we can force it
+                                                                    // storageService.subscribeNotes triggers update
+                                                                });
+                                                                e.currentTarget.value = '';
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                     {entry.energy && (
