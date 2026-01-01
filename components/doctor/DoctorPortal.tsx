@@ -51,6 +51,8 @@ const CustomTooltip = ({ active, payload }: any) => {
     return null;
 };
 
+import { ExportReportModal } from './ExportReportModal';
+
 export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) => {
     const [patients, setPatients] = useState<User[]>([]);
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
@@ -61,6 +63,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
     const [newNote, setNewNote] = useState('');
     const [connectEmail, setConnectEmail] = useState('');
     const chartScrollRef = useRef<HTMLDivElement>(null);
+
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
     const [isRecording, setIsRecording] = useState(false);
 
@@ -848,6 +852,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                                             <p className="text-[10px] text-indigo-300/60 uppercase font-black">Powered by Gemini 1.5</p>
                                                         </div>
                                                     </div>
+                                                    <Button
+                                                        onClick={() => setIsExportModalOpen(true)}
+                                                        className="h-10 px-4 bg-neutral-800 hover:bg-neutral-700 text-white/70 border border-white/5 gap-2"
+                                                    >
+                                                        <span>📄</span> Relatórios
+                                                    </Button>
                                                     <Button
                                                         onClick={handleGenerateAISummary}
                                                         disabled={isGeneratingSummary || patientEntries.length === 0}
