@@ -478,9 +478,9 @@ export const storageService = {
         const fetchNotes = async () => {
             let query = supabase.from('doctor_notes').select('*').eq('patient_id', patientId).order('created_at', { ascending: true });
 
-            // Se for paciente, filtrar apenas as compartilhadas e não ocultas
+            // Se for paciente, filtrar apenas as compartilhadas
             if (!doctorId) {
-                query = query.eq('is_shared', true).neq('status', 'hidden');
+                query = query.eq('is_shared', true);
             } else {
                 // Se for médico, ver apenas as próprias notas (Isolamento Clínico)
                 query = query.eq('doctor_id', doctorId);
@@ -497,8 +497,10 @@ export const storageService = {
                     isShared: row.is_shared,
                     authorRole: row.author_role,
                     read: row.read,
-                    createdAt: row.created_at
-                }));
+                    createdAt: row.created_at,
+                    status: row.status || 'active' // Fallback for safety
+                })).filter(n => n.status !== 'hidden'); // Filter hidden notes in memory
+
                 callback(mapped as DoctorNote[]);
             }
         };

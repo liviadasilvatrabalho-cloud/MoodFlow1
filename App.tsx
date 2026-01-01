@@ -40,13 +40,23 @@ export default function App() {
     useEffect(() => {
         if (user && user.role !== UserRole.PROFESSIONAL) {
             const unsub = storageService.subscribeEntries(user.id, (data) => setEntries(data));
-            const unsubNotes = storageService.subscribeNotes(undefined, user.id, (notes) => setDoctorNotes(notes));
+            const unsubNotes = storageService.subscribeNotes(undefined, user.id, (notes) => {
+                console.log("Notes received:", notes.length);
+                setDoctorNotes(notes);
+            });
             storageService.getAuditLogs(user.id).then(setAuditLogs);
             // FIX 1: Set full objects, not just IDs
             storageService.getConnectedDoctors(user.id).then(docs => setConnectedDoctors(docs));
             return () => { unsub(); unsubNotes(); }
         }
     }, [user]);
+
+    // Force refresh notes when entering diary view
+    useEffect(() => {
+        if (view === 'diary' && user && user.role === UserRole.PATIENT) {
+            storageService.subscribeNotes(undefined, user.id, (notes) => setDoctorNotes(notes));
+        }
+    }, [view, user]);
 
     const handleSaveEntry = async (entry: MoodEntry) => {
         if (!user) return;
