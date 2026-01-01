@@ -287,8 +287,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                             type="button"
                                             onClick={() => setSelectedDoctorIds(connectedDoctors.filter(d => d.role === 'PSYCHOLOGIST').map(d => d.id))}
                                             className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length > 0 && selectedDoctorIds.every(id => connectedDoctors.find(d => d.id === id)?.role === 'PSYCHOLOGIST')
-                                                    ? 'bg-indigo-500 text-white border-indigo-500 shadow-xl scale-[1.02]'
-                                                    : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-indigo-500/30'}`}
+                                                ? 'bg-indigo-500 text-white border-indigo-500 shadow-xl scale-[1.02]'
+                                                : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-indigo-500/30'}`}
                                         >
                                             <div className="font-black text-sm uppercase tracking-wider mb-1 flex items-center gap-2">🧠 Meu Psicólogo</div>
                                             <div className="text-[11px] opacity-70 font-medium">Compartilhar e permitir comentários</div>
@@ -301,8 +301,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                             type="button"
                                             onClick={() => setSelectedDoctorIds(connectedDoctors.filter(d => d.role === 'PSYCHIATRIST').map(d => d.id))}
                                             className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length > 0 && selectedDoctorIds.every(id => connectedDoctors.find(d => d.id === id)?.role === 'PSYCHIATRIST')
-                                                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-xl scale-[1.02]'
-                                                    : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-emerald-500/30'}`}
+                                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-xl scale-[1.02]'
+                                                : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-emerald-500/30'}`}
                                         >
                                             <div className="font-black text-sm uppercase tracking-wider mb-1 flex items-center gap-2">💊 Meu Psiquiatra</div>
                                             <div className="text-[11px] opacity-70 font-medium">Compartilhar e permitir comentários</div>
@@ -322,6 +322,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                     )}
                                 </div>
                             </div>
+                        )}
                     </form>
                 )}
             </div>
