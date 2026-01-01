@@ -232,159 +232,188 @@ export default function App() {
                                                 {new Date(entry.timestamp).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                             </h4>
                                             <span className="text-gray-600 text-[10px] font-black">{new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </h4>
+                                            <span className="text-gray-600 text-[10px] font-black">{new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
-                                        <div className={`px-3 py-1 rounded-full text-[9px] font-black border uppercase tracking-widest ${entry.isLocked ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' : 'bg-green-500/10 border-green-500/20 text-green-400'}`}>
+                                        <button 
+                                            onClick={() => {
+                                                const newStatus = !entry.isLocked;
+                                                // Optimistic Update
+                                                setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isLocked: newStatus } : e));
+                                                // Database Update
+                                                storageService.updateEntry(entry.id, { isLocked: newStatus } as any).catch(err => {
+                                                    console.error("Failed to toggle lock:", err);
+                                                    setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isLocked: !newStatus } : e)); // Rollback
+                                                });
+                                            }}
+                                            className={`px-3 py-1 rounded-full text-[9px] font-black border uppercase tracking-widest transition-all hover:scale-105 active:scale-95 ${entry.isLocked ? 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20' : 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20'}`}
+                                        >
                                             {entry.isLocked ? '🔒 Privado' : '🔓 Visível'}
-                                        </div>
+                                        </button>
                                     </div>
                                     <p className="text-[#e5e5e5] text-base leading-relaxed font-medium tracking-tight whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">
                                         {entry.text}
                                     </p>
 
-                                    {/* DOCTOR NOTES & REPLIES SECTION */}
-                                    {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active').length > 0 && (
-                                        <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
-                                            {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active').map(note => (
-                                                <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFESSIONAL' ? 'bg-[#1A1A1A] border-[#7c3aed]/20 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
-                                                    <div className={`absolute -top-3 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#7c3aed]' : 'right-4 bg-[#2563eb]'} text-white text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-widest shadow-lg`}>
-                                                        {note.authorRole === 'PROFESSIONAL' ? 'Mensagem do Dr.' : 'Sua Resposta'}
-                                                    </div>
-                                                    <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
-                                                    <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
-                                                        {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                            ))}
-
-                                            {/* REPLY INPUT */}
-                                            <div className="pt-2 flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Responder ao médico..."
-                                                    className="flex-1 bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#7c3aed] outline-none transition-colors"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            const val = e.currentTarget.value.trim();
-                                                            if (val) {
-                                                                // Find the doctor ID from the existing notes in this thread
-                                                                const projectThread = doctorNotes.filter(n => n.entryId === entry.id && n.authorRole === 'PROFESSIONAL');
-                                                                const targetDoctorId = projectThread.length > 0 ? projectThread[0].doctorId : undefined;
-
-                                                                if (!targetDoctorId) {
-                                                                    alert("Erro: Não foi possível identificar o médico para responder.");
-                                                                    return;
-                                                                }
-
-                                                                const newNote = {
-                                                                    id: crypto.randomUUID(),
-                                                                    doctorId: targetDoctorId,
-                                                                    patientId: user.id,
-                                                                    entryId: entry.id,
-                                                                    text: val,
-                                                                    isShared: true,
-                                                                    authorRole: 'PATIENT',
-                                                                    read: false,
-                                                                    status: 'active',
-                                                                    createdAt: new Date().toISOString()
-                                                                };
-                                                                storageService.saveDoctorNote(newNote as any).then(() => {
-                                                                    // Optimistic update handled by subscription mostly, but we can force it
-                                                                    // storageService.subscribeNotes triggers update
-                                                                });
-                                                                e.currentTarget.value = '';
-                                                            }
-                                                        }
-                                                    }}
-                                                />
+                                    {/* DOCTOR NOTES & REPLIES SECTION */ }
+                                < div className = "mt-6 pt-6 border-t border-white/5 space-y-4" >
+                                {
+                                    doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active').map(note => (
+                                        <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFESSIONAL' ? 'bg-[#1A1A1A] border-[#7c3aed]/20 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                            <div className={`absolute -top-3 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#7c3aed]' : 'right-4 bg-[#2563eb]'} text-white text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                {note.authorRole === 'PROFESSIONAL' ? 'Mensagem do Dr.' : 'Sua Resposta'}
                                             </div>
+                                            <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
+                                            <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
+                                                {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
                                         </div>
-                                    )}
+                                    ))
+                                }
+
+                                        {/* REPLY INPUT */ }
+                                < div className = "pt-2 flex gap-2" >
+                                <input
+                                    type="text"
+                                    placeholder="Adicionar comentário ou resposta..."
+                                    className="flex-1 bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#7c3aed] outline-none transition-colors"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            const val = e.currentTarget.value.trim();
+                                            if (val) {
+                                                // Find the doctor ID from the existing notes in this thread
+                                                const projectThread = doctorNotes.filter(n => n.entryId === entry.id && n.authorRole === 'PROFESSIONAL');
+                                                let targetDoctorId = projectThread.length > 0 ? projectThread[0].doctorId : undefined;
+
+                                                // If no thread exists, infer from entry permissions (first shared doctor)
+                                                if (!targetDoctorId) {
+                                                    const validDocs = connectedDoctors.filter(doc => entry.permissions?.includes(doc.id));
+                                                    if (validDocs.length > 0) targetDoctorId = validDocs[0].id;
+                                                    else if (connectedDoctors.length > 0) targetDoctorId = connectedDoctors[0].id; // Fallback to any connected doctor
+                                                }
+
+                                                if (!targetDoctorId) {
+                                                    alert("Você precisa estar conectado a um médico para enviar comentários.");
+                                                    return;
+                                                }
+
+                                                const newNote = {
+                                                    id: crypto.randomUUID(),
+                                                    doctorId: targetDoctorId,
+                                                    patientId: user.id,
+                                                    entryId: entry.id,
+                                                    text: val,
+                                                    isShared: true,
+                                                    authorRole: 'PATIENT',
+                                                    read: false,
+                                                    status: 'active',
+                                                    createdAt: new Date().toISOString()
+                                                };
+                                                storageService.saveDoctorNote(newNote as any).then(() => {
+                                                    // Optimistic update handled by subscription mostly
+                                                });
+                                                e.currentTarget.value = '';
+                                            }
+                                        }
+                                    }}
+                                />
+                                        </div>
+                    </div>
                                     {entry.energy && (
-                                        <div className="flex items-center gap-2 text-yellow-500/80 font-black text-[11px] uppercase tracking-widest pt-4 border-t border-white/5">
-                                            <span>⚡ Energia: {entry.energy}/10</span>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                    <div className="flex items-center gap-2 text-yellow-500/80 font-black text-[11px] uppercase tracking-widest pt-4 border-t border-white/5">
+                        <span>⚡ Energia: {entry.energy}/10</span>
+                    </div>
+                )}
+        </div>
+    ))
+}
+                        </div >
+                    </div >
+                )}
+
+{
+    view === 'stats' && (
+        <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-8">
+            <h2 className="text-3xl font-black text-white tracking-tighter">{t.stats}</h2>
+            <Analytics entries={entries} lang={lang} />
+        </div>
+    )
+}
+
+{
+    view === 'settings' && user && (
+        <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-10 animate-in fade-in duration-500">
+            <h2 className="text-3xl font-black text-white tracking-tighter">{t.accountSettings}</h2>
+            <div className="space-y-6">
+                <div className="bg-[#0D0D0D] p-8 rounded-[36px] border border-white/5 space-y-8 shadow-2xl">
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 rounded-[24px] bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#7c3aed]/20">
+                            {(user.name || '?')[0].toUpperCase()}
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-2xl font-black text-white tracking-tight">{user.name}</h3>
+                            <p className="text-sm text-gray-500 font-medium">{user.email}</p>
                         </div>
                     </div>
-                )}
-
-                {view === 'stats' && (
-                    <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-8">
-                        <h2 className="text-3xl font-black text-white tracking-tighter">{t.stats}</h2>
-                        <Analytics entries={entries} lang={lang} />
-                    </div>
-                )}
-
-                {view === 'settings' && user && (
-                    <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-10 animate-in fade-in duration-500">
-                        <h2 className="text-3xl font-black text-white tracking-tighter">{t.accountSettings}</h2>
-                        <div className="space-y-6">
-                            <div className="bg-[#0D0D0D] p-8 rounded-[36px] border border-white/5 space-y-8 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-16 h-16 rounded-[24px] bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#7c3aed]/20">
-                                        {(user.name || '?')[0].toUpperCase()}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-2xl font-black text-white tracking-tight">{user.name}</h3>
-                                        <p className="text-sm text-gray-500 font-medium">{user.email}</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-4 pt-6 border-t border-white/5">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">{t.role}</span>
-                                        <span className="bg-[#1A1A1A] text-[10px] px-3 py-1 rounded-full text-white font-black border border-white/10 uppercase">{user.role}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">Idioma</span>
-                                        <div className="flex gap-2">
-                                            {['pt', 'en'].map(l => (
-                                                <button key={l} onClick={() => setLang(l as Language)} className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${lang === l ? 'bg-white text-black' : 'text-gray-600 hover:text-white'}`}>
-                                                    {l}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                                <Button variant="secondary" onClick={storageService.logout} className="w-full bg-[#1A1A1A] border-none text-white h-12 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#222]">
-                                    {t.signOut}
-                                </Button>
+                    <div className="space-y-4 pt-6 border-t border-white/5">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">{t.role}</span>
+                            <span className="bg-[#1A1A1A] text-[10px] px-3 py-1 rounded-full text-white font-black border border-white/10 uppercase">{user.role}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">Idioma</span>
+                            <div className="flex gap-2">
+                                {['pt', 'en'].map(l => (
+                                    <button key={l} onClick={() => setLang(l as Language)} className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${lang === l ? 'bg-white text-black' : 'text-gray-600 hover:text-white'}`}>
+                                        {l}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
-                )}
-
-                {view === 'consent' && user && (
-                    <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-8 py-10">
-                        <button onClick={() => setView('settings')} className="text-xs text-gray-500 font-black uppercase tracking-widest hover:text-white flex items-center gap-2 mb-6 transition-all">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                            Voltar
-                        </button>
-                        <ConsentSettings user={user} />
-                    </div>
-                )}
-            </main>
-
-            <BottomNav currentView={view} onViewChange={setView} />
-
-            {showEntryForm && user && (
-                <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
-                    <EntryForm
-                        userId={user.id}
-                        userRole={user.role}
-                        onSave={handleSaveEntry}
-                        onCancel={() => setShowEntryForm(false)}
-                        initialMode={entryMode}
-                        lang={lang}
-                        // FIX 2: Correct prop name and value
-                        connectedDoctors={connectedDoctors}
-                    />
+                    <Button variant="secondary" onClick={storageService.logout} className="w-full bg-[#1A1A1A] border-none text-white h-12 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#222]">
+                        {t.signOut}
+                    </Button>
                 </div>
-            )}
+            </div>
+        </div>
+    )
+}
 
-            <style dangerouslySetInnerHTML={{
-                __html: `
+{
+    view === 'consent' && user && (
+        <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-8 py-10">
+            <button onClick={() => setView('settings')} className="text-xs text-gray-500 font-black uppercase tracking-widest hover:text-white flex items-center gap-2 mb-6 transition-all">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                Voltar
+            </button>
+            <ConsentSettings user={user} />
+        </div>
+    )
+}
+            </main >
+
+    <BottomNav currentView={view} onViewChange={setView} />
+
+{
+    showEntryForm && user && (
+        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-0 md:p-4 animate-in fade-in duration-300">
+            <EntryForm
+                userId={user.id}
+                userRole={user.role}
+                onSave={handleSaveEntry}
+                onCancel={() => setShowEntryForm(false)}
+                initialMode={entryMode}
+                lang={lang}
+                // FIX 2: Correct prop name and value
+                connectedDoctors={connectedDoctors}
+            />
+        </div>
+    )
+}
+
+<style dangerouslySetInnerHTML={{
+    __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: #050505; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #1A1A1A; border-radius: 10px; }
@@ -397,6 +426,6 @@ export default function App() {
                 body { overflow: hidden; height: 100%; position: fixed; width: 100%; }
                 #root { height: 100%; }
             `}} />
-        </div>
+        </div >
     );
 }
