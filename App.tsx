@@ -237,7 +237,7 @@ export default function App() {
                                             {entry.isLocked ? '🔒 Privado' : '🔓 Visível'}
                                         </div>
                                     </div>
-                                    <p className="text-[#e5e5e5] text-base leading-relaxed font-medium tracking-tight whitespace-pre-wrap">
+                                    <p className="text-[#e5e5e5] text-base leading-relaxed font-medium tracking-tight whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">
                                         {entry.text}
                                     </p>
 
@@ -249,7 +249,7 @@ export default function App() {
                                                     <div className={`absolute -top-3 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#7c3aed]' : 'right-4 bg-[#2563eb]'} text-white text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-widest shadow-lg`}>
                                                         {note.authorRole === 'PROFESSIONAL' ? 'Mensagem do Dr.' : 'Sua Resposta'}
                                                     </div>
-                                                    <p className="text-gray-300 text-sm mt-2">{note.text}</p>
+                                                    <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                     <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
                                                         {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
