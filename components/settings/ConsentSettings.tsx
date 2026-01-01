@@ -54,8 +54,8 @@ export const ConsentSettings: React.FC<ConsentSettingsProps> = ({ user }) => {
             </header>
 
             <div className="bg-surface rounded-2xl border border-neutral-800 overflow-hidden">
-                <div className="p-4 border-b border-neutral-800 bg-white/5">
-                    <h3 className="text-xs font-bold text-textMuted uppercase tracking-wider">Profissionais Conectados</h3>
+                <div className="p-4 border-b border-neutral-800 bg-white/5 flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-textMuted uppercase tracking-wider">Meus Profissionais de Saúde</h3>
                 </div>
 
                 {connections.length === 0 ? (
@@ -66,17 +66,24 @@ export const ConsentSettings: React.FC<ConsentSettingsProps> = ({ user }) => {
                 ) : (
                     <div className="divide-y divide-neutral-800">
                         {connections.map((conn) => (
-                            <div key={conn.doctor_id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
-                                <div>
-                                    <div className="font-bold text-white text-sm">{conn.doctor_name || 'Profissional'}</div>
-                                    <div className="text-[10px] text-textMuted uppercase tracking-tighter">Conectado em {new Date(conn.created_at).toLocaleDateString()}</div>
+                            <div key={conn.doctor_id} className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-inner ${conn.doctor_role === 'PSYCHOLOGIST' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                        {conn.doctor_role === 'PSYCHOLOGIST' ? '🧠' : '💊'}
+                                    </div>
+                                    <div>
+                                        <div className="font-black text-white text-base tracking-tight">{conn.doctor_name || 'Profissional'}</div>
+                                        <div className={`text-[10px] uppercase font-black tracking-widest mt-1 ${conn.doctor_role === 'PSYCHOLOGIST' ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                                            {conn.doctor_role === 'PSYCHOLOGIST' ? 'Seu Psicólogo' : conn.doctor_role === 'PSYCHIATRIST' ? 'Seu Psiquiatra' : 'Profissional de Saúde'}
+                                        </div>
+                                    </div>
                                 </div>
                                 <Button
                                     variant="outline"
                                     onClick={() => handleDisconnect(conn.doctor_id)}
-                                    className="h-8 text-[10px] uppercase font-bold border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white"
+                                    className="h-9 px-4 text-[10px] uppercase font-black border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all hover:scale-105"
                                 >
-                                    Revogar Acesso
+                                    Revogar
                                 </Button>
                             </div>
                         ))}

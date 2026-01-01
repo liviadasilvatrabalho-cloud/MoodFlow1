@@ -42,6 +42,8 @@ export interface MoodEntry {
 export interface DoctorNote {
   id: string;
   doctorId: string;
+  doctorName?: string; // Enhanced for UI
+  doctorRole?: UserRole; // Enhanced for segregation
   patientId: string;
   entryId?: string; // Optional: Link to a specific mood entry
   text: string;

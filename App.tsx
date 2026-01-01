@@ -256,43 +256,88 @@ export default function App() {
                                         {entry.text}
                                     </p>
 
-                                    {/* DOCTOR NOTES & REPLIES SECTION */}
-                                    <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
-                                        {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active').map(note => (
-                                            <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFESSIONAL' ? 'bg-[#1A1A1A] border-[#7c3aed]/20 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
-                                                <div className={`absolute -top-3 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#7c3aed]' : 'right-4 bg-[#2563eb]'} text-white text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-widest shadow-lg`}>
-                                                    {note.authorRole === 'PROFESSIONAL' ? 'Mensagem do Dr.' : 'Sua Resposta'}
-                                                </div>
-                                                <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
-                                                <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
-                                                    {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </div>
-                                        ))}
+                                    {/* CLINICAL COMMENTS SECTION */}
+                                    <div className="mt-6 pt-6 border-t border-white/5 space-y-6">
 
-                                        {/* REPLY INPUT */}
-                                        <div className="pt-2 flex gap-2">
+                                        {/* SECTION 1: PSYCHOLOGIST */}
+                                        {doctorNotes.some(n => n.entryId === entry.id && n.doctorRole === 'PSYCHOLOGIST') && (
+                                            <div className="space-y-3">
+                                                <h5 className="text-[10px] uppercase font-black tracking-widest text-[#8b5cf6] flex items-center gap-2">
+                                                    <span>🧠</span> Anotações do Psicólogo
+                                                </h5>
+                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === 'PSYCHOLOGIST').map(note => (
+                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFESSIONAL' ? 'bg-[#1e1b4b] border-[#8b5cf6]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                        <div className={`absolute -top-2 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#8b5cf6]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                            {note.authorRole === 'PROFESSIONAL' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psicólogo'}` : 'Sua Resposta'}
+                                                        </div>
+                                                        <p className="text-gray-200 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
+                                                        <span className="text-[9px] text-gray-500 block mt-2 font-black uppercase tracking-widest">
+                                                            {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* SECTION 2: PSYCHIATRIST */}
+                                        {doctorNotes.some(n => n.entryId === entry.id && n.doctorRole === 'PSYCHIATRIST') && (
+                                            <div className="space-y-3 pt-2">
+                                                <h5 className="text-[10px] uppercase font-black tracking-widest text-[#10b981] flex items-center gap-2">
+                                                    <span>💊</span> Anotações do Psiquiatra
+                                                </h5>
+                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === 'PSYCHIATRIST').map(note => (
+                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFESSIONAL' ? 'bg-[#064e3b]/30 border-[#10b981]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                        <div className={`absolute -top-2 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#10b981]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                            {note.authorRole === 'PROFESSIONAL' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psiquiatra'}` : 'Sua Resposta'}
+                                                        </div>
+                                                        <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
+                                                        <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
+                                                            {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* REPLY INPUT (Global for the entry, logic handles details) */}
+                                        <div className="pt-4 flex gap-2">
                                             <input
                                                 type="text"
-                                                placeholder="Adicionar comentário ou resposta..."
+                                                placeholder="Responder ou adicionar comentário..."
                                                 className="flex-1 bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#7c3aed] outline-none transition-colors"
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
                                                         const val = e.currentTarget.value.trim();
                                                         if (val) {
-                                                            // Find the doctor ID from the existing notes in this thread
-                                                            const projectThread = doctorNotes.filter(n => n.entryId === entry.id && n.authorRole === 'PROFESSIONAL');
-                                                            let targetDoctorId = projectThread.length > 0 ? projectThread[0].doctorId : undefined;
+                                                            // Logic: If there's an active thread, reply to it. 
+                                                            // If multiple threads (both doctors), defaulting to replying to the most recent one or creating a general note? 
+                                                            // For simplicity/safety in this iteration: Reply to the FIRST visible doctor or let storageService handle it?
+                                                            // Actually, let's look at the existing logic. It finds `projectThread`.
+                                                            // We should probably prioritize replying to the most recent conversation or prompt user?
+                                                            // Requirement says "Patient sees separate comments".
+                                                            // Ideally, the REPLY button should be per-thread.
+                                                            // BUT, for now, let's keep the single input but make it smart.
 
-                                                            // If no thread exists, infer from entry permissions (first shared doctor)
-                                                            if (!targetDoctorId) {
+                                                            // Find ALL active threads
+                                                            const psychThread = doctorNotes.filter(n => n.entryId === entry.id && n.doctorRole === 'PSYCHOLOGIST');
+                                                            const psychiThread = doctorNotes.filter(n => n.entryId === entry.id && n.doctorRole === 'PSYCHIATRIST');
+
+                                                            let targetDoctorId: string | undefined;
+
+                                                            // Prioritize the doctor who last commented?
+                                                            const lastNote = doctorNotes.filter(n => n.entryId === entry.id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+                                                            if (lastNote && lastNote.doctorId) {
+                                                                targetDoctorId = lastNote.doctorId;
+                                                            } else {
+                                                                // No notes yet. Infer from permissions.
+                                                                // If shared with both, maybe default to Psychologist? Or just pick first?
                                                                 const validDocs = connectedDoctors.filter(doc => entry.permissions?.includes(doc.id));
-                                                                if (validDocs.length > 0) targetDoctorId = validDocs[0].id;
-                                                                else if (connectedDoctors.length > 0) targetDoctorId = connectedDoctors[0].id;
+                                                                if (validDocs.length > 0) targetDoctorId = validDocs[0].id; // Pick first allowed
                                                             }
 
                                                             if (!targetDoctorId) {
-                                                                alert("Você precisa estar conectado a um médico para enviar comentários.");
+                                                                alert("Selecione um médico no 'Quem pode ver' para iniciar uma conversa.");
                                                                 return;
                                                             }
 

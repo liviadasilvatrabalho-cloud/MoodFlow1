@@ -266,34 +266,62 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                         </div>
 
                         {/* Permission Sharing (Granular) */}
+                        {/* Permission Sharing (Simplified) */}
                         {connectedDoctors.length > 0 && (
-                            <div className="space-y-4 pt-4 animate-in fade-in duration-500">
-                                <div className="flex items-center justify-between px-1">
-                                    <span className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-black opacity-90">COMPARTILHAR COM</span>
-                                    <span className="text-[9px] text-indigo-400 font-mono font-bold">{selectedDoctorIds.length === 0 ? 'PRIVADO' : selectedDoctorIds.length === connectedDoctors.length ? 'TODOS' : 'PERSONALIZADO'}</span>
-                                </div>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {connectedDoctors.map(doc => (
+                            <div className="space-y-6 pt-4 animate-in fade-in duration-500">
+                                <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">QUEM PODE VER ESTE REGISTRO?</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {/* Option 1: Only Me */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedDoctorIds([])}
+                                        className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length === 0 ? 'bg-white text-black border-white shadow-xl scale-[1.02]' : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-white/10'}`}
+                                    >
+                                        <div className="font-black text-sm uppercase tracking-wider mb-1">🔒 Somente Eu</div>
+                                        <div className="text-[11px] opacity-70 font-medium">Nenhum profissional terá acesso</div>
+                                    </button>
+
+                                    {/* Option 2: Psychologist (if exists) */}
+                                    {connectedDoctors.some(d => d.role === 'PSYCHOLOGIST') && (
                                         <button
-                                            key={doc.id}
                                             type="button"
-                                            onClick={() => handleToggleDoctor(doc.id)}
-                                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300 group ${selectedDoctorIds.includes(doc.id) ? 'bg-[#1e1b4b] border-indigo-500/50 shadow-lg' : 'bg-[#0A0A0A] border-white/5 hover:border-white/10'}`}
+                                            onClick={() => setSelectedDoctorIds(connectedDoctors.filter(d => d.role === 'PSYCHOLOGIST').map(d => d.id))}
+                                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length > 0 && selectedDoctorIds.every(id => connectedDoctors.find(d => d.id === id)?.role === 'PSYCHOLOGIST')
+                                                    ? 'bg-indigo-500 text-white border-indigo-500 shadow-xl scale-[1.02]'
+                                                    : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-indigo-500/30'}`}
                                         >
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-300 ${selectedDoctorIds.includes(doc.id) ? 'bg-indigo-500 border-indigo-500 scale-110' : 'border-neutral-600 group-hover:border-neutral-500'}`}>
-                                                    {selectedDoctorIds.includes(doc.id) && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>}
-                                                </div>
-                                                <div className="text-left">
-                                                    <div className={`text-sm font-bold ${selectedDoctorIds.includes(doc.id) ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}`}>{doc.name}</div>
-                                                    {doc.role && <div className="text-[10px] font-black uppercase tracking-wider text-indigo-400/80 mt-0.5">{doc.role === 'PSYCHOLOGIST' ? 'Psicólogo' : doc.role === 'PSYCHIATRIST' ? 'Psiquiatra' : doc.role}</div>}
-                                                </div>
-                                            </div>
+                                            <div className="font-black text-sm uppercase tracking-wider mb-1 flex items-center gap-2">🧠 Meu Psicólogo</div>
+                                            <div className="text-[11px] opacity-70 font-medium">Compartilhar e permitir comentários</div>
                                         </button>
-                                    ))}
+                                    )}
+
+                                    {/* Option 3: Psychiatrist (if exists) */}
+                                    {connectedDoctors.some(d => d.role === 'PSYCHIATRIST') && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedDoctorIds(connectedDoctors.filter(d => d.role === 'PSYCHIATRIST').map(d => d.id))}
+                                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length > 0 && selectedDoctorIds.every(id => connectedDoctors.find(d => d.id === id)?.role === 'PSYCHIATRIST')
+                                                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-xl scale-[1.02]'
+                                                    : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-emerald-500/30'}`}
+                                        >
+                                            <div className="font-black text-sm uppercase tracking-wider mb-1 flex items-center gap-2">💊 Meu Psiquiatra</div>
+                                            <div className="text-[11px] opacity-70 font-medium">Compartilhar e permitir comentários</div>
+                                        </button>
+                                    )}
+
+                                    {/* Option 4: Both (if both exist) */}
+                                    {connectedDoctors.some(d => d.role === 'PSYCHIATRIST') && connectedDoctors.some(d => d.role === 'PSYCHOLOGIST') && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedDoctorIds(connectedDoctors.map(d => d.id))}
+                                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length === connectedDoctors.length ? 'bg-purple-600 text-white border-purple-600 shadow-xl scale-[1.02]' : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-purple-600/30'}`}
+                                        >
+                                            <div className="font-black text-sm uppercase tracking-wider mb-1">👥 Ambos</div>
+                                            <div className="text-[11px] opacity-70 font-medium">Visível para toda a equipe</div>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                        )}
                     </form>
                 )}
             </div>

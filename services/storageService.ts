@@ -477,7 +477,12 @@ export const storageService = {
 
     subscribeNotes: (doctorId: string | undefined, patientId: string, callback: (notes: DoctorNote[]) => void) => {
         const fetchNotes = async () => {
-            let query = supabase.from('doctor_notes').select('*').eq('patient_id', patientId).order('created_at', { ascending: true });
+            // Join with profiles to get doctor name and role
+            let query = supabase
+                .from('doctor_notes')
+                .select('*, profiles:doctor_id(name, role)') // Select profile info
+                .eq('patient_id', patientId)
+                .order('created_at', { ascending: true });
 
             // Se for paciente, filtrar apenas as compartilhadas
             if (!doctorId) {
@@ -487,21 +492,27 @@ export const storageService = {
                 query = query.eq('doctor_id', doctorId);
             }
 
-            const { data } = await query;
+            const { data, error } = await query;
+            if (error) {
+                console.error("Error fetching notes:", error);
+                return;
+            }
+
             if (data) {
-                const mapped = data.map(row => ({
+                const mapped = data.map((row: any) => ({
                     id: row.id,
                     doctorId: row.doctor_id,
+                    doctorName: row.profiles?.name, // Add name
+                    doctorRole: row.profiles?.role, // Add role
                     patientId: row.patient_id,
                     entryId: row.entry_id,
                     text: row.text,
                     isShared: row.is_shared,
                     authorRole: row.author_role,
                     read: row.read,
-                    createdAt: row.created_at,
-                    status: row.status || 'active' // Fallback for safety
-                })).filter(n => n.status !== 'hidden'); // Filter hidden notes in memory
-
+                    status: row.status,
+                    createdAt: row.created_at
+                }));
                 callback(mapped as DoctorNote[]);
             }
         };
@@ -509,7 +520,7 @@ export const storageService = {
         fetchNotes();
 
         const channel = supabase
-            .channel(`notes-${patientId}`)
+            .channel('notes-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'doctor_notes', filter: `patient_id=eq.${patientId}` }, () => {
                 fetchNotes();
             })
