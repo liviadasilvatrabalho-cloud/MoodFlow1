@@ -23,6 +23,7 @@ export default function App() {
     const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([]);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string, role?: string }[]>([]);
+    const [replyRecipients, setReplyRecipients] = useState<Record<string, 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH' | null>>({});
 
     useEffect(() => {
         const unsub = storageService.onAuthStateChanged((u) => {
@@ -300,65 +301,113 @@ export default function App() {
                                         )}
 
                                         {/* REPLY INPUT (Global for the entry, logic handles details) */}
-                                        <div className="pt-4 flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Responder ou adicionar comentário..."
-                                                className="flex-1 bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#7c3aed] outline-none transition-colors"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const val = e.currentTarget.value.trim();
-                                                        if (val) {
-                                                            // Logic: If there's an active thread, reply to it. 
-                                                            // If multiple threads (both doctors), defaulting to replying to the most recent one or creating a general note? 
-                                                            // For simplicity/safety in this iteration: Reply to the FIRST visible doctor or let storageService handle it?
-                                                            // Actually, let's look at the existing logic. It finds `projectThread`.
-                                                            // We should probably prioritize replying to the most recent conversation or prompt user?
-                                                            // Requirement says "Patient sees separate comments".
-                                                            // Ideally, the REPLY button should be per-thread.
-                                                            // BUT, for now, let's keep the single input but make it smart.
+                                        {/* EXPLICIT RECIPIENT SELECTION & INPUT */}
+                                        <div className="pt-6 border-t border-white/5 flex flex-col gap-3">
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Para quem você quer escrever?</span>
 
-                                                            // Find ALL active threads
-                                                            const psychThread = doctorNotes.filter(n => n.entryId === entry.id && n.doctorRole === 'PSYCHOLOGIST');
-                                                            const psychiThread = doctorNotes.filter(n => n.entryId === entry.id && n.doctorRole === 'PSYCHIATRIST');
+                                            <div className="flex gap-2">
+                                                {/* Psychologist Option */}
+                                                {connectedDoctors.some(d => d.role === 'PSYCHOLOGIST') && (
+                                                    <button
+                                                        onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHOLOGIST' }))}
+                                                        className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#1e1b4b] border-[#8b5cf6] text-[#8b5cf6] shadow-[0_0_15px_rgba(139,92,246,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                    >
+                                                        <span className="text-lg">🧠</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-wider">Psicólogo</span>
+                                                    </button>
+                                                )}
 
-                                                            let targetDoctorId: string | undefined;
+                                                {/* Psychiatrist Option */}
+                                                {connectedDoctors.some(d => d.role === 'PSYCHIATRIST') && (
+                                                    <button
+                                                        onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHIATRIST' }))}
+                                                        className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#064e3b] border-[#10b981] text-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                    >
+                                                        <span className="text-lg">💊</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-wider">Psiquiatra</span>
+                                                    </button>
+                                                )}
 
-                                                            // Prioritize the doctor who last commented?
-                                                            const lastNote = doctorNotes.filter(n => n.entryId === entry.id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+                                                {/* Both Option */}
+                                                {connectedDoctors.some(d => d.role === 'PSYCHOLOGIST') && connectedDoctors.some(d => d.role === 'PSYCHIATRIST') && (
+                                                    <button
+                                                        onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'BOTH' }))}
+                                                        className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'BOTH' ? 'bg-indigo-900/40 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                    >
+                                                        <span className="text-lg">👥</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-wider">Ambos</span>
+                                                    </button>
+                                                )}
+                                            </div>
 
-                                                            if (lastNote && lastNote.doctorId) {
-                                                                targetDoctorId = lastNote.doctorId;
-                                                            } else {
-                                                                // No notes yet. Infer from permissions.
-                                                                // If shared with both, maybe default to Psychologist? Or just pick first?
-                                                                const validDocs = connectedDoctors.filter(doc => entry.permissions?.includes(doc.id));
-                                                                if (validDocs.length > 0) targetDoctorId = validDocs[0].id; // Pick first allowed
+                                            <div className="relative">
+                                                {replyRecipients[entry.id] && (
+                                                    <div className={`absolute -top-3 left-4 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#8b5cf6]' :
+                                                            replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#10b981]' : 'bg-indigo-500'
+                                                        }`}>
+                                                        Escrevendo para: {replyRecipients[entry.id] === 'BOTH' ? 'Toda a Equipe' : replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'Psicólogo' : 'Psiquiatra'}
+                                                    </div>
+                                                )}
+
+                                                <input
+                                                    type="text"
+                                                    disabled={!replyRecipients[entry.id]}
+                                                    placeholder={!replyRecipients[entry.id] ? "Selecione um destinatário acima para escrever..." : "Digite sua mensagem..."}
+                                                    className={`w-full bg-[#0A0A0A] border rounded-xl px-4 py-4 text-sm text-white outline-none transition-all placeholder:text-gray-700 ${!replyRecipients[entry.id]
+                                                            ? 'border-white/5 cursor-not-allowed opacity-50'
+                                                            : replyRecipients[entry.id] === 'PSYCHOLOGIST'
+                                                                ? 'border-[#8b5cf6]/50 focus:border-[#8b5cf6] focus:bg-[#8b5cf6]/5'
+                                                                : replyRecipients[entry.id] === 'PSYCHIATRIST'
+                                                                    ? 'border-[#10b981]/50 focus:border-[#10b981] focus:bg-[#10b981]/5'
+                                                                    : 'border-indigo-500/50 focus:border-indigo-500 focus:bg-indigo-500/5'
+                                                        }`}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            const val = e.currentTarget.value.trim();
+                                                            const recipient = replyRecipients[entry.id];
+
+                                                            if (val && recipient) {
+                                                                const targets: string[] = [];
+
+                                                                if (recipient === 'PSYCHOLOGIST' || recipient === 'BOTH') {
+                                                                    const psych = connectedDoctors.find(d => d.role === 'PSYCHOLOGIST');
+                                                                    if (psych) targets.push(psych.id);
+                                                                }
+
+                                                                if (recipient === 'PSYCHIATRIST' || recipient === 'BOTH') {
+                                                                    const psychi = connectedDoctors.find(d => d.role === 'PSYCHIATRIST');
+                                                                    if (psychi) targets.push(psychi.id);
+                                                                }
+
+                                                                if (targets.length === 0) {
+                                                                    alert("Médico não encontrado para o cargo selecionado.");
+                                                                    return;
+                                                                }
+
+                                                                // Send distinct notes to each target to ensure thread isolation
+                                                                targets.forEach(docId => {
+                                                                    const newNote = {
+                                                                        id: crypto.randomUUID(),
+                                                                        doctorId: docId,
+                                                                        patientId: user.id,
+                                                                        entryId: entry.id,
+                                                                        text: val,
+                                                                        isShared: true,
+                                                                        authorRole: 'PATIENT',
+                                                                        read: false,
+                                                                        status: 'active',
+                                                                        createdAt: new Date().toISOString()
+                                                                    };
+                                                                    storageService.saveDoctorNote(newNote as any).then(() => { });
+                                                                });
+
+                                                                e.currentTarget.value = '';
+                                                                // Optional: Reset selection? No, usually keeps context for continued chat.
                                                             }
-
-                                                            if (!targetDoctorId) {
-                                                                alert("Selecione um médico no 'Quem pode ver' para iniciar uma conversa.");
-                                                                return;
-                                                            }
-
-                                                            const newNote = {
-                                                                id: crypto.randomUUID(),
-                                                                doctorId: targetDoctorId,
-                                                                patientId: user.id,
-                                                                entryId: entry.id,
-                                                                text: val,
-                                                                isShared: true,
-                                                                authorRole: 'PATIENT',
-                                                                read: false,
-                                                                status: 'active',
-                                                                createdAt: new Date().toISOString()
-                                                            };
-                                                            storageService.saveDoctorNote(newNote as any).then(() => { });
-                                                            e.currentTarget.value = '';
                                                         }
-                                                    }
-                                                }}
-                                            />
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                     {entry.energy && (
