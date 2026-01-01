@@ -765,10 +765,33 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                                     <h3 className="text-sm font-bold text-textMuted uppercase tracking-wider">{t.moodProgression}</h3>
                                                     <div className="flex flex-wrap gap-3 items-center">
                                                         <div className="flex bg-neutral-900 rounded-lg p-1">
-                                                            <button onClick={() => setChartViewMode('day')} className={`px-2 md:px-3 py-1 text-xs font-bold rounded transition-colors ${chartViewMode === 'day' ? 'bg-neutral-700 text-white' : 'text-gray-500'}`}>{t.viewDay}</button>
-                                                            <button onClick={() => setChartViewMode('week')} className={`px-2 md:px-3 py-1 text-xs font-bold rounded transition-colors ${chartViewMode === 'week' ? 'bg-neutral-700 text-white' : 'text-gray-500'}`}>{t.days7}</button>
-                                                            <button onClick={() => setChartViewMode('month')} className={`px-2 md:px-3 py-1 text-xs font-bold rounded transition-colors ${chartViewMode === 'month' ? 'bg-neutral-700 text-white' : 'text-gray-500'}`}>{t.viewMonth}</button>
+                                                            <button onClick={() => setChartViewMode('day')} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${chartViewMode === 'day' ? 'bg-neutral-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}>{t.viewDay}</button>
+                                                            <button onClick={() => setChartViewMode('week')} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${chartViewMode === 'week' ? 'bg-neutral-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}>{t.days7}</button>
+                                                            <button onClick={() => setChartViewMode('month')} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${chartViewMode === 'month' ? 'bg-neutral-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}>{t.viewMonth}</button>
                                                         </div>
+
+                                                        {/* Dynamic Time Selectors */}
+                                                        {chartViewMode === 'day' && (
+                                                            <div className="animate-in fade-in slide-in-from-left-2">
+                                                                <input
+                                                                    type="date"
+                                                                    value={selectedDate}
+                                                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                                                    className="bg-neutral-900 border border-neutral-700 text-white text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:border-indigo-500 transition-colors uppercase tracking-wider"
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {chartViewMode === 'month' && (
+                                                            <div className="animate-in fade-in slide-in-from-left-2">
+                                                                <input
+                                                                    type="month"
+                                                                    value={selectedMonth}
+                                                                    onChange={(e) => setSelectedMonth(e.target.value)}
+                                                                    className="bg-neutral-900 border border-neutral-700 text-white text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:border-indigo-500 transition-colors uppercase tracking-wider"
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 
