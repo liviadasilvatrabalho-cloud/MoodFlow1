@@ -273,6 +273,7 @@ export const storageService = {
 
         // Map helper
         const dbEntry = {
+            id: entry.id, // Explicitly use the client-generated ID
             user_id: user.id, // Explicitly use the auth token's user ID
             date: new Date(entry.timestamp).toISOString(),
             mood: entry.mood,
