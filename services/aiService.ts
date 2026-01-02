@@ -26,7 +26,7 @@ const voiceAnalysisSchema = {
   required: ["transcription", "mode", "moodScore", "energyLevel", "detectedTags", "intentToSave"]
 };
 
-// Schema for Clinical Summary
+// Schema for Clinical Summary (Standard)
 const clinicalSummarySchema = {
   type: Type.OBJECT,
   properties: {
@@ -36,6 +36,22 @@ const clinicalSummarySchema = {
     summaryText: { type: Type.STRING }
   },
   required: ["patterns", "riskLevel", "recommendations", "summaryText"]
+};
+
+// Schema for Advanced Enterprise Insights
+const advancedInsightSchema = {
+  type: Type.OBJECT,
+  properties: {
+    summary: { type: Type.STRING },
+    periodSituation: { type: Type.STRING },
+    emotionalTrends: { type: Type.STRING },
+    pointsOfAttention: { type: Type.ARRAY, items: { type: Type.STRING } },
+    comparativeEvolution: { type: Type.STRING },
+    patterns: { type: Type.ARRAY, items: { type: Type.STRING } },
+    riskScore: { type: Type.INTEGER },
+    riskLevel: { type: Type.STRING, enum: ["Low", "Moderate", "Elevated"] }
+  },
+  required: ["summary", "periodSituation", "emotionalTrends", "pointsOfAttention", "comparativeEvolution", "patterns", "riskScore", "riskLevel"]
 };
 
 // --- SIMULATION ENGINE (FALLBACK) ---
@@ -195,5 +211,67 @@ export const aiService = {
     lastSummaryContext = currentContext;
     lastSummaryResult = simResult;
     return simResult;
+  },
+
+  generateAdvancedInsight: async (entries: any[], period: 'weekly' | 'monthly' | 'longitudinal') => {
+    if (apiKey) {
+      try {
+        const historyText = entries.map(e => `[${new Date(e.date).toLocaleDateString()}] Humor: ${e.mood}/5, Energia: ${e.energy}/10. Texto: "${e.text}"`).join('\n');
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-1.5-flash',
+          contents: `Atue como um Especialista em Inteligência de Saúde Mental.
+          
+          PERÍODO DE ANÁLISE: ${period}
+          DADOS:
+          ${historyText}
+          
+          SUA TAREFA:
+          Gere um Relatório Longitudinal Premium focado em apoiar a decisão clínica.
+          
+          ⚠️ REGRAS OBRIGATÓRIAS (GUARDRAILS):
+          - NÃO dê diagnósticos (ex: 'O paciente tem Depressão'). Use 'Padrões sugestivos de...' ou 'Tendências...'.
+          - NÃO prescreva medicamentos ou tratamentos específicos.
+          - A linguagem deve ser profissional, neutra e longitudinal.
+          - O Score de Risco deve ser entre 0 e 100.
+          
+          ESTRUTURA:
+          1. Situação geral do período.
+          2. Tendências emocionais detectadas.
+          3. Pontos de atenção.
+          4. Evolução comparativa.
+          
+          Responda estritamente no formato JSON seguindo o schema definido.`,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: advancedInsightSchema,
+            temperature: 0.1
+          }
+        });
+
+        const resultText = response.text;
+        if (resultText) return JSON.parse(resultText);
+      } catch (error) {
+        console.warn("AI API Error (generateAdvancedInsight):", error);
+      }
+    }
+
+    // Advanced Simulation Fallback
+    const avgMood = entries.length > 0 ? entries.reduce((acc, e) => acc + (e.mood || 3), 0) / entries.length : 3;
+    const riskScore = Math.max(0, Math.min(100, Math.round((5 - avgMood) * 20))); // Simple inversion scale
+
+    return {
+      summary: `Análise ${period} baseada em ${entries.length} registros.`,
+      periodSituation: `O paciente manteve um estado predominantemente ${avgMood > 3.5 ? 'positivo' : avgMood < 2.5 ? 'deprimido' : 'instável'}.`,
+      emotionalTrends: `Tendência à ${avgMood > 3 ? 'estabilidade' : 'reatividade'} com flutuações moderadas.`,
+      pointsOfAttention: [
+        avgMood < 2.5 ? "Baixo humor persistente" : "Oscilações de energia",
+        "Necessidade de monitoramento de gatilhos ambientais"
+      ],
+      comparativeEvolution: "Comparado ao período anterior, observa-se uma " + (avgMood > 3 ? "melhora gradual." : "manutenção do quadro."),
+      patterns: [avgMood < 3 ? "Oscilação Recorrente" : "Estabilidade Sustentada"],
+      riskScore: riskScore,
+      riskLevel: riskScore > 70 ? "Elevated" : riskScore > 40 ? "Moderate" : "Low"
+    };
   }
 };

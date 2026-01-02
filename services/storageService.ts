@@ -1,5 +1,5 @@
 
-import { MoodEntry, User, DoctorNote, UserRole, Language, ClinicalRole, ClinicRole } from '../types';
+import { MoodEntry, User, DoctorNote, UserRole, Language, ClinicalRole, ClinicRole, Notification, AiInsight, MessageThread } from '../types';
 import { supabase } from './supabaseClient';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -545,20 +545,182 @@ export const storageService = {
     },
 
     saveDoctorNote: async (note: DoctorNote) => {
-        const dbNote = {
+        const dbNote: any = {
             doctor_id: note.doctorId,
             patient_id: note.patientId,
             entry_id: note.entryId,
+            thread_id: note.threadId,
             text: note.text,
             is_shared: note.isShared,
             author_role: note.authorRole,
             read: note.read,
-            status: 'active' // Ensure default status for visibility
-            // created_at auto
+            status: 'active'
         };
-        const { error } = await supabase.from('doctor_notes').insert(dbNote);
-        if (error) console.error(error);
+        const { data, error } = await supabase.from('doctor_notes').insert(dbNote).select().single();
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        // AUTO-NOTIFICATION TRIGGER
+        if (note.isShared && data) {
+            const recipientId = note.authorRole === 'PROFESSIONAL' ? note.patientId : note.doctorId;
+            const senderName = note.authorRole === 'PROFESSIONAL' ? (note.doctorName || 'Seu Profissional') : 'Paciente';
+
+            storageService.createNotification({
+                userId: recipientId,
+                type: note.authorRole === 'PROFESSIONAL' ? 'comment_created' : 'message_created',
+                title: note.authorRole === 'PROFESSIONAL' ? 'Novo comentário clínico' : 'Nova resposta do paciente',
+                message: `${senderName} enviou uma nova mensagem.`,
+                data: { entry_id: note.entryId, note_id: data.id, thread_id: note.threadId }
+            } as any).catch(console.error);
+        }
     },
+
+    // --- NOTIFICATIONS ---
+    subscribeNotifications: (userId: string, callback: (notifications: Notification[]) => void) => {
+        const fetchNotifications = async () => {
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (data) {
+                callback(data.map(row => ({
+                    id: row.id,
+                    userId: row.user_id,
+                    type: row.type,
+                    title: row.title,
+                    message: row.message,
+                    data: row.data,
+                    readAt: row.read_at,
+                    createdAt: row.created_at
+                })) as Notification[]);
+            }
+        };
+
+        fetchNotifications();
+
+        const channel = supabase
+            .channel(`notifications-${userId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => {
+                fetchNotifications();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    },
+
+    createNotification: async (notif: Partial<Notification>) => {
+        const { error } = await supabase.from('notifications').insert({
+            user_id: notif.userId,
+            type: notif.type,
+            title: notif.title,
+            message: notif.message,
+            data: notif.data
+        });
+        if (error) throw error;
+    },
+
+    markNotificationAsRead: async (notifId: string) => {
+        await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', notifId);
+    },
+
+    markAllNotificationsAsRead: async (userId: string) => {
+        await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', userId).is('read_at', null);
+    },
+
+    // --- AI INSIGHTS ---
+    saveAiInsight: async (insight: Partial<AiInsight>) => {
+        const { error } = await supabase.from('ai_insights').insert({
+            patient_id: insight.patientId,
+            period: insight.period,
+            summary: insight.summary,
+            risk_score: insight.riskScore,
+            patterns: insight.patterns,
+            metadata: insight.metadata
+        });
+        if (error) throw error;
+    },
+
+    getAiInsights: async (patientId: string): Promise<AiInsight[]> => {
+        const { data, error } = await supabase
+            .from('ai_insights')
+            .select('*')
+            .eq('patient_id', patientId)
+            .order('created_at', { ascending: false });
+
+        if (error || !data) return [];
+        return data.map(row => ({
+            id: row.id,
+            patientId: row.patient_id,
+            period: row.period,
+            summary: row.summary,
+            riskScore: row.risk_score,
+            patterns: row.patterns,
+            metadata: row.metadata,
+            createdAt: row.created_at
+        })) as AiInsight[];
+    },
+
+    // --- MESSAGE THREADS ---
+    getOrCreateThread: async (patientId: string, professionalId: string, specialty: string): Promise<MessageThread> => {
+        // Try to find existing
+        const { data: existing } = await supabase
+            .from('message_threads')
+            .select('*')
+            .eq('patient_id', patientId)
+            .eq('professional_id', professionalId)
+            .eq('specialty', specialty)
+            .single();
+
+        if (existing) {
+            return {
+                id: existing.id,
+                patientId: existing.patient_id,
+                professionalId: existing.professional_id,
+                specialty: existing.specialty,
+                createdAt: existing.created_at
+            } as MessageThread;
+        }
+
+        // Create new
+        const { data: created, error } = await supabase.from('message_threads').insert({
+            patient_id: patientId,
+            professional_id: professionalId,
+            specialty: specialty
+        }).select().single();
+
+        if (error) throw error;
+        return {
+            id: created.id,
+            patientId: created.patient_id,
+            professionalId: created.professional_id,
+            specialty: created.specialty,
+            createdAt: created.created_at
+        } as MessageThread;
+    },
+
+    getThreads: async (userId: string, role: UserRole): Promise<MessageThread[]> => {
+        const column = role === UserRole.PATIENT ? 'patient_id' : 'professional_id';
+        const { data, error } = await supabase
+            .from('message_threads')
+            .select('*')
+            .eq(column, userId)
+            .order('created_at', { ascending: false });
+
+        if (error || !data) return [];
+        return data.map(row => ({
+            id: row.id,
+            patientId: row.patient_id,
+            professionalId: row.professional_id,
+            specialty: row.specialty,
+            createdAt: row.created_at
+        })) as MessageThread[];
+    },
+
 
     markNotesAsRead: async (doctorId: string, patientId: string, viewerRole: 'DOCTOR' | 'PATIENT') => {
         // Update read status based on viewer

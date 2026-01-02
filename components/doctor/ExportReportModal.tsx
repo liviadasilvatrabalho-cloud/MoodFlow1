@@ -11,10 +11,11 @@ interface ExportReportModalProps {
     userRole: string; // 'PATIENT', 'PSYCHOLOGIST', 'PSYCHIATRIST'
     userName: string;
     patientName: string;
+    aiInsight?: any;
 }
 
 export const ExportReportModal: React.FC<ExportReportModalProps> = ({
-    isOpen, onClose, entries, notes, userRole, userName, patientName
+    isOpen, onClose, entries, notes, userRole, userName, patientName, aiInsight
 }) => {
     const [startDate, setStartDate] = useState(() => {
         const d = new Date();
@@ -39,7 +40,8 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                 professionalFilter,
                 contentFilter,
                 userRole,
-                patientName
+                patientName,
+                aiInsight
             }, format);
             if (format !== 'PRINT') onClose();
         } catch (err) {

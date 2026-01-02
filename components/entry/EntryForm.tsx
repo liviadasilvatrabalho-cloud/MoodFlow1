@@ -205,7 +205,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                 </div>
 
                                 {/* Energy Slider */}
-                                <div className="space-y-6 bg-[#0A0A0A] p-10 rounded-[40px] border border-white/5 shadow-inner relative overflow-hidden group">
+                                <div className="space-y-6 bg-[#0A0A0A] p-6 sm:p-10 rounded-3xl sm:rounded-[40px] border border-white/5 shadow-inner relative group isolate">
                                     <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
                                     <div className="flex justify-between items-center relative z-10">
                                         <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black opacity-90">NÍVEL DE ENERGIA</label>

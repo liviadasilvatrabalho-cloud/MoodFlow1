@@ -47,15 +47,46 @@ export interface MoodEntry {
 export interface DoctorNote {
   id: string;
   doctorId: string;
-  doctorName?: string; // Enhanced for UI
-  doctorRole?: UserRole; // Enhanced for segregation
+  doctorName?: string;
+  doctorRole?: UserRole;
   patientId: string;
-  entryId?: string; // Optional: Link to a specific mood entry
+  entryId?: string;
+  threadId?: string; // New: Link to a message thread
   text: string;
-  isShared: boolean; // true = visible to patient, false = private clinical note
-  authorRole: 'PROFESSIONAL' | 'PATIENT'; // Who wrote this note?
-  read: boolean; // For notifications
-  status?: 'active' | 'resolved' | 'hidden'; // For patient thread management
+  isShared: boolean;
+  authorRole: 'PROFESSIONAL' | 'PATIENT';
+  read: boolean;
+  status?: 'active' | 'resolved' | 'hidden';
+  createdAt: string;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'comment_created' | 'entry_shared' | 'risk_alert' | 'message_created';
+  title: string;
+  message: string;
+  data: any;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface AiInsight {
+  id: string;
+  patientId: string;
+  period: 'weekly' | 'monthly' | 'longitudinal';
+  summary: string;
+  riskScore: number;
+  patterns: string[];
+  metadata?: any;
+  createdAt: string;
+}
+
+export interface MessageThread {
+  id: string;
+  patientId: string;
+  professionalId: string;
+  specialty: 'psychologist' | 'psychiatrist';
   createdAt: string;
 }
 

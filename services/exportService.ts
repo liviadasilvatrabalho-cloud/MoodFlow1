@@ -9,8 +9,9 @@ interface ExportConfig {
     endDate: string;
     professionalFilter: 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH';
     contentFilter: 'ENTRIES' | 'NOTES' | 'BOTH';
-    userRole: string; // The role of the user requesting the export
+    userRole: string;
     patientName: string;
+    aiInsight?: any; // Added: Optional AI longitudinal insight
 }
 
 export const exportService = {
@@ -76,29 +77,75 @@ const filterNotes = (notes: DoctorNote[], config: ExportConfig) => {
 
 const generatePDF = (entries: MoodEntry[], notes: DoctorNote[], config: ExportConfig, autoPrint: boolean) => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
 
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(40, 40, 40);
-    doc.text("Relatório Clínico - MoodFlow", 14, 20);
+    // 1. Premium Graphic Header (Clinical Branding)
+    doc.setFillColor(15, 15, 15); // Dark surface
+    doc.rect(0, 0, pageWidth, 40, 'F');
+
+    doc.setFontSize(24);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("MoodFlow", 14, 25);
 
     doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Paciente: ${config.patientName}`, 14, 28);
-    doc.text(`Gerado em: ${new Date().toLocaleDateString()}`, 14, 33);
-    doc.text(`Período: ${new Date(config.startDate).toLocaleDateString()} a ${new Date(config.endDate).toLocaleDateString()}`, 14, 38);
+    doc.setTextColor(150, 150, 150);
+    doc.setFont("helvetica", "normal");
+    doc.text("Clinical Intelligence Platform", 14, 32);
 
-    let finalY = 45;
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.text(`Relatório Gerado: ${new Date().toLocaleString()}`, pageWidth - 14, 25, { align: 'right' });
+    doc.text(`Protocolo: ${crypto.randomUUID().slice(0, 8).toUpperCase()}`, pageWidth - 14, 32, { align: 'right' });
 
-    // Section: Entries
+    let finalY = 50;
+
+    // 2. Patient Meta Information
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.setFont("helvetica", "bold");
+    doc.text("DADOS DO PACIENTE", 14, finalY);
+    finalY += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Nome: ${config.patientName}`, 14, finalY);
+    doc.text(`Período: ${new Date(config.startDate).toLocaleDateString()} - ${new Date(config.endDate).toLocaleDateString()}`, pageWidth / 2, finalY);
+    finalY += 15;
+
+    // 3. AI Longitudinal Insight (Premium Feature)
+    if (config.aiInsight) {
+        doc.setFillColor(245, 247, 255); // Light blue wash
+        doc.roundedRect(14, finalY, pageWidth - 28, 45, 3, 3, 'F');
+
+        doc.setFontSize(11);
+        doc.setTextColor(63, 81, 181); // Indigo
+        doc.setFont("helvetica", "bold");
+        doc.text("INTELIGÊNCIA CLÍNICA (AI INSIGHT)", 20, finalY + 10);
+
+        doc.setFontSize(9);
+        doc.setTextColor(60, 60, 60);
+        doc.setFont("helvetica", "normal");
+        const summaryLines = doc.splitTextToSize(config.aiInsight.summaryText || config.aiInsight.summary || "Nenhuma análise detalhada disponível.", pageWidth - 40);
+        doc.text(summaryLines, 20, finalY + 18);
+
+        doc.setFont("helvetica", "bold");
+        doc.text(`Risco Detectado: ${config.aiInsight.riskLevel?.toUpperCase() || 'BAIXO'}`, 20, finalY + 38);
+
+        finalY += 55;
+    }
+
+    // 4. Clinical Entries Table
     if (entries.length > 0) {
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0); // Black
-        doc.text("Registros do Paciente", 14, finalY);
+        doc.setFontSize(12);
+        doc.setTextColor(40, 40, 40);
+        doc.setFont("helvetica", "bold");
+        doc.text("HISTÓRICO DE REGISTROS", 14, finalY);
         finalY += 5;
 
         const tableData = entries.map(e => [
-            new Date(e.timestamp).toLocaleDateString() + ' ' + new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            new Date(e.timestamp).toLocaleDateString(),
             e.mood ? `${e.mood}/5` : '-',
             e.energy ? `${e.energy}/10` : '-',
             e.text || '-'
@@ -106,48 +153,53 @@ const generatePDF = (entries: MoodEntry[], notes: DoctorNote[], config: ExportCo
 
         autoTable(doc, {
             startY: finalY,
-            head: [['Data', 'Humor', 'Energia', 'Relato']],
+            head: [['Data', 'Humor', 'Energia', 'Relato Qualitativo']],
             body: tableData,
-            styles: { fontSize: 8, cellPadding: 2 },
-            headStyles: { fillColor: [63, 81, 181] }, // Indigo
-            columnStyles: { 3: { cellWidth: 'auto' } }, // Text wrap
+            theme: 'grid',
+            headStyles: { fillColor: [15, 15, 15], textColor: [255, 255, 255], fontStyle: 'bold' },
+            styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
+            columnStyles: { 3: { cellWidth: 'auto' } },
         });
 
         // @ts-ignore
         finalY = doc.lastAutoTable.finalY + 15;
     }
 
-    // Section: Notes
+    // 5. Clinical Observations Table
     if (notes.length > 0) {
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Anotações Clínicas & Comentários", 14, finalY);
+        if (finalY > doc.internal.pageSize.height - 40) doc.addPage();
+
+        doc.setFontSize(12);
+        doc.setTextColor(40, 40, 40);
+        doc.setFont("helvetica", "bold");
+        doc.text("OBSERVAÇÕES CLÍNICAS & RESPOSTAS", 14, finalY);
         finalY += 5;
 
         const tableData = notes.map(n => [
-            new Date(n.createdAt).toLocaleDateString() + ' ' + new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            n.doctorRole === 'PSYCHOLOGIST' ? 'Psicologia' : n.doctorRole === 'PSYCHIATRIST' ? 'Psiquiatria' : 'N/A',
-            n.authorRole === 'PATIENT' ? 'Paciente' : `Profissional (${n.doctorName})`,
+            new Date(n.createdAt).toLocaleDateString(),
+            n.doctorRole === 'PSYCHOLOGIST' ? 'Psicologia' : 'Psiquiatria',
+            n.authorRole === 'PATIENT' ? 'Paciente' : `Dr(a). ${n.doctorName || 'Profissional'}`,
             n.text
         ]);
 
         autoTable(doc, {
             startY: finalY,
-            head: [['Data', 'Área', 'Autor', 'Conteúdo']],
+            head: [['Data', 'Especialidade', 'Interlocutor', 'Conteúdo da Mensagem']],
             body: tableData,
-            styles: { fontSize: 8, cellPadding: 2 },
-            headStyles: { fillColor: [76, 175, 80] }, // Green
-            columnStyles: { 3: { cellWidth: 'auto' } },
+            theme: 'striped',
+            headStyles: { fillColor: [63, 81, 181], textColor: [255, 255, 255] },
+            styles: { fontSize: 8, cellPadding: 4 },
         });
     }
 
-    // Footer with Page Numbers
+    // 6. Footer (Page Numbers & Legal)
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
+        doc.setFontSize(7);
         doc.setTextColor(150);
-        doc.text(`Página ${i} de ${pageCount} - CONFIDENCIAL - MoodFlow Enterprise`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+        doc.text(`MoodFlow Enterprise Edition - Página ${i} de ${pageCount}`, pageWidth / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+        doc.text("Este documento contém informações clínicas confidenciais protegidas por sigilo profissional.", pageWidth / 2, doc.internal.pageSize.height - 14, { align: 'center' });
     }
 
     if (autoPrint) {

@@ -1,6 +1,6 @@
 // MoodFlow v2.0.1 - High Fidelity Update
 import React, { useState, useEffect } from 'react';
-import { User, MoodEntry, UserRole, Language, DoctorNote } from './types';
+import { User, MoodEntry, UserRole, Language, DoctorNote, Notification, MessageThread } from './types';
 import { storageService } from './services/storageService';
 import { TRANSLATIONS, MOODS } from './constants';
 import { Analytics } from './components/charts/Analytics';
@@ -9,6 +9,7 @@ import { DoctorPortal } from './components/doctor/DoctorPortal';
 import { Button } from './components/ui/Button';
 import { Sidebar } from './components/ui/Sidebar';
 import { BottomNav } from './components/ui/BottomNav';
+import { NotificationPanel } from './components/ui/NotificationPanel';
 import Auth from './components/Auth';
 import { ConsentSettings } from './components/settings/ConsentSettings';
 
@@ -23,7 +24,11 @@ export default function App() {
     const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([]);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string, role?: string }[]>([]);
-    const [replyRecipients, setReplyRecipients] = useState<Record<string, 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH' | null>>({});
+    const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+    const [replyRecipients, setReplyRecipients] = useState<{ [key: string]: 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH' | null }>({});
+    const [threads, setThreads] = useState<MessageThread[]>([]); // New: Secure threads cache
+    const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     useEffect(() => {
         const unsub = storageService.onAuthStateChanged((u) => {
@@ -58,6 +63,14 @@ export default function App() {
             storageService.subscribeNotes(undefined, user.id, (notes) => setDoctorNotes(notes));
         }
     }, [view, user]);
+
+    // Notification Subscription
+    useEffect(() => {
+        if (user) {
+            const unsub = storageService.subscribeNotifications(user.id, (data) => setNotifications(data));
+            return () => unsub();
+        }
+    }, [user]);
 
     const handleSaveEntry = async (entry: MoodEntry) => {
         if (!user) return;
@@ -360,23 +373,23 @@ export default function App() {
                                                                 ? 'border-[#10b981]/50 focus:border-[#10b981] focus:bg-[#10b981]/5'
                                                                 : 'border-indigo-500/50 focus:border-indigo-500 focus:bg-indigo-500/5'
                                                         }`}
-                                                    onKeyDown={(e) => {
+                                                    onKeyDown={async (e) => {
                                                         if (e.key === 'Enter' && !e.shiftKey) {
                                                             e.preventDefault();
                                                             const val = e.currentTarget.value.trim();
                                                             const recipient = replyRecipients[entry.id];
 
                                                             if (val && recipient) {
-                                                                const targets: string[] = [];
+                                                                const targets: { id: string, specialty: string }[] = [];
 
                                                                 if (recipient === 'PSYCHOLOGIST' || recipient === 'BOTH') {
                                                                     const psych = connectedDoctors.find(d => d.role === 'PSYCHOLOGIST');
-                                                                    if (psych) targets.push(psych.id);
+                                                                    if (psych) targets.push({ id: psych.id, specialty: 'psychologist' });
                                                                 }
 
                                                                 if (recipient === 'PSYCHIATRIST' || recipient === 'BOTH') {
                                                                     const psychi = connectedDoctors.find(d => d.role === 'PSYCHIATRIST');
-                                                                    if (psychi) targets.push(psychi.id);
+                                                                    if (psychi) targets.push({ id: psychi.id, specialty: 'psychiatrist' });
                                                                 }
 
                                                                 if (targets.length === 0) {
@@ -384,22 +397,28 @@ export default function App() {
                                                                     return;
                                                                 }
 
-                                                                // Send distinct notes to each target to ensure thread isolation
-                                                                targets.forEach(docId => {
-                                                                    const newNote = {
-                                                                        id: crypto.randomUUID(),
-                                                                        doctorId: docId,
-                                                                        patientId: user.id,
-                                                                        entryId: entry.id,
-                                                                        text: val,
-                                                                        isShared: true,
-                                                                        authorRole: 'PATIENT',
-                                                                        read: false,
-                                                                        status: 'active',
-                                                                        createdAt: new Date().toISOString()
-                                                                    };
-                                                                    storageService.saveDoctorNote(newNote as any).then(() => { });
-                                                                });
+                                                                // Send distinct notes to each target with Thread ID support
+                                                                for (const target of targets) {
+                                                                    try {
+                                                                        const thread = await storageService.getOrCreateThread(user.id, target.id, target.specialty);
+                                                                        const newNote = {
+                                                                            id: crypto.randomUUID(),
+                                                                            doctorId: target.id,
+                                                                            patientId: user.id,
+                                                                            entryId: entry.id,
+                                                                            threadId: thread.id,
+                                                                            text: val,
+                                                                            isShared: true,
+                                                                            authorRole: 'PATIENT',
+                                                                            read: false,
+                                                                            status: 'active',
+                                                                            createdAt: new Date().toISOString()
+                                                                        };
+                                                                        await storageService.saveDoctorNote(newNote as any);
+                                                                    } catch (err) {
+                                                                        console.error("Fail to send threaded message", err);
+                                                                    }
+                                                                }
 
                                                                 e.currentTarget.value = '';
                                                             }

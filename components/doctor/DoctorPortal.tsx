@@ -66,6 +66,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
     const chartScrollRef = useRef<HTMLDivElement>(null);
 
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const [isRecording, setIsRecording] = useState(false);
 
@@ -244,29 +246,37 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
 
     const handleSaveEntryComment = async (entryId: string) => {
         if (!entryComment.trim() || !selectedPatientId) return;
-        const note: DoctorNote = {
-            id: crypto.randomUUID(),
-            doctorId: user.id,
-            patientId: selectedPatientId,
-            entryId: entryId,
-            text: entryComment,
-            isShared: true,
-            authorRole: UserRole.PROFESSIONAL,
-            read: false,
-            createdAt: new Date().toISOString()
-        };
 
-        // Optimistic update
-        setNotes(prev => [...prev, note]);
         const currentComment = entryComment;
-        setEntryComment('');
-        setCommentingEntryId(null);
-
         try {
-            await storageService.saveDoctorNote(note);
-        } catch (error) {
-            console.error("Error saving entry comment:", error);
-            setEntryComment(currentComment); // Restore text on failure
+            // Get or Create Thread for this specific pair/specialty
+            const thread = await storageService.getOrCreateThread(selectedPatientId, user.id, user.clinicalRole || 'psychologist');
+
+            const newNote: DoctorNote = {
+                id: crypto.randomUUID(),
+                doctorId: user.id,
+                doctorName: user.name,
+                doctorRole: user.role,
+                patientId: selectedPatientId,
+                entryId,
+                threadId: thread.id,
+                text: entryComment,
+                isShared: true,
+                authorRole: 'PROFESSIONAL',
+                read: false,
+                createdAt: new Date().toISOString()
+            };
+
+            await storageService.saveDoctorNote(newNote);
+            setEntryComment('');
+            setCommentingEntryId(null);
+
+            // Refresh notes for current patient
+            const patientNotes = await storageService.getNotes(undefined, selectedPatientId);
+            setNotes(patientNotes);
+        } catch (err) {
+            console.error("Fail to save threaded comment", err);
+            setEntryComment(currentComment);
         }
     };
 
@@ -436,6 +446,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
             setIsGeneratingSummary(false);
         }
     };
+
+    useEffect(() => {
+        if (user) {
+            const unsub = storageService.subscribeNotifications(user.id, (data) => setNotifications(data));
+            return () => unsub();
+        }
+    }, [user]);
 
     const handleCreateClinic = async () => {
         if (!newClinicName.trim()) return;
@@ -608,10 +625,33 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                 </div>
 
                 <div className="hidden md:block p-4 border-t border-neutral-800">
-                    <button onClick={onLogout} className="flex items-center gap-2 text-textMuted hover:text-white text-sm w-full px-4 py-2 rounded-lg hover:bg-white/5 transition-colors">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                        {t.signOut}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsNotificationPanelOpen(true)}
+                            className="relative p-2 rounded-xl bg-surface/50 border border-white/5 hover:bg-surface transition-all group"
+                        >
+                            <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            {notifications.filter(n => !n.readAt).length > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-500 text-[9px] font-black items-center justify-center text-white">
+                                        {notifications.filter(n => !n.readAt).length}
+                                    </span>
+                                </span>
+                            )}
+                        </button>
+                        <Button variant="outline" className="h-10 text-xs gap-2 border-white/5" onClick={onLogout}>
+                            Logout
+                        </Button>
+                    </div>
+
+                    <NotificationPanel
+                        userId={user.id}
+                        isOpen={isNotificationPanelOpen}
+                        onClose={() => setIsNotificationPanelOpen(false)}
+                    />
                 </div>
             </aside>
 
@@ -1006,11 +1046,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                                                             </div>
                                                                             <div className="flex flex-col sm:flex-row justify-end gap-2 mt-2">
                                                                                 <Button variant="ghost" className="h-10 text-xs flex-1 sm:flex-none" onClick={() => setCommentingEntryId(null)}>Cancel</Button>
-                                                                                <Button className="h-10 text-xs bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none" onClick={() => handleSaveEntryComment(entry.id)}>Send</Button>
+                                                                                <Button className={`h-10 text-xs flex-1 sm:flex-none ${user.clinicalRole === 'psychologist' ? 'bg-[#8b5cf6] hover:bg-[#7c3aed]' : 'bg-[#10b981] hover:bg-[#059669]'}`} onClick={() => handleSaveEntryComment(entry.id)}>Send</Button>
                                                                             </div>
                                                                         </div>
                                                                     ) : (
-                                                                        <button onClick={() => setCommentingEntryId(entry.id)} className="mt-3 text-xs font-bold text-blue-500 hover:text-blue-400">
+                                                                        <button onClick={() => setCommentingEntryId(entry.id)} className={`mt-3 text-xs font-bold hover:opacity-80 ${user.clinicalRole === 'psychologist' ? 'text-[#8b5cf6]' : 'text-[#10b981]'}`}>
                                                                             {entryNotes.length > 0 ? 'Reply to Thread' : 'Add Comment'}
                                                                         </button>
                                                                     )}
