@@ -342,27 +342,27 @@ export default function App() {
 
                                             <div className="relative">
                                                 {replyRecipients[entry.id] && (
-                                                    <div className={`absolute -top-3 left-4 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#8b5cf6]' :
-                                                            replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#10b981]' : 'bg-indigo-500'
+                                                    <div className={`absolute -top-3 left-4 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg z-10 ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#8b5cf6]' :
+                                                        replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#10b981]' : 'bg-indigo-500'
                                                         }`}>
                                                         Escrevendo para: {replyRecipients[entry.id] === 'BOTH' ? 'Toda a Equipe' : replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'Psicólogo' : 'Psiquiatra'}
                                                     </div>
                                                 )}
 
-                                                <input
-                                                    type="text"
+                                                <textarea
                                                     disabled={!replyRecipients[entry.id]}
                                                     placeholder={!replyRecipients[entry.id] ? "Selecione um destinatário acima para escrever..." : "Digite sua mensagem..."}
-                                                    className={`w-full bg-[#0A0A0A] border rounded-xl px-4 py-4 text-sm text-white outline-none transition-all placeholder:text-gray-700 ${!replyRecipients[entry.id]
-                                                            ? 'border-white/5 cursor-not-allowed opacity-50'
-                                                            : replyRecipients[entry.id] === 'PSYCHOLOGIST'
-                                                                ? 'border-[#8b5cf6]/50 focus:border-[#8b5cf6] focus:bg-[#8b5cf6]/5'
-                                                                : replyRecipients[entry.id] === 'PSYCHIATRIST'
-                                                                    ? 'border-[#10b981]/50 focus:border-[#10b981] focus:bg-[#10b981]/5'
-                                                                    : 'border-indigo-500/50 focus:border-indigo-500 focus:bg-indigo-500/5'
+                                                    className={`w-full bg-[#0A0A0A] border rounded-xl px-4 py-4 text-sm text-white outline-none transition-all placeholder:text-gray-700 resize-none min-h-[80px] ${!replyRecipients[entry.id]
+                                                        ? 'border-white/5 cursor-not-allowed opacity-50'
+                                                        : replyRecipients[entry.id] === 'PSYCHOLOGIST'
+                                                            ? 'border-[#8b5cf6]/50 focus:border-[#8b5cf6] focus:bg-[#8b5cf6]/5'
+                                                            : replyRecipients[entry.id] === 'PSYCHIATRIST'
+                                                                ? 'border-[#10b981]/50 focus:border-[#10b981] focus:bg-[#10b981]/5'
+                                                                : 'border-indigo-500/50 focus:border-indigo-500 focus:bg-indigo-500/5'
                                                         }`}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
                                                             const val = e.currentTarget.value.trim();
                                                             const recipient = replyRecipients[entry.id];
 
@@ -402,11 +402,13 @@ export default function App() {
                                                                 });
 
                                                                 e.currentTarget.value = '';
-                                                                // Optional: Reset selection? No, usually keeps context for continued chat.
                                                             }
                                                         }
                                                     }}
                                                 />
+                                                <div className="absolute right-3 bottom-3 text-[9px] text-gray-600 font-bold uppercase tracking-tight pointer-events-none">
+                                                    Enter p/ enviar • Shift+Enter p/ quebra
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
