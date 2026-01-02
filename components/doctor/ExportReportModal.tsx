@@ -139,21 +139,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
 
                 {/* Footer Actions */}
                 <div className="bg-[#1A1A1A] p-6 border-t border-white/5 flex flex-col gap-3">
-                    <button onClick={() => handleExport('PRINT')} className="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
-                        <span>🖨️</span> Imprimir Relatório Oficial
-                    </button>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => handleExport('PDF')} className="bg-[#222] text-white border border-white/10 font-medium py-3 rounded-xl hover:bg-[#333] transition-colors flex items-center justify-center gap-2 text-sm">
-                            <span>📄</span> Baixar PDF
-                        </button>
-                        <button onClick={() => handleExport('EXCEL')} className="bg-[#222] text-white border border-white/10 font-medium py-3 rounded-xl hover:bg-[#333] transition-colors flex items-center justify-center gap-2 text-sm">
-                            <span>📊</span> Baixar Excel
-                        </button>
-                    </div>
-                    {/* CSV fallback small link */}
-                    <button onClick={() => handleExport('CSV')} className="text-[10px] text-gray-600 hover:text-gray-400 mt-2">
-                        Download CSV (Dados Brutos)
-                    </button>
+                    <p className="text-xs text-gray-500 text-center italic">Opções de exportação desativadas temporariamente.</p>
                 </div>
             </div>
         </div>
