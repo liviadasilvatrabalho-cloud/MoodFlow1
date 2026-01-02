@@ -6,13 +6,18 @@ export enum UserRole {
   PSYCHIATRIST = 'PSYCHIATRIST',
 }
 
+export type ClinicalRole = 'psychologist' | 'psychiatrist' | 'none';
+export type ClinicRole = 'admin' | 'member' | 'none';
+
 export type Language = 'pt' | 'en' | 'es' | 'fr';
 
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
+  role: UserRole; // Legacy/Main role (PATIENT/PROFESSIONAL)
+  clinicalRole: ClinicalRole; // psychologist | psychiatrist
+  clinicRole: ClinicRole; // admin | member | none
   language: Language;
   roleConfirmed: boolean;
   type?: 'medico' | 'paciente' | 'pessoa' | 'psicologo' | 'psiquiatra';

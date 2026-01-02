@@ -1,5 +1,5 @@
 
-import { MoodEntry, User, DoctorNote, UserRole, Language } from '../types';
+import { MoodEntry, User, DoctorNote, UserRole, Language, ClinicalRole, ClinicRole } from '../types';
 import { supabase } from './supabaseClient';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -30,6 +30,10 @@ const mapDbUserToUser = (dbUser: any, authName?: string): User => {
         email: dbUser.email,
         name: finalName || 'User',
         role: role,
+        clinicalRole: (dbUser.clinical_role as ClinicalRole) ||
+            (role === UserRole.PSYCHOLOGIST ? 'psychologist' :
+                role === UserRole.PSYCHIATRIST ? 'psychiatrist' : 'none'),
+        clinicRole: (dbUser.clinic_role as ClinicRole) || 'none',
         language: (dbUser.language as Language) || 'pt',
         roleConfirmed: dbUser.role_confirmed || false,
         joinedAt: dbUser.joined_at || dbUser.created_at || new Date().toISOString()
@@ -66,6 +70,8 @@ export const storageService = {
                         email: sessionUser.email!,
                         name: sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || 'User',
                         role: sessionUser.user_metadata?.role || pendingRole,
+                        clinicalRole: 'none',
+                        clinicRole: 'none',
                         language: 'pt',
                         roleConfirmed: !!(sessionUser.user_metadata?.role || pendingRole),
                         joinedAt: sessionUser.created_at || new Date().toISOString()
@@ -124,6 +130,8 @@ export const storageService = {
             email: data.user.email!,
             name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || 'User',
             role: UserRole.PATIENT,
+            clinicalRole: 'none',
+            clinicRole: 'none',
             language: 'pt',
             roleConfirmed: false,
             joinedAt: new Date().toISOString()
@@ -131,6 +139,9 @@ export const storageService = {
     },
 
     signupEmail: async (email: string, pass: string, name: string, role: UserRole): Promise<void> => {
+        const clinicalRole = (role === UserRole.PSYCHOLOGIST ? 'psychologist' :
+            role === UserRole.PSYCHIATRIST ? 'psychiatrist' : 'none') as ClinicalRole;
+
         const { error } = await supabase.auth.signUp({
             email,
             password: pass,
@@ -138,6 +149,8 @@ export const storageService = {
                 data: {
                     full_name: name,
                     role: role,
+                    clinical_role: clinicalRole,
+                    clinic_role: 'none',
                     role_confirmed: true // Email signup already confirms role
                 }
             }
@@ -161,6 +174,8 @@ export const storageService = {
             email: user.email,
             name: user.name,
             role: user.role,
+            clinical_role: user.clinicalRole,
+            clinic_role: user.clinicRole,
             language: user.language,
             role_confirmed: user.roleConfirmed
         });

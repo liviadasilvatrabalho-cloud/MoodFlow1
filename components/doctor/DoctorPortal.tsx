@@ -57,6 +57,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
     const [patients, setPatients] = useState<User[]>([]);
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
     const [patientEntries, setPatientEntries] = useState<MoodEntry[]>([]);
+    const [portalView, setPortalView] = useState<'clinical' | 'administrative'>('clinical');
     const [viewMode, setViewMode] = useState<'dashboard' | 'clinic'>('dashboard');
     const [isConnecting, setIsConnecting] = useState(false);
     const [notes, setNotes] = useState<DoctorNote[]>([]);
@@ -526,38 +527,86 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
 
     return (
         <div className="min-h-screen md:h-screen w-full bg-background text-textMain flex flex-col md:flex-row overflow-hidden">
-            <aside className={`w-full md:w-80 bg-surfaceHighlight border-r border-neutral-800 flex flex-col flex-shrink-0 md:h-full absolute md:relative z-20 h-full transition-transform duration-300 ${selectedPatientId && viewMode === 'dashboard' ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
-                <div className="p-6 border-b border-neutral-800 flex justify-between items-center">
-                    <div>
+            <aside className={`w-full md:w-80 bg-surfaceHighlight border-r border-neutral-800 flex flex-col flex-shrink-0 md:h-full absolute md:relative z-20 h-full transition-transform duration-300 ${selectedPatientId && portalView === 'clinical' ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
+                <div className="p-6 border-b border-neutral-800">
+                    <div className="flex justify-between items-center mb-4">
                         <h1 className="font-black text-xl md:text-2xl text-primary mb-1">MoodFlow <span className="text-xs text-white bg-primary px-2 py-0.5 rounded ml-1">PRO</span></h1>
-                        <div className="flex items-center gap-2 text-xs md:text-sm text-textMuted">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            {user.role === UserRole.PSYCHOLOGIST ? 'Psicólogo(a)' : user.role === UserRole.PSYCHIATRIST ? 'Psiquiatra' : 'Dr(a).'} {user.name}
-                        </div>
-                    </div>
-                    <button onClick={onLogout} className="md:hidden p-2 text-textMuted">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    </button>
-                </div>
-                <div className="p-4 bg-neutral-900/50 border-b border-neutral-800">
-                    <h3 className="text-[10px] font-bold text-textMuted uppercase tracking-wider mb-2">{t.connectPatient}</h3>
-                    <form onSubmit={handleConnectPatient} className="flex gap-2">
-                        <input type="email" placeholder={t.enterPatientEmail} required value={connectEmail} onChange={e => setConnectEmail(e.target.value)} className="flex-1 bg-black border border-neutral-700 rounded-lg px-3 py-2 text-xs md:text-sm text-white focus:border-primary focus:outline-none min-w-0" />
-                        <button type="submit" className="bg-primary text-white px-3 rounded-lg text-sm font-bold">+</button>
-                    </form>
-                </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    <div className="p-4 text-[10px] font-bold text-textMuted uppercase tracking-wider sticky top-0 bg-surfaceHighlight/95 backdrop-blur-sm">{t.yourPatients}</div>
-                    {patients.length === 0 && <p className="text-textMuted text-sm text-center italic p-4 opacity-50">{t.noPatients}</p>}
-                    {patients.map(patient => (
-                        <button key={patient.id} onClick={() => setSelectedPatientId(patient.id)} className={`w-full text-left p-4 hover:bg-white/5 transition-all border-l-4 flex justify-between items-center group ${selectedPatientId === patient.id ? 'border-primary bg-white/5' : 'border-transparent'}`}>
-                            <div className="truncate pr-2 flex-1">
-                                <div className="font-medium text-white group-hover:text-primary transition-colors truncate">{patient.name}</div>
-                                <div className="text-xs text-textMuted mt-0.5 truncate">{patient.email}</div>
-                            </div>
+                        <button onClick={onLogout} className="md:hidden p-2 text-textMuted">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                         </button>
-                    ))}
+                    </div>
+
+                    {/* Navigation Areas Switcher */}
+                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 mb-4">
+                        <button
+                            onClick={() => { setPortalView('clinical'); setViewMode('dashboard'); setSelectedPatientId(null); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${portalView === 'clinical' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
+                        >
+                            <span>🧠</span> Clínica
+                        </button>
+                        <button
+                            onClick={() => { setPortalView('administrative'); setViewMode('clinic'); setSelectedPatientId(null); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${portalView === 'administrative' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-white'}`}
+                        >
+                            <span>🏢</span> Adm
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs md:text-sm text-textMuted">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        {user.clinicalRole === 'psychologist' ? 'Psicólogo(a)' : user.clinicalRole === 'psychiatrist' ? 'Psiquiatra' : 'Profissional'} {user.name}
+                    </div>
                 </div>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    {portalView === 'clinical' ? (
+                        <>
+                            <div className="p-4 bg-neutral-900/30 border-b border-neutral-800 mx-2 my-2 rounded-xl">
+                                <h3 className="text-[10px] font-bold text-textMuted uppercase tracking-wider mb-2">{t.connectPatient}</h3>
+                                <form onSubmit={handleConnectPatient} className="flex gap-2">
+                                    <input type="email" placeholder={t.enterPatientEmail} required value={connectEmail} onChange={e => setConnectEmail(e.target.value)} className="flex-1 bg-black border border-neutral-700 rounded-lg px-3 py-2 text-xs text-white focus:border-primary focus:outline-none min-w-0" />
+                                    <button type="submit" className="bg-primary text-white px-3 rounded-lg text-sm font-bold">+</button>
+                                </form>
+                            </div>
+                            <div className="p-4 text-[10px] font-bold text-textMuted uppercase tracking-wider sticky top-0 bg-surfaceHighlight/95 backdrop-blur-sm">{t.yourPatients}</div>
+                            {patients.length === 0 && <p className="text-textMuted text-sm text-center italic p-4 opacity-50">{t.noPatients}</p>}
+                            {patients.map(patient => (
+                                <button key={patient.id} onClick={() => setSelectedPatientId(patient.id)} className={`w-full text-left p-4 hover:bg-white/5 transition-all border-l-4 flex justify-between items-center group ${selectedPatientId === patient.id ? 'border-primary bg-white/5' : 'border-transparent'}`}>
+                                    <div className="truncate pr-2 flex-1">
+                                        <div className="font-medium text-white group-hover:text-primary transition-colors truncate">{patient.name}</div>
+                                        <div className="text-xs text-textMuted mt-0.5 truncate">{patient.email}</div>
+                                    </div>
+                                </button>
+                            ))}
+                        </>
+                    ) : (
+                        <div className="p-4 space-y-2">
+                            <div className="text-[10px] font-bold text-textMuted uppercase tracking-wider mb-4">Gestão Administrativa</div>
+                            <button
+                                onClick={() => setViewMode('clinic')}
+                                className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${viewMode === 'clinic' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-600/30' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                            >
+                                <span className="text-lg">🏥</span>
+                                <span className="text-sm font-bold">Minha Clínica</span>
+                            </button>
+                            <button
+                                className="w-full text-left p-3 rounded-xl flex items-center gap-3 text-gray-400 hover:bg-white/5 hover:text-white transition-all opacity-50 cursor-not-allowed"
+                                title="Em breve"
+                            >
+                                <span className="text-lg">👥</span>
+                                <span className="text-sm font-bold">Profissionais</span>
+                            </button>
+                            <button
+                                className="w-full text-left p-3 rounded-xl flex items-center gap-3 text-gray-400 hover:bg-white/5 hover:text-white transition-all opacity-50 cursor-not-allowed"
+                                title="Em breve"
+                            >
+                                <span className="text-lg">📊</span>
+                                <span className="text-sm font-bold">Relatórios B2B</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+
                 <div className="hidden md:block p-4 border-t border-neutral-800">
                     <button onClick={onLogout} className="flex items-center gap-2 text-textMuted hover:text-white text-sm w-full px-4 py-2 rounded-lg hover:bg-white/5 transition-colors">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
@@ -609,21 +658,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end border-b border-neutral-800 pb-6 gap-4">
                                 <div>
                                     <h1 className="text-xl md:text-2xl font-black text-white tracking-tight px-1 flex items-center gap-3">
-                                        {t.docPortal}
-                                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 ml-4">
-                                            <button
-                                                onClick={() => { setViewMode('dashboard'); setSelectedPatientId(null); }}
-                                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'dashboard' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
-                                            >
-                                                {t.patients}
-                                            </button>
-                                            <button
-                                                onClick={() => { setViewMode('clinic'); setSelectedPatientId(null); }}
-                                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'clinic' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-white'}`}
-                                            >
-                                                {t.newClinic}
-                                            </button>
-                                        </div>
+                                        {portalView === 'clinical' ? 'Área Clínica' : 'Área Administrativa'}
                                     </h1>
                                     {viewMode === 'dashboard' && selectedPatientId && (
                                         <>
@@ -1044,6 +1079,19 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                 )
                 }
             </main >
+
+            {/* EXPORT MODAL */}
+            {selectedPatientId && (
+                <ExportReportModal
+                    isOpen={isExportModalOpen}
+                    onClose={() => setIsExportModalOpen(false)}
+                    entries={patientEntries}
+                    notes={notes}
+                    userRole={user.role || ''}
+                    userName={user.name || 'Doutor'}
+                    patientName={patients.find(p => p.id === selectedPatientId)?.name || 'Paciente'}
+                />
+            )}
         </div >
     );
 };
