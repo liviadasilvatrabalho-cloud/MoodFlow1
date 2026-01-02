@@ -664,10 +664,6 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                         <>
                                             <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-4">
                                                 {patients.find(p => p.id === selectedPatientId)?.name}
-                                                <Button variant="ghost" onClick={() => window.print()} className="h-8 text-[10px] uppercase font-black px-3 border-neutral-800 gap-2 hover:bg-white hover:text-black print:hidden">
-                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                                                    {t.printReport}
-                                                </Button>
                                             </h2>
                                             <div className="flex items-center gap-2 mt-2 print:hidden">
                                                 <span className="bg-neutral-800 text-xs px-2 py-1 rounded text-gray-400">{patients.find(p => p.id === selectedPatientId)?.email}</span>
@@ -676,25 +672,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                                     )}
                                 </div>
                                 {viewMode === 'dashboard' && selectedPatientId && (
-                                    <div className="flex gap-4 md:gap-8 w-full lg:w-auto justify-between lg:justify-end">
-                                        <div className="text-right">
-                                            <div className="text-[10px] font-bold text-textMuted uppercase tracking-wider">{t.visibleEntries}</div>
-                                            <div className="text-2xl md:text-3xl font-light text-white">{patientEntries.length}</div>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2 self-center print:hidden">
-                                            <Button variant="ghost" onClick={handleExportDataCsv} className="h-10 gap-2 border-neutral-800 text-[10px] uppercase font-bold">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                                CSV
-                                            </Button>
-                                            <Button variant="ghost" onClick={handleExportXLSX} className="h-10 gap-2 border-neutral-800 text-[10px] uppercase font-bold text-green-500">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                                Excel
-                                            </Button>
-                                            <Button variant="ghost" onClick={handleExportPDF} className="h-10 gap-2 border-neutral-800 text-[10px] uppercase font-bold text-red-500">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                                PDF
-                                            </Button>
-                                        </div>
+                                    <div className="text-right">
+                                        <div className="text-[10px] font-bold text-textMuted uppercase tracking-wider">{t.visibleEntries}</div>
+                                        <div className="text-2xl md:text-3xl font-light text-white">{patientEntries.length}</div>
                                     </div>
                                 )}
                             </div>

@@ -137,11 +137,9 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                     </div>
                 </div>
 
-                {/* Footer Actions */}
-                <div className="bg-[#1A1A1A] p-6 border-t border-white/5 flex flex-col gap-3">
-                    <p className="text-xs text-gray-500 text-center italic">Opções de exportação desativadas temporariamente.</p>
-                </div>
+                {/* Content Filters - Modal ends here */}
             </div>
         </div>
     );
+};
 };
