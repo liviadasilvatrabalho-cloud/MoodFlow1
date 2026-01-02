@@ -29,6 +29,14 @@ export default function App() {
     const [threads, setThreads] = useState<MessageThread[]>([]); // New: Secure threads cache
     const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [isAdminPath, setIsAdminPath] = useState(window.location.search.includes('admin=true'));
+
+    useEffect(() => {
+        // Simple listener for URL changes (optional if using a router, but here we use simple state)
+        const checkPath = () => setIsAdminPath(window.location.search.includes('admin=true'));
+        window.addEventListener('popstate', checkPath);
+        return () => window.removeEventListener('popstate', checkPath);
+    }, []);
 
     useEffect(() => {
         const unsub = storageService.onAuthStateChanged((u) => {
@@ -100,14 +108,6 @@ export default function App() {
         </div>
     );
 
-    const [isAdminPath, setIsAdminPath] = useState(window.location.search.includes('admin=true'));
-
-    useEffect(() => {
-        // Simple listener for URL changes (optional if using a router, but here we use simple state)
-        const checkPath = () => setIsAdminPath(window.location.search.includes('admin=true'));
-        window.addEventListener('popstate', checkPath);
-        return () => window.removeEventListener('popstate', checkPath);
-    }, []);
 
     if (!user) return <Auth isAdminMode={isAdminPath} />;
     if (user.role === UserRole.PSICOLOGO || user.role === UserRole.PSIQUIATRA || user.role === UserRole.ADMIN_CLINICA) return <DoctorPortal user={user} onLogout={storageService.logout} isAdminPortal={user.role === UserRole.ADMIN_CLINICA} />;
