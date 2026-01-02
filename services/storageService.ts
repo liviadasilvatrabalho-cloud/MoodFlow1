@@ -3,14 +3,20 @@ import { MoodEntry, User, DoctorNote, UserRole, Language, ClinicalRole, ClinicRo
 import { supabase } from './supabaseClient';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
+// --- Centralized Role Normalization ---
+const normalizeRole = (rawRole: string | undefined): UserRole => {
+    if (!rawRole) return UserRole.PATIENT;
+    const r = rawRole.toLowerCase().trim();
+    if (r === 'psicologo' || r === 'psychologist' || r === 'psicólogo') return UserRole.PSYCHOLOGIST;
+    if (r === 'psiquiatra' || r === 'psychiatrist') return UserRole.PSYCHIATRIST;
+    if (r === 'medico' || r === 'professional' || r === 'profissional' || r === 'saúde') return UserRole.PROFESSIONAL;
+    if (r === 'admin_clinica' || r === 'clinic_admin' || r === 'admin' || r === 'gestão' || r === 'unidade' || r === 'admin_clinica') return UserRole.CLINIC_ADMIN;
+    return UserRole.PATIENT; // Default for 'paciente', 'pessoa', 'patient', etc.
+};
+
 // --- Helper to map DB User -> Application User ---
 const mapDbUserToUser = (dbUser: any, authName?: string): User => {
-    let role = UserRole.PATIENT;
-    if (dbUser.role === UserRole.PROFESSIONAL || dbUser.role === 'medico' || dbUser.role === 'professional') role = UserRole.PROFESSIONAL;
-    if (dbUser.role === UserRole.PSYCHOLOGIST || dbUser.role === 'psicologo') role = UserRole.PSYCHOLOGIST;
-    if (dbUser.role === UserRole.PSYCHIATRIST || dbUser.role === 'psiquiatra') role = UserRole.PSYCHIATRIST;
-    if (dbUser.role === UserRole.CLINIC_ADMIN || dbUser.role === 'ADMIN_CLINICA' || dbUser.role === 'admin_clinica' || dbUser.role === 'admin_clinica') role = UserRole.CLINIC_ADMIN;
-    if (dbUser.role === UserRole.PATIENT || dbUser.role === 'paciente' || dbUser.role === 'pessoa') role = UserRole.PATIENT;
+    const role = normalizeRole(dbUser.role);
 
     // Prioritize DB name if it exists and isn't just "User" default, 
     // otherwise use Auth Metadata name, 
@@ -412,9 +418,9 @@ export const storageService = {
 
         if (error || !data) return [];
         return data.map((d: any) => ({
-            id: d.profiles.id,
-            name: d.profiles.name || 'Médico',
-            role: d.profiles.role
+            id: d.profiles?.id || d.doctor_id,
+            name: d.profiles?.name || 'Médico',
+            role: normalizeRole(d.profiles?.role)
         }));
     },
 
@@ -423,12 +429,14 @@ export const storageService = {
         const { data: foundUsers, error } = await supabase
             .from('profiles')
             .select('id, role')
-            .ilike('email', patientEmail);
+            .ilike('email', patientEmail.trim());
 
         if (error || !foundUsers || foundUsers.length === 0) return { success: false, message: "patientNotFound" };
 
         const targetUser = foundUsers[0];
-        if (targetUser.role !== UserRole.PATIENT && targetUser.role !== 'paciente') return { success: false, message: "userIsStandard" };
+        const normalizedTargetRole = normalizeRole(targetUser.role);
+
+        if (normalizedTargetRole !== UserRole.PATIENT) return { success: false, message: "userIsStandard" };
 
         // 2. Insert relation using retrieved UUID (targetUser.id)
         const { error: insertError } = await supabase.from('doctor_patients').insert({
@@ -519,8 +527,8 @@ export const storageService = {
                 const mapped = data.map((row: any) => ({
                     id: row.id,
                     doctorId: row.doctor_id,
-                    doctorName: row.profiles?.name, // Add name
-                    doctorRole: row.profiles?.role, // Add role
+                    doctorName: row.profiles?.name,
+                    doctorRole: normalizeRole(row.profiles?.role),
                     patientId: row.patient_id,
                     entryId: row.entry_id,
                     text: row.text,
@@ -566,7 +574,7 @@ export const storageService = {
             id: row.id,
             doctorId: row.doctor_id,
             doctorName: row.profiles?.name,
-            doctorRole: row.profiles?.role,
+            doctorRole: normalizeRole(row.profiles?.role),
             patientId: row.patient_id,
             entryId: row.entry_id,
             threadId: row.thread_id,

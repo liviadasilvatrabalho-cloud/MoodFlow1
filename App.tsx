@@ -421,6 +421,7 @@ export default function App() {
                                                                 }
 
                                                                 e.currentTarget.value = '';
+                                                                setReplyRecipients(prev => ({ ...prev, [entry.id]: null }));
                                                             }
                                                         }
                                                     }}
