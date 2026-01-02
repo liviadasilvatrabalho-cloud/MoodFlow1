@@ -147,7 +147,13 @@ export const TRANSLATIONS = {
     deleteConfirm: 'Are you sure? This cannot be undone.',
     confirmDisconnect: 'Are you sure you want to revoke this professional\'s access?',
     disconnectSuccess: 'Access revoked successfully.',
-    consentManagement: 'Consent Management'
+    consentManagement: 'Consent Management',
+    aiEvolution: 'AI Mood Evolution',
+    riskScore: 'Stability Score',
+    requestAnalysis: 'Run AI Evolution Analysis',
+    evolutionSummary: 'Evolution Summary',
+    pointsOfAttention: 'Points of Attention',
+    periodAnalysis: 'Period Situation'
   },
   pt: {
     home: 'Início',
@@ -277,7 +283,13 @@ export const TRANSLATIONS = {
     deleteConfirm: 'Tem certeza? Isso não pode ser desfeito.',
     confirmDisconnect: 'Tem certeza que deseja revogar o acesso deste profissional?',
     disconnectSuccess: 'Acesso revogado com sucesso.',
-    consentManagement: 'Gestão de Consentimento'
+    consentManagement: 'Gestão de Consentimento',
+    aiEvolution: 'Evolução Clínica via IA',
+    riskScore: 'Score de Estabilidade',
+    requestAnalysis: 'Analisar Evolução com IA',
+    evolutionSummary: 'Sumário de Evolução',
+    pointsOfAttention: 'Pontos de Atenção',
+    periodAnalysis: 'Situação do Período'
   },
   es: {
     home: 'Inicio',

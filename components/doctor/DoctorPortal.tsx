@@ -126,6 +126,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
     useEffect(() => {
         if (selectedPatientId) {
             // Log entry view for audit
+            storageService.logView(user.id, selectedPatientId, 'PATIENT_DASHBOARD');
             storageService.logAudit(user.id, 'VIEW_PATIENT_DASHBOARD', selectedPatientId);
 
             // Entries (Realtime)
@@ -439,6 +440,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
         try {
             const summary = await aiService.summarizeHistory(patientEntries);
             setAiSummary(summary);
+
+            // AUTO-RISK ALERT: If risk is detected as medium or high in the summary
+            if (summary.riskLevel === 'high' || summary.riskLevel === 'medium') {
+                await storageService.createRiskAlert(selectedPatientId, summary.riskLevel === 'high' ? 90 : 50, summary.riskLevel, summary.summaryText);
+            }
+
             storageService.logAudit(user.id, 'GENERATE_AI_SUMMARY', selectedPatientId);
         } catch (error) {
             console.error("AI Summary generation failed:", error);

@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { MoodEntry, Language } from '../../types';
 import { MOODS, TRANSLATIONS } from '../../constants';
+import { aiService } from '../../services/aiService';
+import { Button } from '../ui/Button';
 
 interface AnalyticsProps {
     entries: MoodEntry[];
@@ -78,6 +80,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
         return new Date().toISOString().slice(0, 7);
     });
 
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [insight, setInsight] = useState<any>(null);
+
     const t = TRANSLATIONS[lang];
 
     // FILTER OUT ENTRIES WITHOUT MOOD FOR CHARTS
@@ -147,6 +152,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
             return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
         return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    };
+
+    const handleRunAnalysis = async () => {
+        if (filteredData.length === 0) return;
+        setIsAnalyzing(true);
+        try {
+            const period = viewMode === 'day' ? 'weekly' : viewMode === 'week' ? 'weekly' : 'monthly';
+            const result = await aiService.generateAdvancedInsight(filteredData, period as any);
+            setInsight(result);
+        } catch (error) {
+            console.error("AI Analysis failed:", error);
+            alert("Erro ao realizar análise de evolução.");
+        } finally {
+            setIsAnalyzing(false);
+        }
     };
 
     return (
@@ -296,6 +316,114 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
                         <div className="h-full flex items-center justify-center text-textMuted text-xs">No energy data for this period</div>
                     )}
                 </div>
+            </div>
+
+            {/* AI Evolution Dashboard */}
+            <div className="bg-gradient-to-br from-neutral-900 via-neutral-900 to-indigo-950/20 p-6 md:p-10 rounded-[40px] border border-white/5 shadow-2xl space-y-8 animate-in slide-in-from-bottom-4 duration-1000">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/5 pb-8">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-3xl shadow-inner">✨</div>
+                        <div>
+                            <h3 className="text-xl font-black text-white tracking-tight">{t.aiEvolution}</h3>
+                            <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.2em]">Powered by Clinical AI</p>
+                        </div>
+                    </div>
+                    <Button
+                        onClick={handleRunAnalysis}
+                        disabled={isAnalyzing || filteredData.length === 0}
+                        className={`h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest gap-3 transition-all ${isAnalyzing ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-700 shadow-[0_8px_30px_rgb(79,70,229,0.3)] hover:scale-[1.02]'}`}
+                    >
+                        {isAnalyzing ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Analisando Padrões...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                {t.requestAnalysis}
+                            </>
+                        )}
+                    </Button>
+                </div>
+
+                {!insight && !isAnalyzing && (
+                    <div className="py-20 border-2 border-dashed border-indigo-500/10 rounded-[32px] flex flex-col items-center justify-center text-center px-10 group hover:border-indigo-500/20 transition-all">
+                        <div className="w-20 h-20 bg-indigo-500/5 rounded-full flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition-transform">🧠</div>
+                        <h4 className="text-white font-bold mb-2">Pronto para a Evolução?</h4>
+                        <p className="text-gray-500 text-sm max-w-sm font-medium leading-relaxed">Nossa IA clínica analisa seus registros para identificar padrões ocultos e seu score de estabilidade emocional.</p>
+                    </div>
+                )}
+
+                {insight && (
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 animate-in fade-in zoom-in-95 duration-700">
+                        {/* LEFT: Gauge & Badges */}
+                        <div className="xl:col-span-4 space-y-8">
+                            <div className="bg-black/40 p-10 rounded-[32px] border border-white/5 text-center flex flex-col items-center justify-center relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[.3em] mb-6 relative z-10">{t.riskScore}</label>
+                                <div className="relative w-40 h-40 flex items-center justify-center z-10">
+                                    <svg className="w-full h-full transform -rotate-90">
+                                        <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-white/5" />
+                                        <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent"
+                                            strokeDasharray={440}
+                                            strokeDashoffset={440 - (440 * insight.riskScore) / 100}
+                                            strokeLinecap="round"
+                                            className={`${insight.riskScore > 70 ? 'text-red-500' : insight.riskScore > 40 ? 'text-yellow-500' : 'text-green-500'} transition-all duration-1000 shadow-lg`}
+                                        />
+                                    </svg>
+                                    <div className="absolute text-4xl font-black text-white">{insight.riskScore}</div>
+                                </div>
+                                <div className={`mt-6 inline-flex px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${insight.riskLevel === 'Elevated' ? 'bg-red-500/20 text-red-400 border border-red-500/20' : insight.riskLevel === 'Moderate' ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/20' : 'bg-green-500/20 text-green-400 border border-green-500/20'}`}>
+                                    {insight.riskLevel === 'Elevated' ? 'Atenção Necessária' : insight.riskLevel === 'Moderate' ? 'Oscilação Detectada' : 'Alta Estabilidade'}
+                                </div>
+                            </div>
+
+                            <div className="bg-white/5 p-8 rounded-[32px] border border-white/5 space-y-4">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[.2em]">{t.identifiedPatterns}</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {insight.patterns.map((p: string, i: number) => (
+                                        <span key={i} className="bg-indigo-500/10 text-indigo-300 text-[11px] font-bold px-4 py-2 rounded-xl border border-indigo-500/20">{p}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* RIGHT: Descriptive Content */}
+                        <div className="xl:col-span-8 space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-black/30 p-8 rounded-[32px] border border-white/5">
+                                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[.2em] mb-4 block">{t.evolutionSummary}</label>
+                                    <p className="text-sm text-gray-300 leading-relaxed font-medium">{insight.summary}</p>
+                                </div>
+                                <div className="bg-black/30 p-8 rounded-[32px] border border-white/5">
+                                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[.2em] mb-4 block">{t.periodAnalysis}</label>
+                                    <p className="text-sm text-gray-300 leading-relaxed font-medium">{insight.periodSituation}</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-indigo-500/5 p-8 rounded-[32px] border border-indigo-500/10">
+                                <div className="flex gap-4 items-start">
+                                    <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">👁️</div>
+                                    <div className="space-y-4">
+                                        <h4 className="text-white font-black text-sm uppercase tracking-widest">{t.pointsOfAttention}</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {insight.pointsOfAttention.map((point: string, i: number) => (
+                                                <div key={i} className="flex gap-3 text-xs text-gray-400 font-medium">
+                                                    <span className="text-indigo-500">▹</span> {point}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-black/20 p-8 rounded-[32px] border border-white/5 italic">
+                                <p className="text-xs text-gray-500 leading-relaxed"><strong>Observação Clínica:</strong> Esta análise é preditiva e educacional. Não substitui o diagnóstico médico profissional. Em caso de crise, contate seu terapeuta imediatamente.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

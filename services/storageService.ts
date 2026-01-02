@@ -896,5 +896,35 @@ export const storageService = {
 
     updateNoteStatus: async (noteId: string, status: 'active' | 'resolved' | 'hidden') => {
         await supabase.from('doctor_notes').update({ status }).eq('id', noteId);
+    },
+
+    // --- RISK & COMPLIANCE ---
+    createRiskAlert: async (patientId: string, riskScore: number, riskLevel: string, summary: string) => {
+        const { error } = await supabase.from('risk_alerts').insert({
+            patient_id: patientId,
+            risk_score: riskScore,
+            risk_level: riskLevel,
+            summary,
+            status: 'pending'
+        });
+        if (error) console.error("Error creating risk alert:", error);
+    },
+
+    getRiskAlerts: async (doctorId: string) => {
+        const { data, error } = await supabase
+            .from('risk_alerts')
+            .select('*, profiles!patient_id(name)')
+            .order('created_at', { ascending: false });
+
+        if (error) return [];
+        return data;
+    },
+
+    logView: async (viewerId: string, targetId: string, entityType: string) => {
+        await supabase.from('view_logs').insert({
+            viewer_id: viewerId,
+            target_id: targetId,
+            entity_type: entityType
+        });
     }
 };
