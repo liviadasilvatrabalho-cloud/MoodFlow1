@@ -44,7 +44,7 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (user && user.role === UserRole.PATIENT) {
+        if (user && user.role === UserRole.PACIENTE) {
             const unsub = storageService.subscribeEntries(user.id, (data) => setEntries(data));
             const unsubNotes = storageService.subscribeNotes(undefined, user.id, (notes) => {
                 console.log("Notes received:", notes.length);
@@ -59,7 +59,7 @@ export default function App() {
 
     // Force refresh notes when entering diary view
     useEffect(() => {
-        if (view === 'diary' && user && user.role === UserRole.PATIENT) {
+        if (view === 'diary' && user && user.role === UserRole.PACIENTE) {
             storageService.subscribeNotes(undefined, user.id, (notes) => setDoctorNotes(notes));
         }
     }, [view, user]);
@@ -101,7 +101,7 @@ export default function App() {
     );
 
     if (!user) return <Auth />;
-    if (user.role === UserRole.PROFESSIONAL || user.role === UserRole.PSYCHOLOGIST || user.role === UserRole.PSYCHIATRIST) return <DoctorPortal user={user} onLogout={storageService.logout} />;
+    if (user.role === UserRole.PSICOLOGO || user.role === UserRole.PSIQUIATRA || user.role === UserRole.ADMIN_CLINICA) return <DoctorPortal user={user} onLogout={storageService.logout} />;
 
     const t = TRANSLATIONS[lang] || TRANSLATIONS['pt'];
     const latestEntry = entries[0];
@@ -216,7 +216,7 @@ export default function App() {
                                                 </div>
                                                 <div className="flex items-center gap-4 flex-shrink-0">
                                                     <span className="text-[10px] text-gray-600 font-black uppercase tracking-tighter">{new Date(e.timestamp).toLocaleDateString('pt-BR')}</span>
-                                                    {user.role === UserRole.PATIENT && (
+                                                    {user.role === UserRole.PACIENTE && (
                                                         <span className={`w-2 h-2 rounded-full ${e.isLocked ? 'bg-orange-500 shadow-[0_0_8px_#f97316]' : 'bg-green-500 shadow-[0_0_8px_#10b981]'}`} />
                                                     )}
                                                 </div>
@@ -274,15 +274,15 @@ export default function App() {
                                     <div className="mt-6 pt-6 border-t border-white/5 space-y-6">
 
                                         {/* SECTION 1: PSYCHOLOGIST */}
-                                        {doctorNotes.some(n => n.entryId === entry.id && n.doctorRole === 'PSYCHOLOGIST') && (
+                                        {doctorNotes.some(n => n.entryId === entry.id && n.doctorRole === UserRole.PSICOLOGO) && (
                                             <div className="space-y-3">
                                                 <h5 className="text-[10px] uppercase font-black tracking-widest text-[#8b5cf6] flex items-center gap-2">
                                                     <span>🧠</span> Anotações do Psicólogo
                                                 </h5>
-                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === 'PSYCHOLOGIST').map(note => (
-                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFESSIONAL' ? 'bg-[#1e1b4b] border-[#8b5cf6]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
-                                                        <div className={`absolute -top-2 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#8b5cf6]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
-                                                            {note.authorRole === 'PROFESSIONAL' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psicólogo'}` : 'Sua Resposta'}
+                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === UserRole.PSICOLOGO).map(note => (
+                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFISSIONAL' ? 'bg-[#1e1b4b] border-[#8b5cf6]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                        <div className={`absolute -top-2 ${note.authorRole === 'PROFISSIONAL' ? 'left-4 bg-[#8b5cf6]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                            {note.authorRole === 'PROFISSIONAL' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psicólogo'}` : 'Sua Resposta'}
                                                         </div>
                                                         <p className="text-gray-200 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                         <span className="text-[9px] text-gray-500 block mt-2 font-black uppercase tracking-widest">
@@ -294,15 +294,15 @@ export default function App() {
                                         )}
 
                                         {/* SECTION 2: PSYCHIATRIST */}
-                                        {doctorNotes.some(n => n.entryId === entry.id && n.doctorRole === 'PSYCHIATRIST') && (
+                                        {doctorNotes.some(n => n.entryId === entry.id && n.doctorRole === UserRole.PSIQUIATRA) && (
                                             <div className="space-y-3 pt-2">
                                                 <h5 className="text-[10px] uppercase font-black tracking-widest text-[#10b981] flex items-center gap-2">
                                                     <span>💊</span> Anotações do Psiquiatra
                                                 </h5>
-                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === 'PSYCHIATRIST').map(note => (
-                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFESSIONAL' ? 'bg-[#064e3b]/30 border-[#10b981]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
-                                                        <div className={`absolute -top-2 ${note.authorRole === 'PROFESSIONAL' ? 'left-4 bg-[#10b981]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
-                                                            {note.authorRole === 'PROFESSIONAL' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psiquiatra'}` : 'Sua Resposta'}
+                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === UserRole.PSIQUIATRA).map(note => (
+                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFISSIONAL' ? 'bg-[#064e3b]/30 border-[#10b981]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                        <div className={`absolute -top-2 ${note.authorRole === 'PROFISSIONAL' ? 'left-4 bg-[#10b981]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                            {note.authorRole === 'PROFISSIONAL' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psiquiatra'}` : 'Sua Resposta'}
                                                         </div>
                                                         <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                         <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
@@ -320,7 +320,7 @@ export default function App() {
 
                                             <div className="flex gap-2">
                                                 {/* Psychologist Option */}
-                                                {connectedDoctors.some(d => d.role === 'PSYCHOLOGIST') && (
+                                                {connectedDoctors.some(d => d.role === UserRole.PSICOLOGO) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHOLOGIST' }))}
                                                         className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#1e1b4b] border-[#8b5cf6] text-[#8b5cf6] shadow-[0_0_15px_rgba(139,92,246,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
@@ -331,7 +331,7 @@ export default function App() {
                                                 )}
 
                                                 {/* Psychiatrist Option */}
-                                                {connectedDoctors.some(d => d.role === 'PSYCHIATRIST') && (
+                                                {connectedDoctors.some(d => d.role === UserRole.PSIQUIATRA) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHIATRIST' }))}
                                                         className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#064e3b] border-[#10b981] text-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
@@ -342,7 +342,7 @@ export default function App() {
                                                 )}
 
                                                 {/* Both Option */}
-                                                {connectedDoctors.some(d => d.role === 'PSYCHOLOGIST') && connectedDoctors.some(d => d.role === 'PSYCHIATRIST') && (
+                                                {connectedDoctors.some(d => d.role === UserRole.PSICOLOGO) && connectedDoctors.some(d => d.role === UserRole.PSIQUIATRA) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'BOTH' }))}
                                                         className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'BOTH' ? 'bg-indigo-900/40 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
@@ -383,13 +383,13 @@ export default function App() {
                                                                 const targets: { id: string, specialty: string }[] = [];
 
                                                                 if (recipient === 'PSYCHOLOGIST' || recipient === 'BOTH') {
-                                                                    const psych = connectedDoctors.find(d => d.role === 'PSYCHOLOGIST');
-                                                                    if (psych) targets.push({ id: psych.id, specialty: 'psychologist' });
+                                                                    const psych = connectedDoctors.find(d => d.role === UserRole.PSICOLOGO);
+                                                                    if (psych) targets.push({ id: psych.id, specialty: UserRole.PSICOLOGO });
                                                                 }
 
                                                                 if (recipient === 'PSYCHIATRIST' || recipient === 'BOTH') {
-                                                                    const psychi = connectedDoctors.find(d => d.role === 'PSYCHIATRIST');
-                                                                    if (psychi) targets.push({ id: psychi.id, specialty: 'psychiatrist' });
+                                                                    const psychi = connectedDoctors.find(d => d.role === UserRole.PSIQUIATRA);
+                                                                    if (psychi) targets.push({ id: psychi.id, specialty: UserRole.PSIQUIATRA });
                                                                 }
 
                                                                 if (targets.length === 0) {

@@ -14,7 +14,7 @@ describe('Clinical Isolation (Isolamento entre Profissionais)', () => {
         text: 'Psychological observation',
         createdAt: new Date().toISOString(),
         read: false,
-        authorRole: 'PROFESSIONAL', // Updated to match union type
+        authorRole: 'PROFISSIONAL', // Updated to match union type
         status: 'active',
         isShared: false
     };

@@ -5,13 +5,13 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 
 // --- Centralized Role Normalization ---
 const normalizeRole = (rawRole: string | undefined): UserRole => {
-    if (!rawRole) return UserRole.PATIENT;
+    if (!rawRole) return UserRole.PACIENTE;
     const r = rawRole.toLowerCase().trim();
-    if (r === 'psicologo' || r === 'psychologist' || r === 'psicólogo') return UserRole.PSYCHOLOGIST;
-    if (r === 'psiquiatra' || r === 'psychiatrist') return UserRole.PSYCHIATRIST;
-    if (r === 'medico' || r === 'professional' || r === 'profissional' || r === 'saúde') return UserRole.PROFESSIONAL;
-    if (r === 'admin_clinica' || r === 'clinic_admin' || r === 'admin' || r === 'gestão' || r === 'unidade' || r === 'admin_clinica') return UserRole.CLINIC_ADMIN;
-    return UserRole.PATIENT; // Default for 'paciente', 'pessoa', 'patient', etc.
+    if (r === 'psicologo' || r === 'psychologist' || r === 'psicólogo') return UserRole.PSICOLOGO;
+    if (r === 'psiquiatra' || r === 'psychiatrist') return UserRole.PSIQUIATRA;
+    if (r === 'medico' || r === 'professional' || r === 'profissional' || r === 'saúde') return UserRole.PSICOLOGO;
+    if (r === 'admin_clinica' || r === 'clinic_admin' || r === 'admin' || r === 'gestão' || r === 'unidade') return UserRole.ADMIN_CLINICA;
+    return UserRole.PACIENTE; // Default for 'paciente', 'pessoa', 'patient', etc.
 };
 
 // --- Helper to map DB User -> Application User ---
@@ -38,8 +38,8 @@ const mapDbUserToUser = (dbUser: any, authName?: string): User => {
         name: finalName || 'User',
         role: role,
         clinicalRole: (dbUser.clinical_role as ClinicalRole) ||
-            (role === UserRole.PSYCHOLOGIST ? 'psychologist' :
-                role === UserRole.PSYCHIATRIST ? 'psychiatrist' : 'none'),
+            (role === UserRole.PSICOLOGO ? 'PSICOLOGO' :
+                role === UserRole.PSIQUIATRA ? 'PSIQUIATRA' : 'none'),
         clinicRole: (dbUser.clinic_role as ClinicRole) || 'none',
         language: (dbUser.language as Language) || 'pt',
         roleConfirmed: dbUser.role_confirmed || false,
@@ -68,15 +68,15 @@ export const storageService = {
                     console.error("Error fetching user:", error);
 
                     // NEW: Check if we have a pending role from Auth screen
-                    const pendingRole = localStorage.getItem('moodflow_selected_role') as UserRole || UserRole.PATIENT;
+                    const pendingRole = localStorage.getItem('moodflow_selected_role') as UserRole || UserRole.PACIENTE;
 
                     // Fallback using session metadata
                     const fallbackUser: User = {
                         id: sessionUser.id,
                         email: sessionUser.email!,
                         name: sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || 'User',
-                        role: pendingRole || sessionUser.user_metadata?.role || UserRole.PATIENT,
-                        clinicalRole: (pendingRole === UserRole.PSYCHOLOGIST ? 'psychologist' : pendingRole === UserRole.PSYCHIATRIST ? 'psychiatrist' : 'none') as ClinicalRole,
+                        role: pendingRole || sessionUser.user_metadata?.role || UserRole.PACIENTE,
+                        clinicalRole: (pendingRole === UserRole.PSICOLOGO ? 'PSICOLOGO' : pendingRole === UserRole.PSIQUIATRA ? 'PSIQUIATRA' : 'none') as ClinicalRole,
                         clinicRole: 'none',
                         language: 'pt',
                         roleConfirmed: true,
@@ -137,7 +137,7 @@ export const storageService = {
             id: data.user.id,
             email: data.user.email!,
             name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || 'User',
-            role: UserRole.PATIENT,
+            role: UserRole.PACIENTE,
             clinicalRole: 'none',
             clinicRole: 'none',
             language: 'pt',
@@ -147,8 +147,8 @@ export const storageService = {
     },
 
     signupEmail: async (email: string, pass: string, name: string, role: UserRole): Promise<void> => {
-        const clinicalRole = (role === UserRole.PSYCHOLOGIST ? 'psychologist' :
-            role === UserRole.PSYCHIATRIST ? 'psychiatrist' : 'none') as ClinicalRole;
+        const clinicalRole = (role === UserRole.PSICOLOGO ? 'PSICOLOGO' :
+            role === UserRole.PSIQUIATRA ? 'PSIQUIATRA' : 'none') as ClinicalRole;
 
         const { error } = await supabase.auth.signUp({
             email,
@@ -436,7 +436,7 @@ export const storageService = {
         const targetUser = foundUsers[0];
         const normalizedTargetRole = normalizeRole(targetUser.role);
 
-        if (normalizedTargetRole !== UserRole.PATIENT) return { success: false, message: "userIsStandard" };
+        if (normalizedTargetRole !== UserRole.PACIENTE) return { success: false, message: "userIsStandard" };
 
         // 2. Insert relation using retrieved UUID (targetUser.id)
         const { error: insertError } = await supabase.from('doctor_patients').insert({
@@ -469,14 +469,15 @@ export const storageService = {
     getPatientConnections: async (patientId: string) => {
         const { data, error } = await supabase
             .from('doctor_patients')
-            .select('doctor_id, created_at, profiles!doctor_id(name, email)')
+            .select('doctor_id, created_at, profiles!doctor_id(name, email, role)')
             .eq('patient_id', patientId);
 
         if (error) throw error;
         return data.map((d: any) => ({
             doctor_id: d.doctor_id,
-            doctor_name: d.profiles.name,
-            doctor_email: d.profiles.email,
+            doctor_name: d.profiles?.name,
+            doctor_email: d.profiles?.email,
+            doctor_role: normalizeRole(d.profiles?.role),
             created_at: d.created_at
         }));
     },
@@ -533,7 +534,7 @@ export const storageService = {
                     entryId: row.entry_id,
                     text: row.text,
                     isShared: row.is_shared,
-                    authorRole: row.author_role,
+                    authorRole: 'PROFISSIONAL',
                     read: row.read,
                     status: row.status,
                     createdAt: row.created_at
@@ -607,13 +608,13 @@ export const storageService = {
 
         // AUTO-NOTIFICATION TRIGGER
         if (note.isShared && data) {
-            const recipientId = note.authorRole === 'PROFESSIONAL' ? note.patientId : note.doctorId;
-            const senderName = note.authorRole === 'PROFESSIONAL' ? (note.doctorName || 'Seu Profissional') : 'Paciente';
+            const recipientId = note.authorRole === 'PROFISSIONAL' ? note.patientId : note.doctorId;
+            const senderName = note.authorRole === 'PROFISSIONAL' ? (note.doctorName || 'Seu Profissional') : 'Paciente';
 
             storageService.createNotification({
                 userId: recipientId,
-                type: note.authorRole === 'PROFESSIONAL' ? 'comment_created' : 'message_created',
-                title: note.authorRole === 'PROFESSIONAL' ? 'Novo comentário clínico' : 'Nova resposta do paciente',
+                type: note.authorRole === 'PROFISSIONAL' ? 'comment_created' : 'message_created',
+                title: note.authorRole === 'PROFISSIONAL' ? 'Novo comentário clínico' : 'Nova resposta do paciente',
                 message: `${senderName} enviou uma nova mensagem.`,
                 data: { entry_id: note.entryId, note_id: data.id, thread_id: note.threadId }
             } as any).catch(console.error);
@@ -747,7 +748,7 @@ export const storageService = {
     },
 
     getThreads: async (userId: string, role: UserRole): Promise<MessageThread[]> => {
-        const column = role === UserRole.PATIENT ? 'patient_id' : 'professional_id';
+        const column = role === UserRole.PACIENTE ? 'patient_id' : 'professional_id';
         const { data, error } = await supabase
             .from('message_threads')
             .select('*')
@@ -807,9 +808,9 @@ export const storageService = {
 
         if (!authUser) throw new Error("User not authenticated");
 
-        // CHECK PERMISSION: Only CLINIC_ADMIN can create clinics
+        // CHECK PERMISSION: Only ADMIN_CLINICA can create clinics
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', authUser.id).single();
-        if (profile?.role !== UserRole.CLINIC_ADMIN && profile?.role !== 'ADMIN_CLINICA') {
+        if (profile?.role !== UserRole.ADMIN_CLINICA && profile?.role !== 'ADMIN_CLINICA') {
             throw new Error("Ação não autorizada. Apenas administradores podem criar clínicas.");
         }
 

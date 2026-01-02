@@ -7,9 +7,9 @@ import { MoodEntry, DoctorNote, UserRole } from '../types';
 interface ExportConfig {
     startDate: string;
     endDate: string;
-    professionalFilter: 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH';
+    professionalFilter: UserRole.PSICOLOGO | UserRole.PSIQUIATRA | 'BOTH';
     contentFilter: 'ENTRIES' | 'NOTES' | 'BOTH';
-    userRole: string;
+    userRole: UserRole;
     patientName: string;
     aiInsight?: any; // Added: Optional AI longitudinal insight
 }
@@ -60,14 +60,14 @@ const filterNotes = (notes: DoctorNote[], config: ExportConfig) => {
         if (!withinTime) return false;
 
         // Security / Isolation Logic
-        // If user is Psychologist, CANNOT see Psychiatrist notes
-        if (config.userRole === 'PSYCHOLOGIST' && n.doctorRole === 'PSYCHIATRIST') return false;
-        // If user is Psychiatrist, CANNOT see Psychologist notes
-        if (config.userRole === 'PSYCHIATRIST' && n.doctorRole === 'PSYCHOLOGIST') return false;
+        // If user is Psicólogo, CANNOT see Psiquiatra notes
+        if (config.userRole === UserRole.PSICOLOGO && n.doctorRole === UserRole.PSIQUIATRA) return false;
+        // If user is Psiquiatra, CANNOT see Psicólogo notes
+        if (config.userRole === UserRole.PSIQUIATRA && n.doctorRole === UserRole.PSICOLOGO) return false;
 
         // Filter by request
-        if (config.professionalFilter === 'PSYCHOLOGIST' && n.doctorRole !== 'PSYCHOLOGIST') return false;
-        if (config.professionalFilter === 'PSYCHIATRIST' && n.doctorRole !== 'PSYCHIATRIST') return false;
+        if (config.professionalFilter === UserRole.PSICOLOGO && n.doctorRole !== UserRole.PSICOLOGO) return false;
+        if (config.professionalFilter === UserRole.PSIQUIATRA && n.doctorRole !== UserRole.PSIQUIATRA) return false;
 
         return true;
     }).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -177,8 +177,8 @@ const generatePDF = (entries: MoodEntry[], notes: DoctorNote[], config: ExportCo
 
         const tableData = notes.map(n => [
             new Date(n.createdAt).toLocaleDateString(),
-            n.doctorRole === 'PSYCHOLOGIST' ? 'Psicologia' : 'Psiquiatria',
-            n.authorRole === 'PATIENT' ? 'Paciente' : `Dr(a). ${n.doctorName || 'Profissional'}`,
+            n.doctorRole === UserRole.PSICOLOGO ? 'Psicologia' : 'Psiquiatria',
+            n.authorRole === 'PACIENTE' ? 'Paciente' : `Dr(a). ${n.doctorName || 'Profissional'}`,
             n.text
         ]);
 
@@ -237,7 +237,7 @@ const generateCSV = (entries: MoodEntry[], notes: DoctorNote[], config: ExportCo
                 new Date(n.createdAt).toISOString(),
                 "", // No mood
                 "", // No energy
-                `${n.doctorRole} - ${n.authorRole}`,
+                `${n.doctorRole === UserRole.PSICOLOGO ? 'Psicólogo' : 'Psiquiatra'} - ${n.authorRole === 'PACIENTE' ? 'Paciente' : 'Profissional'}`,
                 `"${(n.text || "").replace(/"/g, '""')}"`
             ];
             csvContent += row.join(",") + "\n";
@@ -272,8 +272,8 @@ const generateExcel = (entries: MoodEntry[], notes: DoctorNote[], config: Export
     if (notes.length > 0) {
         const noteData = notes.map(n => ({
             Data: new Date(n.createdAt).toISOString(),
-            Area: n.doctorRole,
-            Autor: n.authorRole,
+            Area: n.doctorRole === UserRole.PSICOLOGO ? 'Psicologia' : 'Psiquiatria',
+            Autor: n.authorRole === 'PACIENTE' ? 'Paciente' : 'Profissional',
             Profissional: n.doctorName || 'N/A',
             Conteudo: n.text
         }));

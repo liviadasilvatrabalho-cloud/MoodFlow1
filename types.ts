@@ -1,13 +1,12 @@
 
 export enum UserRole {
-  PATIENT = 'PATIENT',
-  PROFESSIONAL = 'PROFESSIONAL',
-  PSYCHOLOGIST = 'PSYCHOLOGIST',
-  PSYCHIATRIST = 'PSYCHIATRIST',
-  CLINIC_ADMIN = 'CLINIC_ADMIN',
+  PACIENTE = 'PACIENTE',
+  PSICOLOGO = 'PSICOLOGO',
+  PSIQUIATRA = 'PSIQUIATRA',
+  ADMIN_CLINICA = 'ADMIN_CLINICA',
 }
 
-export type ClinicalRole = 'psychologist' | 'psychiatrist' | 'none';
+export type ClinicalRole = 'PSICOLOGO' | 'PSIQUIATRA' | 'none';
 export type ClinicRole = 'admin' | 'member' | 'none';
 
 export type Language = 'pt' | 'en' | 'es' | 'fr';
@@ -56,7 +55,7 @@ export interface DoctorNote {
   threadId?: string; // New: Link to a message thread
   text: string;
   isShared: boolean;
-  authorRole: 'PROFESSIONAL' | 'PATIENT';
+  authorRole: 'PROFISSIONAL' | 'PACIENTE';
   visibility?: 'PRIVATE' | 'PATIENT_VISIBLE'; // New for admin segregation
   professionalType?: string;
   parentNoteId?: string;
@@ -91,7 +90,7 @@ export interface MessageThread {
   id: string;
   patientId: string;
   professionalId: string;
-  specialty: 'psychologist' | 'psychiatrist';
+  specialty: 'PSICOLOGO' | 'PSIQUIATRA';
   createdAt: string;
 }
 

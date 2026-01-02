@@ -58,8 +58,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
     const [patients, setPatients] = useState<User[]>([]);
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
     const [patientEntries, setPatientEntries] = useState<MoodEntry[]>([]);
-    const [portalView, setPortalView] = useState<'clinical' | 'administrative'>(user.role === UserRole.CLINIC_ADMIN ? 'administrative' : 'clinical');
-    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic'>(user.role === UserRole.CLINIC_ADMIN ? 'clinic' : 'dashboard');
+    const [portalView, setPortalView] = useState<'clinical' | 'administrative'>(user.role === UserRole.ADMIN_CLINICA ? 'administrative' : 'clinical');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic'>(user.role === UserRole.ADMIN_CLINICA ? 'clinic' : 'dashboard');
     const [isConnecting, setIsConnecting] = useState(false);
     const [notes, setNotes] = useState<DoctorNote[]>([]);
     const [newNote, setNewNote] = useState('');
@@ -113,7 +113,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
             id: row.patient_id,
             name: row.patient_name || 'Unknown',
             email: row.patient_email || 'No Email',
-            role: UserRole.PATIENT,
+            role: UserRole.PACIENTE,
             language: 'pt', // View doesn't have lang yet, default
             joinedAt: new Date().toISOString()
         }));
@@ -228,7 +228,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
             patientId: selectedPatientId,
             text: newNote,
             isShared: false,
-            authorRole: 'PROFESSIONAL',
+            authorRole: 'PROFISSIONAL',
             read: true,
             createdAt: new Date().toISOString()
         };
@@ -258,13 +258,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                 id: crypto.randomUUID(),
                 doctorId: user.id,
                 doctorName: user.name,
-                doctorRole: user.role,
+                doctorRole: user.clinicalRole === 'psychologist' ? UserRole.PSICOLOGO : UserRole.PSIQUIATRA,
                 patientId: selectedPatientId,
                 entryId,
                 threadId: thread.id,
                 text: entryComment,
                 isShared: true,
-                authorRole: 'PROFESSIONAL',
+                authorRole: 'PROFISSIONAL',
                 read: false,
                 createdAt: new Date().toISOString()
             };
@@ -562,7 +562,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                     </div>
 
                     {/* Navigation Areas Switcher - Visible only to Admins */}
-                    {user.role === UserRole.CLINIC_ADMIN && (
+                    {user.role === UserRole.ADMIN_CLINICA && (
                         <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 mb-4">
                             <button
                                 onClick={() => { setPortalView('clinical'); setViewMode('dashboard'); setSelectedPatientId(null); }}

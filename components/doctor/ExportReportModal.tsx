@@ -24,7 +24,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     });
     const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-    const [professionalFilter, setProfessionalFilter] = useState<'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH'>('BOTH');
+    const [professionalFilter, setProfessionalFilter] = useState<UserRole.PSICOLOGO | UserRole.PSIQUIATRA | 'BOTH'>('BOTH');
     const [contentFilter, setContentFilter] = useState<'ENTRIES' | 'NOTES' | 'BOTH'>('BOTH');
 
     const [isExporting, setIsExporting] = useState(false);
@@ -52,7 +52,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
         }
     };
 
-    const isDoctor = userRole === UserRole.PSYCHOLOGIST || userRole === UserRole.PSYCHIATRIST;
+    const isDoctor = userRole === UserRole.PSICOLOGO || userRole === UserRole.PSIQUIATRA;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -93,16 +93,16 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
 
                         <div className="flex gap-2 p-1 bg-[#0A0A0A] rounded-xl border border-white/5">
                             <button
-                                onClick={() => setProfessionalFilter('PSYCHOLOGIST')}
-                                disabled={isDoctor && userRole !== 'PSYCHOLOGIST'}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${professionalFilter === 'PSYCHOLOGIST' ? 'bg-[#8b5cf6] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed'}`}
+                                onClick={() => setProfessionalFilter(UserRole.PSICOLOGO)}
+                                disabled={isDoctor && userRole !== UserRole.PSICOLOGO}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${professionalFilter === UserRole.PSICOLOGO ? 'bg-[#8b5cf6] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed'}`}
                             >
                                 Psicologia
                             </button>
                             <button
-                                onClick={() => setProfessionalFilter('PSYCHIATRIST')}
-                                disabled={isDoctor && userRole !== 'PSYCHIATRIST'}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${professionalFilter === 'PSYCHIATRIST' ? 'bg-[#10b981] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed'}`}
+                                onClick={() => setProfessionalFilter(UserRole.PSIQUIATRA)}
+                                disabled={isDoctor && userRole !== UserRole.PSIQUIATRA}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${professionalFilter === UserRole.PSIQUIATRA ? 'bg-[#10b981] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed'}`}
                             >
                                 Psiquiatria
                             </button>

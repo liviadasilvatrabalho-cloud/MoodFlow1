@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Language } from '../../types';
+import { User, Language, UserRole } from '../../types';
 import { TRANSLATIONS } from '../../constants';
 import { storageService } from '../../services/storageService';
 import { Button } from '../ui/Button';
@@ -68,13 +68,13 @@ export const ConsentSettings: React.FC<ConsentSettingsProps> = ({ user }) => {
                         {connections.map((conn) => (
                             <div key={conn.doctor_id} className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-inner ${conn.doctor_role === 'PSYCHOLOGIST' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                        {conn.doctor_role === 'PSYCHOLOGIST' ? '🧠' : '💊'}
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-inner ${conn.doctor_role === UserRole.PSICOLOGO ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                        {conn.doctor_role === UserRole.PSICOLOGO ? '🧠' : '💊'}
                                     </div>
                                     <div>
                                         <div className="font-black text-white text-base tracking-tight">{conn.doctor_name || 'Profissional'}</div>
-                                        <div className={`text-[10px] uppercase font-black tracking-widest mt-1 ${conn.doctor_role === 'PSYCHOLOGIST' ? 'text-indigo-400' : 'text-emerald-400'}`}>
-                                            {conn.doctor_role === 'PSYCHOLOGIST' ? 'Seu Psicólogo' : conn.doctor_role === 'PSYCHIATRIST' ? 'Seu Psiquiatra' : 'Profissional de Saúde'}
+                                        <div className={`text-[10px] uppercase font-black tracking-widest mt-1 ${conn.doctor_role === UserRole.PSICOLOGO ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                                            {conn.doctor_role === UserRole.PSICOLOGO ? 'Seu Psicólogo' : conn.doctor_role === UserRole.PSIQUIATRA ? 'Seu Psiquiatra' : 'Profissional de Saúde'}
                                         </div>
                                     </div>
                                 </div>

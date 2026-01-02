@@ -11,14 +11,15 @@ export default function Auth() {
     const [password, setPassword] = useState('')
     const [isSignUp, setIsSignUp] = useState(false)
     const [fullName, setFullName] = useState('')
-    const [role, setRole] = useState<UserRole>(UserRole.PATIENT)
+    const [role, setRole] = useState<UserRole>(UserRole.PACIENTE)
+    const [selectedCategory, setSelectedCategory] = useState<'PACIENTE' | 'PROFISSIONAL' | 'ADMIN_CLINICA'>('PACIENTE')
     const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault()
 
         // Prevent generic professional registration
-        if (isSignUp && role === UserRole.PROFESSIONAL) {
+        if (isSignUp && selectedCategory === 'PROFISSIONAL' && role !== UserRole.PSICOLOGO && role !== UserRole.PSIQUIATRA) {
             setMessage({ type: 'error', text: 'Por favor, selecione sua especialidade (Psicólogo ou Psiquiatra).' });
             return;
         }
@@ -59,10 +60,11 @@ export default function Auth() {
                 <div className="mb-4 p-1 bg-black/40 rounded-xl border border-white/5 flex gap-1">
                     <button
                         onClick={() => {
-                            setRole(UserRole.PATIENT);
-                            localStorage.setItem('moodflow_selected_role', UserRole.PATIENT);
+                            setRole(UserRole.PACIENTE);
+                            setSelectedCategory('PACIENTE');
+                            localStorage.setItem('moodflow_selected_role', UserRole.PACIENTE);
                         }}
-                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${role === UserRole.PATIENT
+                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === 'PACIENTE'
                             ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
                             : 'text-gray-500 hover:text-gray-300'
                             }`}
@@ -72,10 +74,9 @@ export default function Auth() {
                     </button>
                     <button
                         onClick={() => {
-                            setRole(UserRole.PROFESSIONAL);
-                            localStorage.setItem('moodflow_selected_role', UserRole.PROFESSIONAL);
+                            setSelectedCategory('PROFISSIONAL');
                         }}
-                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${role === UserRole.PROFESSIONAL || role === UserRole.PSYCHOLOGIST || role === UserRole.PSYCHIATRIST
+                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === 'PROFISSIONAL'
                             ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
                             : 'text-gray-500 hover:text-gray-300'
                             }`}
@@ -85,10 +86,11 @@ export default function Auth() {
                     </button>
                     <button
                         onClick={() => {
-                            setRole(UserRole.CLINIC_ADMIN);
-                            localStorage.setItem('moodflow_selected_role', UserRole.CLINIC_ADMIN);
+                            setRole(UserRole.ADMIN_CLINICA);
+                            setSelectedCategory('ADMIN_CLINICA');
+                            localStorage.setItem('moodflow_selected_role', UserRole.ADMIN_CLINICA);
                         }}
-                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${role === UserRole.CLINIC_ADMIN
+                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === 'ADMIN_CLINICA'
                             ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
                             : 'text-gray-500 hover:text-gray-300'
                             }`}
@@ -98,15 +100,15 @@ export default function Auth() {
                     </button>
                 </div>
 
-                {(role === UserRole.PROFESSIONAL || role === UserRole.PSYCHOLOGIST || role === UserRole.PSYCHIATRIST) && (
+                {selectedCategory === 'PROFISSIONAL' && (
                     <div className="mb-8 grid grid-cols-2 gap-2 animate-in slide-in-from-top-2 fade-in duration-300">
                         <button
                             type="button"
                             onClick={() => {
-                                setRole(UserRole.PSYCHOLOGIST);
-                                localStorage.setItem('moodflow_selected_role', UserRole.PSYCHOLOGIST);
+                                setRole(UserRole.PSICOLOGO);
+                                localStorage.setItem('moodflow_selected_role', UserRole.PSICOLOGO);
                             }}
-                            className={`p-3 rounded-lg border text-xs font-bold transition-all ${role === UserRole.PSYCHOLOGIST
+                            className={`p-3 rounded-lg border text-xs font-bold transition-all ${role === UserRole.PSICOLOGO
                                 ? 'bg-indigo-900/30 border-indigo-500 text-indigo-300'
                                 : 'bg-[#151515] border-transparent text-gray-500 hover:bg-[#202020]'
                                 }`}
@@ -116,10 +118,10 @@ export default function Auth() {
                         <button
                             type="button"
                             onClick={() => {
-                                setRole(UserRole.PSYCHIATRIST);
-                                localStorage.setItem('moodflow_selected_role', UserRole.PSYCHIATRIST);
+                                setRole(UserRole.PSIQUIATRA);
+                                localStorage.setItem('moodflow_selected_role', UserRole.PSIQUIATRA);
                             }}
-                            className={`p-3 rounded-lg border text-xs font-bold transition-all ${role === UserRole.PSYCHIATRIST
+                            className={`p-3 rounded-lg border text-xs font-bold transition-all ${role === UserRole.PSIQUIATRA
                                 ? 'bg-indigo-900/30 border-indigo-500 text-indigo-300'
                                 : 'bg-[#151515] border-transparent text-gray-500 hover:bg-[#202020]'
                                 }`}
@@ -129,7 +131,7 @@ export default function Auth() {
                     </div>
                 )}
 
-                {role === UserRole.PROFESSIONAL && (
+                {selectedCategory === 'PROFISSIONAL' && role === UserRole.PACIENTE && (
                     <div className="mb-6 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg flex items-center gap-2">
                         <svg className="w-4 h-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                         <span className="text-[10px] text-yellow-200 font-bold uppercase">Selecione sua especialidade acima</span>
