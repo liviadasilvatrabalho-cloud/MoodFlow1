@@ -142,4 +142,3 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
         </div>
     );
 };
-};
