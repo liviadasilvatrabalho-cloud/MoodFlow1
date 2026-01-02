@@ -13,6 +13,7 @@ import { NotificationPanel } from '../ui/NotificationPanel';
 interface DoctorPortalProps {
     user: User;
     onLogout: () => void;
+    isAdminPortal?: boolean;
 }
 
 const CustomizedDot = (props: any) => {
@@ -54,12 +55,12 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 import { ExportReportModal } from './ExportReportModal';
 
-export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) => {
+export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAdminPortal = false }) => {
     const [patients, setPatients] = useState<User[]>([]);
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
     const [patientEntries, setPatientEntries] = useState<MoodEntry[]>([]);
-    const [portalView, setPortalView] = useState<'clinical' | 'administrative'>(user.role === UserRole.ADMIN_CLINICA ? 'administrative' : 'clinical');
-    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic'>(user.role === UserRole.ADMIN_CLINICA ? 'clinic' : 'dashboard');
+    const [portalView, setPortalView] = useState<'clinical' | 'administrative'>(isAdminPortal ? 'administrative' : 'clinical');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic'>(isAdminPortal ? 'clinic' : 'dashboard');
     const [isConnecting, setIsConnecting] = useState(false);
     const [notes, setNotes] = useState<DoctorNote[]>([]);
     const [newNote, setNewNote] = useState('');
@@ -99,12 +100,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
 
     // Initial Load & Polling
     useEffect(() => {
-        loadDashboard();
-        const interval = setInterval(loadDashboard, 15000);
+        if (!user || isAdminPortal) return; // STRICT: Admins do not fetch clinical data
+        loadPatients();
+        const interval = setInterval(loadPatients, 30000);
         return () => clearInterval(interval);
-    }, [user.id]);
+    }, [user.id, isAdminPortal]);
 
-    const loadDashboard = async () => {
+    const loadPatients = async () => {
         // 1. Fetch Dashboard View
         const dashboardRows = await storageService.getMedicalDashboard(user.id);
 
@@ -212,7 +214,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
         e.preventDefault();
         const result = await storageService.connectPatient(user.id, connectEmail);
         if (result.success) {
-            loadDashboard();
+            loadPatients();
             setConnectEmail('');
             alert("Success");
         } else {
@@ -561,8 +563,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                         </button>
                     </div>
 
-                    {/* Navigation Areas Switcher - Visible only to Admins */}
-                    {user.role === UserRole.ADMIN_CLINICA && (
+                    {/* Navigation Areas Switcher - Visible only to Professionals with ADMIN_CLINICA role (Hybrid Mode) */}
+                    {/* BUT if isAdminPortal is true (Hard mode), we force administrative view and hide toggle */}
+                    {user.role === UserRole.ADMIN_CLINICA && !isAdminPortal && (
                         <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 mb-4">
                             <button
                                 onClick={() => { setPortalView('clinical'); setViewMode('dashboard'); setSelectedPatientId(null); }}
@@ -576,6 +579,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                             >
                                 <span>🏢</span> Adm
                             </button>
+                        </div>
+                    )}
+
+                    {isAdminPortal && (
+                        <div className="mb-6 p-4 bg-indigo-900/10 border border-indigo-500/20 rounded-2xl flex flex-col items-center gap-2">
+                            <span className="text-xs font-black text-indigo-400 uppercase tracking-widest">Portal de Gestão</span>
                         </div>
                     )}
 

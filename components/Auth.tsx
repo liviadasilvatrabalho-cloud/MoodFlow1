@@ -5,14 +5,18 @@ import { storageService } from '../services/storageService'
 import { UserRole } from '../types'
 
 
-export default function Auth() {
+interface AuthProps {
+    isAdminMode?: boolean;
+}
+
+export default function Auth({ isAdminMode = false }: AuthProps) {
     const [loading, setLoading] = useState(false)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [isSignUp, setIsSignUp] = useState(false)
     const [fullName, setFullName] = useState('')
-    const [role, setRole] = useState<UserRole>(UserRole.PACIENTE)
-    const [selectedCategory, setSelectedCategory] = useState<'PACIENTE' | 'PROFISSIONAL' | 'ADMIN_CLINICA'>('PACIENTE')
+    const [role, setRole] = useState<UserRole>(isAdminMode ? UserRole.ADMIN_CLINICA : UserRole.PACIENTE)
+    const [selectedCategory, setSelectedCategory] = useState<'PACIENTE' | 'PROFISSIONAL' | 'ADMIN_CLINICA'>(isAdminMode ? 'ADMIN_CLINICA' : 'PACIENTE')
     const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
     const handleAuth = async (e: React.FormEvent) => {
@@ -57,48 +61,41 @@ export default function Auth() {
                     <p className="text-gray-500 text-xs tracking-wide uppercase font-black">AI & Professional Portal</p>
                 </div>
 
-                <div className="mb-4 p-1 bg-black/40 rounded-xl border border-white/5 flex gap-1">
-                    <button
-                        onClick={() => {
-                            setRole(UserRole.PACIENTE);
-                            setSelectedCategory('PACIENTE');
-                            localStorage.setItem('moodflow_selected_role', UserRole.PACIENTE);
-                        }}
-                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === 'PACIENTE'
-                            ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
-                            : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                    >
-                        <span>PACIENTE</span>
-                        <span className="text-[7px] opacity-40 font-mono tracking-tight">Acesso Clínico</span>
-                    </button>
-                    <button
-                        onClick={() => {
-                            setSelectedCategory('PROFISSIONAL');
-                        }}
-                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === 'PROFISSIONAL'
-                            ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
-                            : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                    >
-                        <span>SAÚDE</span>
-                        <span className="text-[7px] opacity-40 font-mono tracking-tight">Profissional</span>
-                    </button>
-                    <button
-                        onClick={() => {
-                            setRole(UserRole.ADMIN_CLINICA);
-                            setSelectedCategory('ADMIN_CLINICA');
-                            localStorage.setItem('moodflow_selected_role', UserRole.ADMIN_CLINICA);
-                        }}
-                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === 'ADMIN_CLINICA'
-                            ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
-                            : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                    >
-                        <span>GESTÃO</span>
-                        <span className="text-[7px] opacity-40 font-mono tracking-tight">Unidade</span>
-                    </button>
-                </div>
+                {!isAdminMode ? (
+                    <div className="mb-4 p-1 bg-black/40 rounded-xl border border-white/5 flex gap-1">
+                        <button
+                            onClick={() => {
+                                setRole(UserRole.PACIENTE);
+                                setSelectedCategory('PACIENTE');
+                                localStorage.setItem('moodflow_selected_role', UserRole.PACIENTE);
+                            }}
+                            className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === 'PACIENTE'
+                                ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
+                                : 'text-gray-500 hover:text-gray-300'
+                                }`}
+                        >
+                            <span>PACIENTE</span>
+                            <span className="text-[7px] opacity-40 font-mono tracking-tight">Acesso Clínico</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                setSelectedCategory('PROFISSIONAL');
+                            }}
+                            className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${selectedCategory === 'PROFISSIONAL'
+                                ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
+                                : 'text-gray-500 hover:text-gray-300'
+                                }`}
+                        >
+                            <span>SAÚDE</span>
+                            <span className="text-[7px] opacity-40 font-mono tracking-tight">Profissional</span>
+                        </button>
+                    </div>
+                ) : (
+                    <div className="mb-8 p-4 bg-indigo-900/10 border border-indigo-500/20 rounded-2xl flex flex-col items-center gap-2">
+                        <span className="text-xs font-black text-indigo-400 uppercase tracking-widest">Portal Administrativo</span>
+                        <p className="text-[10px] text-gray-500 text-center">Acesso restrito a gestores de unidade e administradores autorizados.</p>
+                    </div>
+                )}
 
                 {selectedCategory === 'PROFISSIONAL' && (
                     <div className="mb-8 grid grid-cols-2 gap-2 animate-in slide-in-from-top-2 fade-in duration-300">
@@ -188,25 +185,27 @@ export default function Auth() {
                         disabled={loading}
                         className="w-full py-4 px-4 flex items-center justify-center bg-white text-black hover:bg-gray-200 font-black rounded-xl shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest mt-2"
                     >
-                        {loading ? 'Processando...' : (isSignUp ? 'Criar Conta' : 'Entrar')}
+                        {loading ? 'Processando...' : (isSignUp ? 'Criar Conta' : isAdminMode ? 'Acessar Gestão' : 'Entrar')}
                     </button>
                 </form>
 
 
-                <div className="mt-8 text-center border-t border-white/5 pt-6">
-                    <button
-                        onClick={() => {
-                            setIsSignUp(!isSignUp)
-                            setMessage(null)
-                        }}
-                        className="text-[11px] text-gray-500 hover:text-white transition-colors uppercase font-bold tracking-tighter"
-                    >
-                        {isSignUp ? 'Já tem uma conta? ' : 'Ainda não tem conta? '}
-                        <span className="text-white ml-2 underline underline-offset-4">
-                            {isSignUp ? 'Entre aqui' : 'Cadastre-se grátis'}
-                        </span>
-                    </button>
-                </div>
+                {!isAdminMode && (
+                    <div className="mt-8 text-center border-t border-white/5 pt-6">
+                        <button
+                            onClick={() => {
+                                setIsSignUp(!isSignUp)
+                                setMessage(null)
+                            }}
+                            className="text-[11px] text-gray-500 hover:text-white transition-colors uppercase font-bold tracking-tighter"
+                        >
+                            {isSignUp ? 'Já tem uma conta? ' : 'Ainda não tem conta? '}
+                            <span className="text-white ml-2 underline underline-offset-4">
+                                {isSignUp ? 'Entre aqui' : 'Cadastre-se grátis'}
+                            </span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     )

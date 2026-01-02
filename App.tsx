@@ -100,8 +100,17 @@ export default function App() {
         </div>
     );
 
-    if (!user) return <Auth />;
-    if (user.role === UserRole.PSICOLOGO || user.role === UserRole.PSIQUIATRA || user.role === UserRole.ADMIN_CLINICA) return <DoctorPortal user={user} onLogout={storageService.logout} />;
+    const [isAdminPath, setIsAdminPath] = useState(window.location.search.includes('admin=true'));
+
+    useEffect(() => {
+        // Simple listener for URL changes (optional if using a router, but here we use simple state)
+        const checkPath = () => setIsAdminPath(window.location.search.includes('admin=true'));
+        window.addEventListener('popstate', checkPath);
+        return () => window.removeEventListener('popstate', checkPath);
+    }, []);
+
+    if (!user) return <Auth isAdminMode={isAdminPath} />;
+    if (user.role === UserRole.PSICOLOGO || user.role === UserRole.PSIQUIATRA || user.role === UserRole.ADMIN_CLINICA) return <DoctorPortal user={user} onLogout={storageService.logout} isAdminPortal={user.role === UserRole.ADMIN_CLINICA} />;
 
     const t = TRANSLATIONS[lang] || TRANSLATIONS['pt'];
     const latestEntry = entries[0];
