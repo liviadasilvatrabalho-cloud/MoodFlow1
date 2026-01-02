@@ -9,6 +9,7 @@ const mapDbUserToUser = (dbUser: any, authName?: string): User => {
     if (dbUser.role === UserRole.PROFESSIONAL || dbUser.role === 'medico' || dbUser.role === 'professional') role = UserRole.PROFESSIONAL;
     if (dbUser.role === UserRole.PSYCHOLOGIST || dbUser.role === 'psicologo') role = UserRole.PSYCHOLOGIST;
     if (dbUser.role === UserRole.PSYCHIATRIST || dbUser.role === 'psiquiatra') role = UserRole.PSYCHIATRIST;
+    if (dbUser.role === UserRole.CLINIC_ADMIN || dbUser.role === 'ADMIN_CLINICA' || dbUser.role === 'admin_clinica' || dbUser.role === 'admin_clinica') role = UserRole.CLINIC_ADMIN;
     if (dbUser.role === UserRole.PATIENT || dbUser.role === 'paciente' || dbUser.role === 'pessoa') role = UserRole.PATIENT;
 
     // Prioritize DB name if it exists and isn't just "User" default, 
@@ -62,18 +63,17 @@ export const storageService = {
 
                     // NEW: Check if we have a pending role from Auth screen
                     const pendingRole = localStorage.getItem('moodflow_selected_role') as UserRole || UserRole.PATIENT;
-                    localStorage.removeItem('moodflow_selected_role');
 
                     // Fallback using session metadata
                     const fallbackUser: User = {
                         id: sessionUser.id,
                         email: sessionUser.email!,
                         name: sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || 'User',
-                        role: sessionUser.user_metadata?.role || pendingRole,
-                        clinicalRole: 'none',
+                        role: pendingRole || sessionUser.user_metadata?.role || UserRole.PATIENT,
+                        clinicalRole: (pendingRole === UserRole.PSYCHOLOGIST ? 'psychologist' : pendingRole === UserRole.PSYCHIATRIST ? 'psychiatrist' : 'none') as ClinicalRole,
                         clinicRole: 'none',
                         language: 'pt',
-                        roleConfirmed: !!(sessionUser.user_metadata?.role || pendingRole),
+                        roleConfirmed: true,
                         joinedAt: sessionUser.created_at || new Date().toISOString()
                     };
                     callback(fallbackUser);
@@ -81,6 +81,8 @@ export const storageService = {
                     // If it was a first-time login without a profile, save the initial profile now
                     if (!dbUser) {
                         storageService.saveUser(fallbackUser).catch(console.error);
+                        // Only clear after we are sure we tried to save
+                        localStorage.removeItem('moodflow_selected_role');
                     }
                 } else {
                     const mappedUser = mapDbUserToUser(dbUser, sessionUser.user_metadata?.full_name);
@@ -544,6 +546,39 @@ export const storageService = {
         return () => { supabase.removeChannel(channel); };
     },
 
+    getNotes: async (doctorId: string | undefined, patientId: string): Promise<DoctorNote[]> => {
+        let query = supabase
+            .from('doctor_notes')
+            .select('*, profiles:doctor_id(name, role)')
+            .eq('patient_id', patientId)
+            .order('created_at', { ascending: true });
+
+        if (!doctorId) {
+            query = query.eq('is_shared', true);
+        } else {
+            query = query.eq('doctor_id', doctorId);
+        }
+
+        const { data, error } = await query;
+        if (error || !data) return [];
+
+        return data.map((row: any) => ({
+            id: row.id,
+            doctorId: row.doctor_id,
+            doctorName: row.profiles?.name,
+            doctorRole: row.profiles?.role,
+            patientId: row.patient_id,
+            entryId: row.entry_id,
+            threadId: row.thread_id,
+            text: row.text,
+            isShared: row.is_shared,
+            authorRole: row.author_role,
+            read: row.read,
+            status: row.status,
+            createdAt: row.created_at
+        }));
+    },
+
     saveDoctorNote: async (note: DoctorNote) => {
         const dbNote: any = {
             doctor_id: note.doctorId,
@@ -760,13 +795,19 @@ export const storageService = {
 
     // --- CLINIC MANAGEMENT ---
     createClinic: async (name: string, ownerId: string) => { // ownerId ignored in favor of auth.getUser()
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
 
-        if (!user) throw new Error("User not authenticated");
+        if (!authUser) throw new Error("User not authenticated");
+
+        // CHECK PERMISSION: Only CLINIC_ADMIN can create clinics
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', authUser.id).single();
+        if (profile?.role !== UserRole.CLINIC_ADMIN && profile?.role !== 'ADMIN_CLINICA') {
+            throw new Error("Ação não autorizada. Apenas administradores podem criar clínicas.");
+        }
 
         const { data, error } = await supabase.from('clinics').insert({
             name,
-            admin_id: user.id, // Correct column per schema
+            admin_id: authUser.id, // Correct column per schema
             plan_type: 'enterprise'
         }).select().single();
 
@@ -778,7 +819,7 @@ export const storageService = {
         // Auto-add owner as admin member
         await supabase.from('clinic_members').insert({
             clinic_id: data.id,
-            doctor_id: user.id,
+            doctor_id: authUser.id,
             role: 'admin'
         });
 

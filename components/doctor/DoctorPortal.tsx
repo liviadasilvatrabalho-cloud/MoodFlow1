@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MOODS, TRANSLATIONS } from '../../constants';
 import { storageService } from '../../services/storageService';
 import { aiService } from '../../services/aiService';
-import { MoodEntry, User, DoctorNote, Language, UserRole } from '../../types';
+import { MoodEntry, User, DoctorNote, Language, UserRole, Notification } from '../../types';
 import { Button } from '../ui/Button';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { NotificationPanel } from '../ui/NotificationPanel';
 
 interface DoctorPortalProps {
     user: User;
@@ -57,8 +58,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
     const [patients, setPatients] = useState<User[]>([]);
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
     const [patientEntries, setPatientEntries] = useState<MoodEntry[]>([]);
-    const [portalView, setPortalView] = useState<'clinical' | 'administrative'>('clinical');
-    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic'>('dashboard');
+    const [portalView, setPortalView] = useState<'clinical' | 'administrative'>(user.role === UserRole.CLINIC_ADMIN ? 'administrative' : 'clinical');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic'>(user.role === UserRole.CLINIC_ADMIN ? 'clinic' : 'dashboard');
     const [isConnecting, setIsConnecting] = useState(false);
     const [notes, setNotes] = useState<DoctorNote[]>([]);
     const [newNote, setNewNote] = useState('');
@@ -226,7 +227,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
             patientId: selectedPatientId,
             text: newNote,
             isShared: false,
-            authorRole: UserRole.PROFESSIONAL,
+            authorRole: 'PROFESSIONAL',
             read: true,
             createdAt: new Date().toISOString()
         };
@@ -271,8 +272,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
             setEntryComment('');
             setCommentingEntryId(null);
 
-            // Refresh notes for current patient
-            const patientNotes = await storageService.getNotes(undefined, selectedPatientId);
+            // Refresh notes for current patient (Subscription also handles this, but explicit refresh for immediate feedback)
+            const patientNotes = await storageService.getNotes(user.id, selectedPatientId);
             setNotes(patientNotes);
         } catch (err) {
             console.error("Fail to save threaded comment", err);
@@ -553,21 +554,23 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout }) =>
                         </button>
                     </div>
 
-                    {/* Navigation Areas Switcher */}
-                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 mb-4">
-                        <button
-                            onClick={() => { setPortalView('clinical'); setViewMode('dashboard'); setSelectedPatientId(null); }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${portalView === 'clinical' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            <span>🧠</span> Clínica
-                        </button>
-                        <button
-                            onClick={() => { setPortalView('administrative'); setViewMode('clinic'); setSelectedPatientId(null); }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${portalView === 'administrative' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            <span>🏢</span> Adm
-                        </button>
-                    </div>
+                    {/* Navigation Areas Switcher - Visible only to Admins */}
+                    {user.role === UserRole.CLINIC_ADMIN && (
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 mb-4">
+                            <button
+                                onClick={() => { setPortalView('clinical'); setViewMode('dashboard'); setSelectedPatientId(null); }}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${portalView === 'clinical' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                <span>🧠</span> Clínica
+                            </button>
+                            <button
+                                onClick={() => { setPortalView('administrative'); setViewMode('clinic'); setSelectedPatientId(null); }}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${portalView === 'administrative' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                <span>🏢</span> Adm
+                            </button>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-2 text-xs md:text-sm text-textMuted">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>

@@ -4,6 +4,7 @@ export enum UserRole {
   PROFESSIONAL = 'PROFESSIONAL',
   PSYCHOLOGIST = 'PSYCHOLOGIST',
   PSYCHIATRIST = 'PSYCHIATRIST',
+  CLINIC_ADMIN = 'CLINIC_ADMIN',
 }
 
 export type ClinicalRole = 'psychologist' | 'psychiatrist' | 'none';
@@ -42,6 +43,7 @@ export interface MoodEntry {
     triggers: string[];
     summary: string;
   };
+  aiClinicalInsight?: any; // New: Link to ai_clinical_insight in DB
 }
 
 export interface DoctorNote {
@@ -55,6 +57,9 @@ export interface DoctorNote {
   text: string;
   isShared: boolean;
   authorRole: 'PROFESSIONAL' | 'PATIENT';
+  visibility?: 'PRIVATE' | 'PATIENT_VISIBLE'; // New for admin segregation
+  professionalType?: string;
+  parentNoteId?: string;
   read: boolean;
   status?: 'active' | 'resolved' | 'hidden';
   createdAt: string;
@@ -88,6 +93,24 @@ export interface MessageThread {
   professionalId: string;
   specialty: 'psychologist' | 'psychiatrist';
   createdAt: string;
+}
+
+export interface RiskAlert {
+  id: string;
+  doctorId?: string;
+  patientId?: string;
+  entryId?: string;
+  riskLevel: 'high' | 'medium';
+  message: string;
+  isResolved: boolean;
+  createdAt: string;
+}
+
+export interface ViewLog {
+  id: string;
+  viewerId: string;
+  entryId: string;
+  viewedAt: string;
 }
 
 // Recharts data shapes

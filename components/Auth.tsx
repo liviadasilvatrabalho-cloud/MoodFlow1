@@ -58,32 +58,54 @@ export default function Auth() {
 
                 <div className="mb-4 p-1 bg-black/40 rounded-xl border border-white/5 flex gap-1">
                     <button
-                        onClick={() => setRole(UserRole.PATIENT)}
-                        className={`flex-1 py-3 px-4 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 ${role === UserRole.PATIENT
+                        onClick={() => {
+                            setRole(UserRole.PATIENT);
+                            localStorage.setItem('moodflow_selected_role', UserRole.PATIENT);
+                        }}
+                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${role === UserRole.PATIENT
                             ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
                             : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >
                         <span>PACIENTE</span>
-                        <span className="text-[8px] opacity-40 font-mono tracking-tight">Acesso Clínico</span>
+                        <span className="text-[7px] opacity-40 font-mono tracking-tight">Acesso Clínico</span>
                     </button>
                     <button
-                        onClick={() => setRole(UserRole.PROFESSIONAL)} // Sets to generic first, then forces specific choice below
-                        className={`flex-1 py-3 px-4 rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 ${role !== UserRole.PATIENT
+                        onClick={() => {
+                            setRole(UserRole.PROFESSIONAL);
+                            localStorage.setItem('moodflow_selected_role', UserRole.PROFESSIONAL);
+                        }}
+                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${role === UserRole.PROFESSIONAL || role === UserRole.PSYCHOLOGIST || role === UserRole.PSYCHIATRIST
                             ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
                             : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >
-                        <span>PROFISSIONAL</span>
-                        <span className="text-[8px] opacity-40 font-mono tracking-tight">Portal Saúde</span>
+                        <span>SAÚDE</span>
+                        <span className="text-[7px] opacity-40 font-mono tracking-tight">Profissional</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setRole(UserRole.CLINIC_ADMIN);
+                            localStorage.setItem('moodflow_selected_role', UserRole.CLINIC_ADMIN);
+                        }}
+                        className={`flex-1 py-3 px-2 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${role === UserRole.CLINIC_ADMIN
+                            ? 'bg-[#1A1A1A] text-white border border-white/10 shadow-lg'
+                            : 'text-gray-500 hover:text-gray-300'
+                            }`}
+                    >
+                        <span>GESTÃO</span>
+                        <span className="text-[7px] opacity-40 font-mono tracking-tight">Unidade</span>
                     </button>
                 </div>
 
-                {role !== UserRole.PATIENT && (
+                {(role === UserRole.PROFESSIONAL || role === UserRole.PSYCHOLOGIST || role === UserRole.PSYCHIATRIST) && (
                     <div className="mb-8 grid grid-cols-2 gap-2 animate-in slide-in-from-top-2 fade-in duration-300">
                         <button
                             type="button"
-                            onClick={() => setRole(UserRole.PSYCHOLOGIST)}
+                            onClick={() => {
+                                setRole(UserRole.PSYCHOLOGIST);
+                                localStorage.setItem('moodflow_selected_role', UserRole.PSYCHOLOGIST);
+                            }}
                             className={`p-3 rounded-lg border text-xs font-bold transition-all ${role === UserRole.PSYCHOLOGIST
                                 ? 'bg-indigo-900/30 border-indigo-500 text-indigo-300'
                                 : 'bg-[#151515] border-transparent text-gray-500 hover:bg-[#202020]'
@@ -93,7 +115,10 @@ export default function Auth() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => setRole(UserRole.PSYCHIATRIST)}
+                            onClick={() => {
+                                setRole(UserRole.PSYCHIATRIST);
+                                localStorage.setItem('moodflow_selected_role', UserRole.PSYCHIATRIST);
+                            }}
                             className={`p-3 rounded-lg border text-xs font-bold transition-all ${role === UserRole.PSYCHIATRIST
                                 ? 'bg-indigo-900/30 border-indigo-500 text-indigo-300'
                                 : 'bg-[#151515] border-transparent text-gray-500 hover:bg-[#202020]'
@@ -104,7 +129,7 @@ export default function Auth() {
                     </div>
                 )}
 
-                {role !== UserRole.PATIENT && role !== UserRole.PSYCHOLOGIST && role !== UserRole.PSYCHIATRIST && (
+                {role === UserRole.PROFESSIONAL && (
                     <div className="mb-6 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-lg flex items-center gap-2">
                         <svg className="w-4 h-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                         <span className="text-[10px] text-yellow-200 font-bold uppercase">Selecione sua especialidade acima</span>
