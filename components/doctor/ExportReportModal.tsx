@@ -85,36 +85,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                     </div>
 
                     {/* 2. Professional Filter (Only editable if NOT a restricted doctor) */}
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Filtro Profissional</label>
-                            {isDoctor && <span className="text-[10px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">Restrito ao seu cargo</span>}
-                        </div>
-
-                        <div className="flex gap-2 p-1 bg-[#0A0A0A] rounded-xl border border-white/5">
-                            <button
-                                onClick={() => setProfessionalFilter(UserRole.PSICOLOGO)}
-                                disabled={isDoctor && userRole !== UserRole.PSICOLOGO}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${professionalFilter === UserRole.PSICOLOGO ? 'bg-[#8b5cf6] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed'}`}
-                            >
-                                Psicologia
-                            </button>
-                            <button
-                                onClick={() => setProfessionalFilter(UserRole.PSIQUIATRA)}
-                                disabled={isDoctor && userRole !== UserRole.PSIQUIATRA}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${professionalFilter === UserRole.PSIQUIATRA ? 'bg-[#10b981] text-white shadow-lg' : 'text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed'}`}
-                            >
-                                Psiquiatria
-                            </button>
-                            <button
-                                onClick={() => setProfessionalFilter('BOTH')}
-                                disabled={isDoctor}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${professionalFilter === 'BOTH' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed'}`}
-                            >
-                                Ambos
-                            </button>
-                        </div>
-                    </div>
+                    {/* 2. Professional Filter REMOVED as per request */}
 
                     {/* 3. Content Filter */}
                     <div className="space-y-3">
@@ -136,6 +107,40 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                                 <span className="text-sm text-gray-300">Anotações Clínicas</span>
                             </label>
                         </div>
+                    </div>
+                </div>
+
+                {/* Footer with Actions */}
+                <div className="p-6 bg-neutral-900/30 border-t border-white/5 flex flex-col gap-3">
+                    <button
+                        onClick={() => handleExport('PRINT')}
+                        disabled={isExporting}
+                        className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                    >
+                        <span>🖨️</span> Imprimir Relatório
+                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handleExport('PDF')}
+                            disabled={isExporting}
+                            className="flex-1 py-3 bg-red-600/10 text-red-500 font-bold rounded-xl hover:bg-red-600/20 border border-red-600/20 transition-all disabled:opacity-50"
+                        >
+                            PDF
+                        </button>
+                        <button
+                            onClick={() => handleExport('EXCEL')}
+                            disabled={isExporting}
+                            className="flex-1 py-3 bg-green-600/10 text-green-500 font-bold rounded-xl hover:bg-green-600/20 border border-green-600/20 transition-all disabled:opacity-50"
+                        >
+                            Excel
+                        </button>
+                        <button
+                            onClick={() => handleExport('CSV')}
+                            disabled={isExporting}
+                            className="flex-1 py-3 bg-blue-600/10 text-blue-500 font-bold rounded-xl hover:bg-blue-600/20 border border-blue-600/20 transition-all disabled:opacity-50"
+                        >
+                            CSV
+                        </button>
                     </div>
                 </div>
 

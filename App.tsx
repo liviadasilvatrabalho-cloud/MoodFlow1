@@ -1,6 +1,6 @@
 // MoodFlow v2.0.1 - High Fidelity Update
 import React, { useState, useEffect } from 'react';
-import { User, MoodEntry, UserRole, Language, DoctorNote, Notification, MessageThread } from './types';
+import { User, MoodEntry, UserRole, Language, DoctorNote } from './types';
 import { storageService } from './services/storageService';
 import { TRANSLATIONS, MOODS } from './constants';
 import { Analytics } from './components/charts/Analytics';
@@ -9,7 +9,6 @@ import { DoctorPortal } from './components/doctor/DoctorPortal';
 import { Button } from './components/ui/Button';
 import { Sidebar } from './components/ui/Sidebar';
 import { BottomNav } from './components/ui/BottomNav';
-import { NotificationPanel } from './components/ui/NotificationPanel';
 import Auth from './components/Auth';
 import { ConsentSettings } from './components/settings/ConsentSettings';
 
@@ -22,13 +21,8 @@ export default function App() {
     const [entryMode, setEntryMode] = useState<'mood' | 'voice' | 'diary'>('mood');
     const [lang, setLang] = useState<Language>('pt');
     const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([]);
-    const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string, role?: string }[]>([]);
-    const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
     const [replyRecipients, setReplyRecipients] = useState<{ [key: string]: 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH' | null }>({});
-    const [threads, setThreads] = useState<MessageThread[]>([]); // New: Secure threads cache
-    const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isAdminPath, setIsAdminPath] = useState(window.location.search.includes('admin=true'));
 
     useEffect(() => {
@@ -55,10 +49,8 @@ export default function App() {
         if (user && user.role === UserRole.PACIENTE) {
             const unsub = storageService.subscribeEntries(user.id, (data) => setEntries(data));
             const unsubNotes = storageService.subscribeNotes(undefined, user.id, (notes) => {
-                console.log("Notes received:", notes.length);
                 setDoctorNotes(notes);
             });
-            storageService.getAuditLogs(user.id).then(setAuditLogs);
             // FIX 1: Set full objects, not just IDs
             storageService.getConnectedDoctors(user.id).then(docs => setConnectedDoctors(docs));
             return () => { unsub(); unsubNotes(); }
@@ -72,13 +64,61 @@ export default function App() {
         }
     }, [view, user]);
 
-    // Notification Subscription
-    useEffect(() => {
-        if (user) {
-            const unsub = storageService.subscribeNotifications(user.id, (data) => setNotifications(data));
-            return () => unsub();
+
+    const handleSendReply = async (entryId: string, text: string) => {
+        if (!user) return;
+        const val = text.trim();
+        const recipient = replyRecipients[entryId];
+
+        if (!val || !recipient) return;
+
+        const targets: { id: string, specialty: string }[] = [];
+
+        if (recipient === 'PSYCHOLOGIST' || recipient === 'BOTH') {
+            const psych = connectedDoctors.find(d => d.role === UserRole.PSICOLOGO);
+            if (psych) targets.push({ id: psych.id, specialty: UserRole.PSICOLOGO });
         }
-    }, [user]);
+
+        if (recipient === 'PSYCHIATRIST' || recipient === 'BOTH') {
+            const psychi = connectedDoctors.find(d => d.role === UserRole.PSIQUIATRA);
+            if (psychi) targets.push({ id: psychi.id, specialty: UserRole.PSIQUIATRA });
+        }
+
+        if (targets.length === 0) {
+            alert("Médico não encontrado para o cargo selecionado.");
+            return;
+        }
+
+        try {
+            for (const target of targets) {
+                const thread = await storageService.getOrCreateThread(user.id, target.id, target.specialty);
+                const newNote = {
+                    id: crypto.randomUUID(),
+                    doctorId: target.id,
+                    patientId: user.id,
+                    entryId: entryId,
+                    threadId: thread.id,
+                    text: val,
+                    isShared: true,
+                    authorRole: 'PATIENT',
+                    read: false,
+                    status: 'active',
+                    createdAt: new Date().toISOString()
+                };
+                await storageService.saveDoctorNote(newNote as any);
+            }
+
+            // Success: Clear input and recipient
+            const inputEl = document.getElementById(`reply-input-${entryId}`) as HTMLTextAreaElement;
+            if (inputEl) inputEl.value = '';
+
+            setReplyRecipients(prev => ({ ...prev, [entryId]: null }));
+
+        } catch (err: any) {
+            console.error("Failed to send message", err);
+            alert("Erro ao enviar mensagem: " + (err.message || "Tente novamente."));
+        }
+    };
 
     const handleSaveEntry = async (entry: MoodEntry) => {
         if (!user) return;
@@ -89,7 +129,7 @@ export default function App() {
         setShowEntryForm(false);
 
         try {
-            await storageService.addEntry(user.id, entry);
+            await storageService.addEntry(entry);
             console.log("Entry saved successfully to Supabase");
         } catch (error: any) {
             console.error("CRITICAL: Failed to persist entry:", error);
@@ -265,7 +305,7 @@ export default function App() {
                                                 setEntries(prev => prev.map(e => e.id === entry.id ? updatedEntry : e));
 
                                                 // Database Update
-                                                storageService.updateEntry(entry.id, updatedEntry).catch(err => {
+                                                storageService.updateEntry(updatedEntry).catch(err => {
                                                     console.error("Failed to toggle lock:", err);
                                                     setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isLocked: !newStatus } : e)); // Rollback
                                                 });
@@ -372,9 +412,10 @@ export default function App() {
                                                 )}
 
                                                 <textarea
+                                                    id={`reply-input-${entry.id}`}
                                                     disabled={!replyRecipients[entry.id]}
                                                     placeholder={!replyRecipients[entry.id] ? "Selecione um destinatário acima para escrever..." : "Digite sua mensagem..."}
-                                                    className={`w-full bg-[#0A0A0A] border rounded-xl px-4 py-4 text-sm text-white outline-none transition-all placeholder:text-gray-700 resize-none min-h-[80px] ${!replyRecipients[entry.id]
+                                                    className={`w-full bg-[#0A0A0A] border rounded-xl pl-4 pr-14 py-4 text-sm text-white outline-none transition-all placeholder:text-gray-700 resize-none min-h-[80px] ${!replyRecipients[entry.id]
                                                         ? 'border-white/5 cursor-not-allowed opacity-50'
                                                         : replyRecipients[entry.id] === 'PSYCHOLOGIST'
                                                             ? 'border-[#8b5cf6]/50 focus:border-[#8b5cf6] focus:bg-[#8b5cf6]/5'
@@ -382,61 +423,31 @@ export default function App() {
                                                                 ? 'border-[#10b981]/50 focus:border-[#10b981] focus:bg-[#10b981]/5'
                                                                 : 'border-indigo-500/50 focus:border-indigo-500 focus:bg-indigo-500/5'
                                                         }`}
-                                                    onKeyDown={async (e) => {
+                                                    onKeyDown={(e) => {
                                                         if (e.key === 'Enter' && !e.shiftKey) {
                                                             e.preventDefault();
-                                                            const val = e.currentTarget.value.trim();
-                                                            const recipient = replyRecipients[entry.id];
-
-                                                            if (val && recipient) {
-                                                                const targets: { id: string, specialty: string }[] = [];
-
-                                                                if (recipient === 'PSYCHOLOGIST' || recipient === 'BOTH') {
-                                                                    const psych = connectedDoctors.find(d => d.role === UserRole.PSICOLOGO);
-                                                                    if (psych) targets.push({ id: psych.id, specialty: UserRole.PSICOLOGO });
-                                                                }
-
-                                                                if (recipient === 'PSYCHIATRIST' || recipient === 'BOTH') {
-                                                                    const psychi = connectedDoctors.find(d => d.role === UserRole.PSIQUIATRA);
-                                                                    if (psychi) targets.push({ id: psychi.id, specialty: UserRole.PSIQUIATRA });
-                                                                }
-
-                                                                if (targets.length === 0) {
-                                                                    alert("Médico não encontrado para o cargo selecionado.");
-                                                                    return;
-                                                                }
-
-                                                                // Send distinct notes to each target with Thread ID support
-                                                                for (const target of targets) {
-                                                                    try {
-                                                                        const thread = await storageService.getOrCreateThread(user.id, target.id, target.specialty);
-                                                                        const newNote = {
-                                                                            id: crypto.randomUUID(),
-                                                                            doctorId: target.id,
-                                                                            patientId: user.id,
-                                                                            entryId: entry.id,
-                                                                            threadId: thread.id,
-                                                                            text: val,
-                                                                            isShared: true,
-                                                                            authorRole: 'PATIENT',
-                                                                            read: false,
-                                                                            status: 'active',
-                                                                            createdAt: new Date().toISOString()
-                                                                        };
-                                                                        await storageService.saveDoctorNote(newNote as any);
-                                                                    } catch (err) {
-                                                                        console.error("Fail to send threaded message", err);
-                                                                    }
-                                                                }
-
-                                                                e.currentTarget.value = '';
-                                                                setReplyRecipients(prev => ({ ...prev, [entry.id]: null }));
-                                                            }
+                                                            if (e.nativeEvent.isComposing) return;
+                                                            handleSendReply(entry.id, e.currentTarget.value);
                                                         }
                                                     }}
                                                 />
-                                                <div className="absolute right-3 bottom-3 text-[9px] text-gray-600 font-bold uppercase tracking-tight pointer-events-none">
-                                                    Enter p/ enviar • Shift+Enter p/ quebra
+                                                <div className="absolute right-3 bottom-3 flex items-center gap-3">
+                                                    <span className="text-[9px] text-gray-600 font-bold uppercase tracking-tight hidden md:block pointer-events-none">
+                                                        Enter p/ enviar
+                                                    </span>
+                                                    <button
+                                                        onClick={() => {
+                                                            const inputEl = document.getElementById(`reply-input-${entry.id}`) as HTMLTextAreaElement;
+                                                            if (inputEl) handleSendReply(entry.id, inputEl.value);
+                                                        }}
+                                                        disabled={!replyRecipients[entry.id]}
+                                                        className={`p-2 rounded-full transition-all ${!replyRecipients[entry.id] ? 'opacity-0' : 'opacity-100 hover:bg-white/10 active:scale-95'}`}
+                                                        title="Enviar mensagem"
+                                                    >
+                                                        <svg className={`w-4 h-4 ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'text-[#8b5cf6]' : replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'text-[#10b981]' : 'text-indigo-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                                        </svg>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>

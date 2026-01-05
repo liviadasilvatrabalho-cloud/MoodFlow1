@@ -1,14 +1,7 @@
-
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { UserRole } from '../types';
 
 // Mock Storage Service
-const mockUser = {
-    id: 'user-123',
-    email: 'test@example.com',
-    name: 'Test User',
-    role: UserRole.PACIENTE,
-};
 
 describe('Auth & Roles Validation', () => {
     it('should identify a valid Patient role', () => {

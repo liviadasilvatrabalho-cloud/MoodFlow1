@@ -1,7 +1,6 @@
 
 import { MoodEntry, User, DoctorNote, UserRole, Language, ClinicalRole, ClinicRole, Notification, AiInsight, MessageThread } from '../types';
 import { supabase } from './supabaseClient';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 // --- Centralized Role Normalization ---
 const normalizeRole = (rawRole: string | undefined): UserRole => {
@@ -175,8 +174,6 @@ export const storageService = {
     },
 
     saveUser: async (user: User) => {
-        const now = new Date().toISOString();
-
         const { error: profileError } = await supabase.from('profiles').upsert({
             id: user.id,
             email: user.email,
@@ -250,6 +247,7 @@ export const storageService = {
                     .eq('can_view', true);
 
                 const mapped = entriesData.map(row => {
+                    // Optimized: Check local permissions array first, if not available, check join
                     const entryPermissions = permissionsData
                         ? permissionsData.filter(p => p.entry_id === row.id).map(p => p.doctor_id)
                         : [];
@@ -285,7 +283,7 @@ export const storageService = {
         return () => { supabase.removeChannel(channel); };
     },
 
-    addEntry: async (userId: string, entry: MoodEntry) => { // userId arg kept for interface compatibility but we use auth user
+    addEntry: async (entry: MoodEntry) => { // userId derived from auth
         // 1. Force fetch authenticated user to prevent ID spoofing/mismatch
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -330,7 +328,7 @@ export const storageService = {
         }
     },
 
-    updateEntry: async (userId: string, updatedEntry: MoodEntry) => {
+    updateEntry: async (updatedEntry: MoodEntry) => {
         const dbEntry = {
             mood: updatedEntry.mood,
             mood_label: updatedEntry.moodLabel,
@@ -363,9 +361,6 @@ export const storageService = {
         }
     },
 
-    deleteEntry: async (userId: string, entryId: string) => {
-        await supabase.from('entries').delete().eq('id', entryId);
-    },
 
     getEntriesOnce: async (userId: string): Promise<MoodEntry[]> => {
         const { data } = await supabase.from('entries').select('*').eq('user_id', userId).order('date', { ascending: false });
@@ -405,7 +400,7 @@ export const storageService = {
     },
 
     // Legacy method optional, or remove if unused. Kept for safety but unimplemented effectively.
-    getDoctorPatients: async (doctorId: string): Promise<User[]> => {
+    getDoctorPatients: async (): Promise<User[]> => {
         // Deprecated by getMedicalDashboard, but keeping structure if needed
         return [];
     },
@@ -603,7 +598,7 @@ export const storageService = {
         const { data, error } = await supabase.from('doctor_notes').insert(dbNote).select().single();
         if (error) {
             console.error(error);
-            return;
+            throw error;
         }
 
         // AUTO-NOTIFICATION TRIGGER
@@ -624,7 +619,7 @@ export const storageService = {
     // --- NOTIFICATIONS ---
     subscribeNotifications: (userId: string, callback: (notifications: Notification[]) => void) => {
         const fetchNotifications = async () => {
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('notifications')
                 .select('*')
                 .eq('user_id', userId)
@@ -766,7 +761,7 @@ export const storageService = {
     },
 
 
-    markNotesAsRead: async (doctorId: string, patientId: string, viewerRole: 'DOCTOR' | 'PATIENT') => {
+    markNotesAsRead: async (patientId: string, viewerRole: 'DOCTOR' | 'PATIENT') => {
         // Update read status based on viewer
         const targetAuthorRole = viewerRole === 'DOCTOR' ? 'PATIENT' : 'DOCTOR';
 
@@ -803,7 +798,7 @@ export const storageService = {
     },
 
     // --- CLINIC MANAGEMENT ---
-    createClinic: async (name: string, ownerId: string) => { // ownerId ignored in favor of auth.getUser()
+    createClinic: async (name: string) => {
         const { data: { user: authUser } } = await supabase.auth.getUser();
 
         if (!authUser) throw new Error("User not authenticated");
@@ -911,15 +906,6 @@ export const storageService = {
         if (error) console.error("Error creating risk alert:", error);
     },
 
-    getRiskAlerts: async (doctorId: string) => {
-        const { data, error } = await supabase
-            .from('risk_alerts')
-            .select('*, profiles!patient_id(name)')
-            .order('created_at', { ascending: false });
-
-        if (error) return [];
-        return data;
-    },
 
     logView: async (viewerId: string, targetId: string, entityType: string) => {
         await supabase.from('view_logs').insert({

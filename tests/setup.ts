@@ -1,5 +1,4 @@
 import { vi } from 'vitest';
-import { aiService } from '../services/aiService';
 
 // Mock Supabase
 vi.mock('../services/supabaseClient', () => ({

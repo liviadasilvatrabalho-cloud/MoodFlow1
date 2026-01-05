@@ -40,6 +40,13 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
     // Default to sharing with all doctors if not locked.
     const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>(connectedDoctors.map(d => d.id));
 
+    // Sync selectedDoctorIds when connectedDoctors prop updates (Async Fetch Fix)
+    useEffect(() => {
+        if (connectedDoctors.length > 0) {
+            setSelectedDoctorIds(connectedDoctors.map(d => d.id));
+        }
+    }, [connectedDoctors]);
+
     // Voice Handler
     const handleVoiceTranscription = async (transcribedText: string) => {
         setIsAnalyzing(true);
@@ -183,7 +190,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                 {/* Mood Selection Grid */}
                                 <div className="space-y-6">
                                     <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">COMO VOCÊ ESTÁ SE SENTINDO?</label>
-                                    <div className="grid grid-cols-5 gap-2 sm:gap-4">
+                                    <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
                                         {MOODS.map((m) => {
                                             const isSelected = mood === m.value;
                                             return (
@@ -191,13 +198,13 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                                     key={m.value}
                                                     type="button"
                                                     onClick={() => setMood(m.value)}
-                                                    className={`aspect-square flex flex-col items-center justify-center rounded-[28px] transition-all duration-400 border-[2px] ${isSelected
-                                                        ? 'bg-[#1A1A1A] border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.6)] scale-105 z-10'
-                                                        : 'bg-white/5 border-transparent opacity-30 hover:opacity-100 hover:scale-[1.02]'
+                                                    className={`aspect-square flex flex-col items-center justify-center rounded-[22px] transition-all duration-400 border-[1.5px] ${isSelected
+                                                        ? 'bg-[#1A1A1A] border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] scale-[1.05] z-10'
+                                                        : 'bg-white/5 border-transparent opacity-30 hover:opacity-100'
                                                         }`}
                                                 >
-                                                    <span className={`text-3xl sm:text-4xl md:text-5xl mb-2 select-none transform transition-all ${isSelected ? 'scale-110 drop-shadow-lg' : ''}`}>{m.emoji}</span>
-                                                    {isSelected && <span className="text-[9px] sm:text-[11px] font-black uppercase text-white tracking-tighter animate-in fade-in zoom-in-50">{m.label}</span>}
+                                                    <span className={`text-2xl sm:text-4xl mb-1 select-none transform transition-all ${isSelected ? 'scale-110 drop-shadow-md' : ''}`}>{m.emoji}</span>
+                                                    {isSelected && <span className="text-[8px] sm:text-[10px] font-black uppercase text-white tracking-tighter animate-in fade-in zoom-in-50">{m.label}</span>}
                                                 </button>
                                             )
                                         })}
@@ -211,31 +218,33 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                         <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black opacity-90">NÍVEL DE ENERGIA</label>
                                         <span className="text-[#FBBF24] font-black text-2xl sm:text-3xl tracking-tighter drop-shadow-lg">{energy}<span className="text-gray-700 text-sm sm:text-base font-bold ml-1">/10</span></span>
                                     </div>
-                                    <div className="relative pt-6 pb-4 cursor-pointer">
-                                        <div className="h-3 w-full bg-gradient-to-r from-[#EF4444] via-[#FBBF24] to-[#10B981] rounded-full shadow-inner opacity-90" />
+                                    <div className="relative pt-8 pb-6 cursor-pointer group/slider">
+                                        <div className="h-2 w-full bg-gradient-to-r from-[#EF4444] via-[#FBBF24] to-[#10B981] rounded-full shadow-inner opacity-90" />
                                         <input
                                             type="range" min="1" max="10" value={energy}
                                             onChange={(e) => setEnergy(Number(e.target.value))}
-                                            className="absolute top-1/2 -translate-y-1/2 w-full h-12 bg-transparent appearance-none cursor-pointer accent-transparent z-20"
+                                            className="absolute top-1/2 -translate-y-1/2 w-full h-10 bg-transparent appearance-none cursor-pointer accent-transparent z-20"
                                         />
                                         <div
-                                            className="absolute top-1/2 -translate-y-1/2 w-8 h-8 bg-[#8b5cf6] border-[4px] border-white rounded-full shadow-[0_0_20px_-2px_rgba(139,92,246,0.6)] pointer-events-none transition-all duration-100 z-10"
-                                            style={{ left: `calc(${(energy - 1) / 9 * 100}% - 16px)` }}
-                                        />
+                                            className="absolute top-1/2 -translate-y-1/2 w-7 h-7 bg-white border-[3px] border-[#8b5cf6] rounded-full shadow-[0_0_15px_rgba(139,92,246,0.5)] pointer-events-none transition-all duration-75 z-10 flex items-center justify-center"
+                                            style={{ left: `calc(${(energy - 1) / 9 * 100}% - 14px)` }}
+                                        >
+                                            <div className="w-1.5 h-1.5 bg-[#8b5cf6] rounded-full" />
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Tags Pillbox */}
                                 <div className="space-y-6">
                                     <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">TAGS</label>
-                                    <div className="flex flex-wrap gap-3">
+                                    <div className="flex flex-wrap gap-2 sm:gap-2.5">
                                         {[...ACTIVITIES, ...SYMPTOMS].map(tag => (
                                             <button
                                                 key={tag}
                                                 type="button"
                                                 onClick={() => toggleTag(tag)}
-                                                className={`px-6 py-3 rounded-2xl text-[13px] font-black transition-all border-2 duration-300 ${selectedTags.includes(tag)
-                                                    ? 'bg-white text-black border-white shadow-[0_8px_20px_rgba(255,255,255,0.2)]'
+                                                className={`px-4 py-2 rounded-xl text-[11px] font-black transition-all border duration-300 ${selectedTags.includes(tag)
+                                                    ? 'bg-white text-black border-white shadow-[0_4px_12px_rgba(255,255,255,0.15)]'
                                                     : 'bg-[#1A1A1A] border-white/5 text-[#9CA3AF] hover:text-white hover:border-white/20'
                                                     }`}
                                             >
@@ -257,7 +266,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                 )}
                             </label>
                             <textarea
-                                className={`w-full bg-[#0A0A0A] border-[2px] border-white/5 rounded-[32px] p-8 text-[#F3F4F6] placeholder-gray-700 focus:outline-none focus:border-white/10 focus:ring-4 focus:ring-white/[0.02] transition-all resize-none shadow-inner leading-relaxed font-medium text-base ${mode === 'diary' ? 'h-[400px]' : 'h-[160px]'
+                                className={`w-full bg-[#0A0A0A] border-[1.5px] border-white/5 rounded-[24px] p-5 sm:p-6 text-[#F3F4F6] placeholder-gray-700 focus:outline-none focus:border-white/10 focus:ring-4 focus:ring-white/[0.01] transition-all resize-none shadow-inner leading-relaxed font-medium text-sm sm:text-base ${mode === 'diary' ? 'h-[300px] sm:h-[400px]' : 'h-[140px]'
                                     }`}
                                 placeholder={mode === 'diary' ? 'Como foi o seu dia? Escreva livremente sobre seus sentimentos e eventos...' : 'Algo a acrescentar?'}
                                 value={text}

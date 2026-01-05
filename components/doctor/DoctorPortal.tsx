@@ -2,13 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MOODS, TRANSLATIONS } from '../../constants';
 import { storageService } from '../../services/storageService';
 import { aiService } from '../../services/aiService';
-import { MoodEntry, User, DoctorNote, Language, UserRole, Notification } from '../../types';
+import { MoodEntry, User, DoctorNote, Language, UserRole } from '../../types';
 import { Button } from '../ui/Button';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { NotificationPanel } from '../ui/NotificationPanel';
 
 interface DoctorPortalProps {
     user: User;
@@ -68,8 +67,6 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const chartScrollRef = useRef<HTMLDivElement>(null);
 
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const [isRecording, setIsRecording] = useState(false);
 
@@ -140,14 +137,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             // Notes (Realtime)
             const unsubNotes = storageService.subscribeNotes(user.id, selectedPatientId, (data) => {
                 setNotes(data);
-                console.log("Doctor received notes:", data.length);
             });
 
             // Fetch Charts from 'charts' table (New!)
             loadPatientCharts(selectedPatientId);
 
             // Mark Read
-            storageService.markNotesAsRead(user.id, selectedPatientId, 'DOCTOR');
+            storageService.markNotesAsRead(selectedPatientId, 'DOCTOR');
 
             // Reset AI Summary on patient change
             setAiSummary(null);
@@ -457,18 +453,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         }
     };
 
-    useEffect(() => {
-        if (user) {
-            const unsub = storageService.subscribeNotifications(user.id, (data) => setNotifications(data));
-            return () => unsub();
-        }
-    }, [user]);
 
     const handleCreateClinic = async () => {
         if (!newClinicName.trim()) return;
         setIsCreatingClinic(true);
         try {
-            await storageService.createClinic(newClinicName, user.id);
+            await storageService.createClinic(newClinicName);
             setNewClinicName('');
             const updated = await storageService.getClinics(user.id);
             setClinics(updated);
@@ -481,37 +471,52 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         }
     };
 
-    const getFilteredEntries = () => {
-        // Filter out patientEntries with null mood for the chart (Diary/Voice)
-        const validEntries = patientEntries.filter(e => {
-            const isMood = e.entryMode === 'mood' || (!e.entryMode && e.mood !== null);
-            return isMood && e.mood !== null && e.mood !== undefined;
-        });
-        const sorted = [...validEntries].sort((a, b) => a.timestamp - b.timestamp);
+    // Unified filtering logic for both Chart and List
+    const getEntriesForSelectedPeriod = () => {
+        const sorted = [...patientEntries].sort((a, b) => b.timestamp - a.timestamp); // Descending for list (newest first)
 
         if (chartViewMode === 'day') {
             return sorted.filter(e => {
-                const d = new Date(e.timestamp);
-                const offset = d.getTimezoneOffset() * 60000;
-                const localISODate = new Date(d.getTime() - offset).toISOString().slice(0, 10);
-                return localISODate === selectedDate;
+                const d = new Date(e.timestamp); // Local browser time derived from timestamp
+                // Construct YYYY-MM-DD in local time explicitely
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const localDateStr = `${year}-${month}-${day}`;
+
+                return localDateStr === selectedDate;
             });
         } else if (chartViewMode === 'month') {
             return sorted.filter(e => {
                 const d = new Date(e.timestamp);
-                const offset = d.getTimezoneOffset() * 60000;
-                const localISOMonth = new Date(d.getTime() - offset).toISOString().slice(0, 7);
-                return localISOMonth === selectedMonth;
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const localMonthStr = `${year}-${month}`;
+
+                return localMonthStr === selectedMonth;
             });
         } else {
+            // Week View (Default)
             const now = new Date();
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-            const sevenDaysAgo = startOfToday - (7 * 24 * 60 * 60 * 1000);
+            // Include today + last 6 days = 7 days total range
+            const sevenDaysAgo = startOfToday - (6 * 24 * 60 * 60 * 1000);
             return sorted.filter(e => e.timestamp >= sevenDaysAgo);
         }
     };
 
-    const filteredChartData = getFilteredEntries().map(e => {
+    const periodEntries = getEntriesForSelectedPeriod();
+
+    // Chart needs Ascending order + Moods only
+    const getChartEntries = () => {
+        const reversed = [...periodEntries].reverse(); // Ascending for chart
+        return reversed.filter(e => {
+            const isMood = e.entryMode === 'mood' || (!e.entryMode && e.mood !== null);
+            return isMood && e.mood !== null && e.mood !== undefined;
+        });
+    };
+
+    const filteredChartData = getChartEntries().map(e => {
         const d = new Date(e.timestamp);
         const moodVal = Number(e.mood);
         const moodObj = MOODS.find(m => m.value === moodVal);
@@ -645,32 +650,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
                 <div className="hidden md:block p-4 border-t border-neutral-800">
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setIsNotificationPanelOpen(true)}
-                            className="relative p-2 rounded-xl bg-surface/50 border border-white/5 hover:bg-surface transition-all group"
-                        >
-                            <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                            </svg>
-                            {notifications.filter(n => !n.readAt).length > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-500 text-[9px] font-black items-center justify-center text-white">
-                                        {notifications.filter(n => !n.readAt).length}
-                                    </span>
-                                </span>
-                            )}
-                        </button>
                         <Button variant="outline" className="h-10 text-xs gap-2 border-white/5" onClick={onLogout}>
                             Logout
                         </Button>
                     </div>
 
-                    <NotificationPanel
-                        userId={user.id}
-                        isOpen={isNotificationPanelOpen}
-                        onClose={() => setIsNotificationPanelOpen(false)}
-                    />
                 </div>
             </aside>
 
@@ -733,7 +717,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                 {viewMode === 'dashboard' && selectedPatientId && (
                                     <div className="text-right">
                                         <div className="text-[10px] font-bold text-textMuted uppercase tracking-wider">{t.visibleEntries}</div>
-                                        <div className="text-2xl md:text-3xl font-light text-white">{patientEntries.length}</div>
+                                        <div className="text-2xl md:text-3xl font-light text-white">{periodEntries.length}</div>
                                     </div>
                                 )}
                             </div>
@@ -1028,7 +1012,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             <div>
                                                 <h3 className="text-sm font-bold text-textMuted uppercase mb-4 tracking-wider">{t.visibleEntries}</h3>
                                                 <div className="space-y-3">
-                                                    {patientEntries.length === 0 ? <p className="text-neutral-600 italic">No unlocked entries.</p> : patientEntries.slice(0, 10).map(entry => {
+                                                    {periodEntries.length === 0 ? <p className="text-neutral-600 italic">No entries for this period.</p> : periodEntries.map(entry => {
                                                         const moodObj = entry.mood ? MOODS.find(m => m.value === entry.mood) : null;
                                                         const entryNotes = notes.filter(n => n.entryId === entry.id);
 
