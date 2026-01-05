@@ -249,14 +249,15 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
         const currentComment = entryComment;
         try {
-            // Get or Create Thread for this specific pair/specialty
-            const thread = await storageService.getOrCreateThread(selectedPatientId, user.id, user.clinicalRole || 'psychologist');
+            // Normalize clinical role to what DB expects (uppercase)
+            const specialty = (user.clinicalRole === 'psychologist' || user.clinicalRole === 'PSICOLOGO') ? 'PSICOLOGO' : 'PSIQUIATRA';
+            const thread = await storageService.getOrCreateThread(selectedPatientId, user.id, specialty);
 
             const newNote: DoctorNote = {
                 id: crypto.randomUUID(),
                 doctorId: user.id,
                 doctorName: user.name,
-                doctorRole: user.clinicalRole === 'psychologist' ? UserRole.PSICOLOGO : UserRole.PSIQUIATRA,
+                doctorRole: (user.clinicalRole === 'psychologist' || user.clinicalRole === 'PSICOLOGO') ? UserRole.PSICOLOGO : UserRole.PSIQUIATRA,
                 patientId: selectedPatientId,
                 entryId,
                 threadId: thread.id,
@@ -1029,9 +1030,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                     {entryNotes.length > 0 && (
                                                                         <div className="mt-4 space-y-3 border-t border-white/5 pt-3">
                                                                             {entryNotes.map(note => (
-                                                                                <div key={note.id} className={`flex flex-col ${note.authorRole === 'PATIENT' ? 'items-start' : 'items-end'}`}>
-                                                                                    <div className={`max-w-[85%] p-2 rounded-xl text-xs break-words overflow-hidden [overflow-wrap:anywhere] whitespace-pre-wrap ${note.authorRole === 'PATIENT' ? 'bg-neutral-800 text-gray-300' : 'bg-blue-900/30 text-blue-100 border border-blue-900/50'}`}>
-                                                                                        <span className="font-bold block text-[10px] opacity-50 mb-1">{note.authorRole === 'PATIENT' ? (patients.find(p => p.id === selectedPatientId)?.name || 'Paciente') : 'Dr. ' + user.name}</span>
+                                                                                <div key={note.id} className={`flex flex-col ${(note.authorRole === 'PATIENT' || note.authorRole === 'PACIENTE') ? 'items-start' : 'items-end'}`}>
+                                                                                    <div className={`max-w-[85%] p-2 rounded-xl text-xs break-words overflow-hidden [overflow-wrap:anywhere] whitespace-pre-wrap ${(note.authorRole === 'PATIENT' || note.authorRole === 'PACIENTE') ? 'bg-neutral-800 text-gray-300' : 'bg-blue-900/30 text-blue-100 border border-blue-900/50'}`}>
+                                                                                        <span className="font-bold block text-[10px] opacity-50 mb-1">{(note.authorRole === 'PATIENT' || note.authorRole === 'PACIENTE') ? (patients.find(p => p.id === selectedPatientId)?.name || 'Paciente') : 'Dr. ' + user.name}</span>
                                                                                         {note.text}
                                                                                     </div>
                                                                                 </div>
