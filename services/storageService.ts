@@ -529,7 +529,7 @@ export const storageService = {
                     entryId: row.entry_id,
                     text: row.text,
                     isShared: row.is_shared,
-                    authorRole: 'PROFISSIONAL',
+                    authorRole: row.author_role,
                     read: row.read,
                     status: row.status,
                     createdAt: row.created_at

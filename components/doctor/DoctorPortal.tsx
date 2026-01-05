@@ -1031,7 +1031,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                             {entryNotes.map(note => (
                                                                                 <div key={note.id} className={`flex flex-col ${note.authorRole === 'PATIENT' ? 'items-start' : 'items-end'}`}>
                                                                                     <div className={`max-w-[85%] p-2 rounded-xl text-xs break-words overflow-hidden [overflow-wrap:anywhere] whitespace-pre-wrap ${note.authorRole === 'PATIENT' ? 'bg-neutral-800 text-gray-300' : 'bg-blue-900/30 text-blue-100 border border-blue-900/50'}`}>
-                                                                                        <span className="font-bold block text-[10px] opacity-50 mb-1">{note.authorRole === 'PATIENT' ? 'Patient Reply' : 'Dr. ' + user.name}</span>
+                                                                                        <span className="font-bold block text-[10px] opacity-50 mb-1">{note.authorRole === 'PATIENT' ? (patients.find(p => p.id === selectedPatientId)?.name || 'Paciente') : 'Dr. ' + user.name}</span>
                                                                                         {note.text}
                                                                                     </div>
                                                                                 </div>
