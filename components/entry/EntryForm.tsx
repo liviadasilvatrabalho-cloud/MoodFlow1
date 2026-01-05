@@ -219,18 +219,12 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                         <span className="text-[#FBBF24] font-black text-2xl sm:text-3xl tracking-tighter drop-shadow-lg">{energy}<span className="text-gray-700 text-sm sm:text-base font-bold ml-1">/10</span></span>
                                     </div>
                                     <div className="relative pt-8 pb-6 cursor-pointer group/slider">
-                                        <div className="h-2 w-full bg-gradient-to-r from-[#EF4444] via-[#FBBF24] to-[#10B981] rounded-full shadow-inner opacity-90" />
+                                        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-2 bg-gradient-to-r from-[#EF4444] via-[#FBBF24] to-[#10B981] rounded-full shadow-inner opacity-90 pointer-events-none" />
                                         <input
                                             type="range" min="1" max="10" value={energy}
                                             onChange={(e) => setEnergy(Number(e.target.value))}
-                                            className="absolute top-1/2 -translate-y-1/2 w-full h-10 bg-transparent appearance-none cursor-pointer accent-transparent z-20"
+                                            className="relative w-full h-10 bg-transparent appearance-none cursor-pointer z-20 energy-range-input focus:outline-none"
                                         />
-                                        <div
-                                            className="absolute top-1/2 -translate-y-1/2 w-7 h-7 bg-white border-[3px] border-[#8b5cf6] rounded-full shadow-[0_0_15px_rgba(139,92,246,0.5)] pointer-events-none transition-all duration-75 z-10 flex items-center justify-center"
-                                            style={{ left: `calc(${(energy - 1) / 9 * 100}% - 14px)` }}
-                                        >
-                                            <div className="w-1.5 h-1.5 bg-[#8b5cf6] rounded-full" />
-                                        </div>
                                     </div>
                                 </div>
 
@@ -418,6 +412,32 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                 @media (max-width: 640px) {
                     .bg-[#121212] { border-radius: 0; max-height: 100dvh; height: 100dvh; }
                     .rounded-[40px] { border-radius: 0; }
+                }
+
+                .energy-range-input::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, #8b5cf6 25%, white 26%);
+                    border: 3px solid #8b5cf6;
+                    box-shadow: 0 0 15px rgba(139,92,246,0.5);
+                    cursor: pointer;
+                    transition: transform 0.1s;
+                }
+                .energy-range-input::-webkit-slider-thumb:hover {
+                    transform: scale(1.1);
+                }
+                .energy-range-input::-moz-range-thumb {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, #8b5cf6 25%, white 26%);
+                    border: 3px solid #8b5cf6;
+                    box-shadow: 0 0 15px rgba(139,92,246,0.5);
+                    cursor: pointer;
+                    transition: transform 0.1s;
                 }
             `}} />
         </div>
