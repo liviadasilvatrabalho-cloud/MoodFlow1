@@ -544,16 +544,16 @@ export default function App() {
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">Idioma</span>
-                                            <div className="grid grid-cols-4 gap-3 mt-2">
+                                            <div className="flex flex-wrap gap-2 mt-2">
                                                 {[
-                                                    { code: 'pt', label: 'Português', flag: '🇧🇷' },
-                                                    { code: 'en', label: 'English', flag: '🇺🇸' },
-                                                    { code: 'es', label: 'Español', flag: '🇪🇸' },
-                                                    { code: 'fr', label: 'Français', flag: '🇫🇷' },
-                                                    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-                                                    { code: 'ja', label: '日本語', flag: '🇯🇵' },
-                                                    { code: 'zh', label: '中文', flag: '🇨🇳' },
-                                                    { code: 'ar', label: 'العربية', flag: '🇦🇪' }
+                                                    { code: 'pt', label: 'PT', flag: '🇧🇷' },
+                                                    { code: 'en', label: 'EN', flag: '🇺🇸' },
+                                                    { code: 'es', label: 'ES', flag: '🇪🇸' },
+                                                    { code: 'fr', label: 'FR', flag: '🇫🇷' },
+                                                    { code: 'de', label: 'DE', flag: '🇩🇪' },
+                                                    { code: 'ja', label: 'JP', flag: '🇯🇵' },
+                                                    { code: 'zh', label: 'CN', flag: '🇨🇳' },
+                                                    { code: 'ar', label: 'AE', flag: '🇦🇪' }
                                                 ].map(l => (
                                                     <button
                                                         key={l.code}
@@ -563,13 +563,13 @@ export default function App() {
                                                                 storageService.saveUser({ ...user, language: l.code as Language }).catch(console.error);
                                                             }
                                                         }}
-                                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all gap-2 ${lang === l.code
-                                                            ? 'bg-white text-black border-white shadow-lg scale-105'
-                                                            : 'bg-[#1A1A1A] text-gray-400 border-white/5 hover:bg-[#222] hover:border-white/10 hover:text-white'
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${lang === l.code
+                                                            ? 'bg-white text-black border-white shadow-sm'
+                                                            : 'bg-transparent text-gray-500 border-white/10 hover:border-white/30 hover:text-gray-300'
                                                             }`}
                                                     >
-                                                        <span className="text-2xl filter drop-shadow-lg">{l.flag}</span>
-                                                        <span className="text-[9px] font-black uppercase tracking-widest text-center">{l.label}</span>
+                                                        <span className="text-sm">{l.flag}</span>
+                                                        <span className="tracking-wider">{l.label}</span>
                                                     </button>
                                                 ))}
                                             </div>
