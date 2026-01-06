@@ -275,8 +275,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             // Refresh notes for current patient (Subscription also handles this, but explicit refresh for immediate feedback)
             const patientNotes = await storageService.getNotes(user.id, selectedPatientId);
             setNotes(patientNotes);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Fail to save threaded comment", err);
+            alert("Falha ao enviar mensagem: " + (err.message || "Erro desconhecido"));
             setEntryComment(currentComment);
         }
     };
