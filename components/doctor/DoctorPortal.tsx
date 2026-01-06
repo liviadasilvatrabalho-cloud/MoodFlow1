@@ -183,21 +183,37 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
         if (isRecording) {
             recognitionRef.current?.stop();
-            setIsRecording(false);
+            // State cleanup happens in onend
         } else {
             const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
             recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = false;
+            recognitionRef.current.continuous = true;
             recognitionRef.current.interimResults = false;
             recognitionRef.current.lang = lang === 'pt' ? 'pt-BR' : 'en-US';
 
             recognitionRef.current.onresult = (event: any) => {
-                const transcript = event.results[0][0].transcript;
-                if (commentingEntryId) {
-                    setEntryComment(prev => prev + ' ' + transcript);
-                } else {
-                    setNewNote(prev => prev + ' ' + transcript);
+                let newTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        newTranscript += event.results[i][0].transcript + ' ';
+                    }
                 }
+
+                if (newTranscript) {
+                    if (commentingEntryId) {
+                        setEntryComment(prev => (prev + ' ' + newTranscript).replace(/\s+/g, ' '));
+                    } else {
+                        setNewNote(prev => (prev + ' ' + newTranscript).replace(/\s+/g, ' '));
+                    }
+                }
+            };
+
+            recognitionRef.current.onend = () => {
+                setIsRecording(false);
+            };
+
+            recognitionRef.current.onerror = (event: any) => {
+                console.error("Speech recognition error", event.error);
                 setIsRecording(false);
             };
 
