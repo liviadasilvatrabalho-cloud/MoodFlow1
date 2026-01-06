@@ -544,10 +544,32 @@ export default function App() {
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">Idioma</span>
-                                            <div className="flex gap-2">
-                                                {['pt', 'en'].map(l => (
-                                                    <button key={l} onClick={() => setLang(l as Language)} className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${lang === l ? 'bg-white text-black' : 'text-gray-600 hover:text-white'}`}>
-                                                        {l}
+                                            <div className="grid grid-cols-4 gap-3 mt-2">
+                                                {[
+                                                    { code: 'pt', label: 'Português', flag: '🇧🇷' },
+                                                    { code: 'en', label: 'English', flag: '🇺🇸' },
+                                                    { code: 'es', label: 'Español', flag: '🇪🇸' },
+                                                    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+                                                    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+                                                    { code: 'ja', label: '日本語', flag: '🇯🇵' },
+                                                    { code: 'zh', label: '中文', flag: '🇨🇳' },
+                                                    { code: 'ar', label: 'العربية', flag: '🇦🇪' }
+                                                ].map(l => (
+                                                    <button
+                                                        key={l.code}
+                                                        onClick={() => {
+                                                            setLang(l.code as Language);
+                                                            if (user) {
+                                                                storageService.saveUser({ ...user, language: l.code as Language }).catch(console.error);
+                                                            }
+                                                        }}
+                                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all gap-2 ${lang === l.code
+                                                            ? 'bg-white text-black border-white shadow-lg scale-105'
+                                                            : 'bg-[#1A1A1A] text-gray-400 border-white/5 hover:bg-[#222] hover:border-white/10 hover:text-white'
+                                                            }`}
+                                                    >
+                                                        <span className="text-2xl filter drop-shadow-lg">{l.flag}</span>
+                                                        <span className="text-[9px] font-black uppercase tracking-widest text-center">{l.label}</span>
                                                     </button>
                                                 ))}
                                             </div>

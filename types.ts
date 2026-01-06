@@ -9,7 +9,7 @@ export enum UserRole {
 export type ClinicalRole = 'PSICOLOGO' | 'PSIQUIATRA' | 'none';
 export type ClinicRole = 'admin' | 'member' | 'none';
 
-export type Language = 'pt' | 'en' | 'es' | 'fr';
+export type Language = 'pt' | 'en' | 'es' | 'fr' | 'de' | 'ja' | 'zh' | 'ar';
 
 export interface User {
   id: string;
