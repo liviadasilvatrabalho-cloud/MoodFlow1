@@ -24,6 +24,8 @@ export default function App() {
     const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string, role?: string }[]>([]);
     const [replyRecipients, setReplyRecipients] = useState<{ [key: string]: 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH' | null }>({});
     const [isAdminPath, setIsAdminPath] = useState(window.location.search.includes('admin=true'));
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [tempName, setTempName] = useState('');
 
     useEffect(() => {
         // Simple listener for URL changes (optional if using a router, but here we use simple state)
@@ -480,10 +482,58 @@ export default function App() {
                                 <div className="bg-[#0D0D0D] p-8 rounded-[36px] border border-white/5 space-y-8 shadow-2xl">
                                     <div className="flex items-center gap-6">
                                         <div className="w-16 h-16 rounded-[24px] bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#7c3aed]/20">
-                                            {(user.name || '?')[0].toUpperCase()}
+                                            {((user.name || '?')[0]).toUpperCase()}
                                         </div>
-                                        <div className="space-y-1">
-                                            <h3 className="text-2xl font-black text-white tracking-tight">{user.name}</h3>
+                                        <div className="space-y-1 flex-1">
+                                            {isEditingName ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={tempName}
+                                                        onChange={(e) => setTempName(e.target.value)}
+                                                        className="bg-[#1A1A1A] border border-white/10 rounded-xl px-3 py-1.5 text-white font-black text-lg focus:outline-none focus:border-[#8b5cf6]"
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!tempName.trim()) return;
+                                                            try {
+                                                                const updatedUser = { ...user, name: tempName.trim() };
+                                                                await storageService.saveUser(updatedUser);
+                                                                setUser(updatedUser);
+                                                                setIsEditingName(false);
+                                                            } catch (e) {
+                                                                alert("Erro ao salvar nome. Tente novamente.");
+                                                            }
+                                                        }}
+                                                        className="p-2 bg-[#8b5cf6] rounded-lg text-white hover:bg-[#7c3aed] transition-all"
+                                                        title="Salvar"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIsEditingName(false)}
+                                                        className="p-2 bg-[#1A1A1A] rounded-lg text-gray-400 hover:text-white transition-all"
+                                                        title="Cancelar"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-3 group">
+                                                    <h3 className="text-2xl font-black text-white tracking-tight">{user.name}</h3>
+                                                    <button
+                                                        onClick={() => {
+                                                            setTempName(user.name);
+                                                            setIsEditingName(true);
+                                                        }}
+                                                        className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-[#8b5cf6] transition-all rounded-lg hover:bg-white/5"
+                                                        title="Editar nome"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                    </button>
+                                                </div>
+                                            )}
                                             <p className="text-sm text-gray-500 font-medium">{user.email}</p>
                                         </div>
                                     </div>
