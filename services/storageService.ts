@@ -303,6 +303,8 @@ export const storageService = {
             text: entry.text,
             tags: entry.tags,
             is_locked: entry.isLocked,
+            visible_to_psychologist: entry.visible_to_psychologist,
+            visible_to_psychiatrist: entry.visible_to_psychiatrist,
             ai_analysis: {
                 ...entry.aiAnalysis,
                 entry_mode: entry.entryMode
@@ -336,6 +338,8 @@ export const storageService = {
             text: updatedEntry.text,
             tags: updatedEntry.tags,
             is_locked: updatedEntry.isLocked,
+            visible_to_psychologist: updatedEntry.visible_to_psychologist,
+            visible_to_psychiatrist: updatedEntry.visible_to_psychiatrist,
             ai_analysis: {
                 ...updatedEntry.aiAnalysis,
                 entry_mode: updatedEntry.entryMode
@@ -371,6 +375,8 @@ export const storageService = {
             timestamp: new Date(row.date).getTime(),
             moodLabel: row.mood_label,
             isLocked: row.is_locked,
+            visible_to_psychologist: row.visible_to_psychologist,
+            visible_to_psychiatrist: row.visible_to_psychiatrist,
             entryMode: row.ai_analysis?.entry_mode || (row.mood === null ? 'diary' : 'mood'),
             aiAnalysis: row.ai_analysis
         })) as MoodEntry[];

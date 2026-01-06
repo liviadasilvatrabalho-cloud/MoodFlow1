@@ -47,6 +47,9 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
         }
     }, [connectedDoctors]);
 
+    const [visiblePsychologist, setVisiblePsychologist] = useState(true);
+    const [visiblePsychiatrist, setVisiblePsychiatrist] = useState(true);
+
     // Voice Handler
     const handleVoiceTranscription = async (transcribedText: string) => {
         setIsAnalyzing(true);
@@ -96,6 +99,8 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
             tags: mode === 'mood' ? selectedTags : [],
             isLocked: permissionsToSave.length === 0, // If no doctors selected, it's private/locked
             permissions: permissionsToSave,
+            visible_to_psychologist: !isLocked ? visiblePsychologist : null,
+            visible_to_psychiatrist: !isLocked ? visiblePsychiatrist : null,
             entryMode: mode
         };
 
@@ -270,59 +275,44 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
 
                         {/* Permission Sharing (Granular) */}
                         {/* Permission Sharing (Simplified) */}
-                        {connectedDoctors.length > 0 && (
-                            <div className="space-y-6 pt-4 animate-in fade-in duration-500">
-                                <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">QUEM PODE VER ESTE REGISTRO?</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {/* Option 1: Only Me */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedDoctorIds([])}
-                                        className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length === 0 ? 'bg-white text-black border-white shadow-xl scale-[1.02]' : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-white/10'}`}
-                                    >
-                                        <div className="font-black text-sm uppercase tracking-wider mb-1">🔒 Somente Eu</div>
-                                        <div className="text-[11px] opacity-70 font-medium">Nenhum profissional terá acesso</div>
-                                    </button>
+                        {/* Permission Sharing (Granular - New) */}
+                        {!isLocked && connectedDoctors.length > 0 && (
+                            <div className="space-y-4 pt-4 animate-in fade-in duration-500 border-t border-white/5">
+                                <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90 block mb-3">
+                                    QUEM PODE VER ESTE REGISTRO?
+                                </label>
+                                <div className="flex flex-col gap-3">
+                                    <label className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
+                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychologist ? 'bg-indigo-500 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.4)]' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                                            {visiblePsychologist && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            className="hidden"
+                                            checked={visiblePsychologist}
+                                            onChange={(e) => setVisiblePsychologist(e.target.checked)}
+                                        />
+                                        <div className="flex flex-col">
+                                            <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychologist ? 'text-white' : 'text-gray-500'}`}>Psicólogo</span>
+                                            <span className="text-[10px] text-gray-500 font-medium">Compartilhar com seu terapeuta</span>
+                                        </div>
+                                    </label>
 
-                                    {/* Option 2: Psychologist (if exists) */}
-                                    {connectedDoctors.some(d => d.role === 'PSYCHOLOGIST') && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedDoctorIds(connectedDoctors.filter(d => d.role === 'PSYCHOLOGIST').map(d => d.id))}
-                                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length > 0 && selectedDoctorIds.every(id => connectedDoctors.find(d => d.id === id)?.role === 'PSYCHOLOGIST')
-                                                ? 'bg-indigo-500 text-white border-indigo-500 shadow-xl scale-[1.02]'
-                                                : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-indigo-500/30'}`}
-                                        >
-                                            <div className="font-black text-sm uppercase tracking-wider mb-1 flex items-center gap-2">🧠 Meu Psicólogo</div>
-                                            <div className="text-[11px] opacity-70 font-medium">Compartilhar e permitir comentários</div>
-                                        </button>
-                                    )}
-
-                                    {/* Option 3: Psychiatrist (if exists) */}
-                                    {connectedDoctors.some(d => d.role === 'PSYCHIATRIST') && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedDoctorIds(connectedDoctors.filter(d => d.role === 'PSYCHIATRIST').map(d => d.id))}
-                                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length > 0 && selectedDoctorIds.every(id => connectedDoctors.find(d => d.id === id)?.role === 'PSYCHIATRIST')
-                                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-xl scale-[1.02]'
-                                                : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-emerald-500/30'}`}
-                                        >
-                                            <div className="font-black text-sm uppercase tracking-wider mb-1 flex items-center gap-2">💊 Meu Psiquiatra</div>
-                                            <div className="text-[11px] opacity-70 font-medium">Compartilhar e permitir comentários</div>
-                                        </button>
-                                    )}
-
-                                    {/* Option 4: Both (if both exist) */}
-                                    {connectedDoctors.some(d => d.role === 'PSYCHIATRIST') && connectedDoctors.some(d => d.role === 'PSYCHOLOGIST') && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedDoctorIds(connectedDoctors.map(d => d.id))}
-                                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-300 ${selectedDoctorIds.length === connectedDoctors.length ? 'bg-purple-600 text-white border-purple-600 shadow-xl scale-[1.02]' : 'bg-[#0A0A0A] border-white/5 text-gray-500 hover:border-purple-600/30'}`}
-                                        >
-                                            <div className="font-black text-sm uppercase tracking-wider mb-1">👥 Ambos</div>
-                                            <div className="text-[11px] opacity-70 font-medium">Visível para toda a equipe</div>
-                                        </button>
-                                    )}
+                                    <label className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
+                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychiatrist ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                                            {visiblePsychiatrist && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            className="hidden"
+                                            checked={visiblePsychiatrist}
+                                            onChange={(e) => setVisiblePsychiatrist(e.target.checked)}
+                                        />
+                                        <div className="flex flex-col">
+                                            <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychiatrist ? 'text-white' : 'text-gray-500'}`}>Psiquiatra</span>
+                                            <span className="text-[10px] text-gray-500 font-medium">Compartilhar com a equipe médica</span>
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
                         )}
