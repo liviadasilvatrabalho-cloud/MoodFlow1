@@ -603,13 +603,14 @@ export const storageService = {
 
         // AUTO-NOTIFICATION TRIGGER
         if (note.isShared && data) {
-            const recipientId = note.authorRole === 'PROFISSIONAL' ? note.patientId : note.doctorId;
-            const senderName = note.authorRole === 'PROFISSIONAL' ? (note.doctorName || 'Seu Profissional') : 'Paciente';
+            const isProfessional = note.authorRole !== 'PACIENTE';
+            const recipientId = isProfessional ? note.patientId : note.doctorId;
+            const senderName = isProfessional ? (note.doctorName || 'Seu Profissional') : 'Paciente';
 
             storageService.createNotification({
                 userId: recipientId,
-                type: note.authorRole === 'PROFISSIONAL' ? 'comment_created' : 'message_created',
-                title: note.authorRole === 'PROFISSIONAL' ? 'Novo comentário clínico' : 'Nova resposta do paciente',
+                type: isProfessional ? 'comment_created' : 'message_created',
+                title: isProfessional ? 'Novo comentário clínico' : 'Nova resposta do paciente',
                 message: `${senderName} enviou uma nova mensagem.`,
                 data: { entry_id: note.entryId, note_id: data.id, thread_id: note.threadId }
             } as any).catch(console.error);

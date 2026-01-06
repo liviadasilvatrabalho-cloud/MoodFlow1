@@ -226,7 +226,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             patientId: selectedPatientId,
             text: newNote,
             isShared: false,
-            authorRole: 'PROFISSIONAL',
+            authorRole: (user.clinicalRole === 'psychiatrist' || user.clinicalRole === 'PSIQUIATRA') ? UserRole.PSIQUIATRA : UserRole.PSICOLOGO,
             read: true,
             createdAt: new Date().toISOString()
         };
@@ -263,7 +263,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                 threadId: thread.id,
                 text: entryComment,
                 isShared: true,
-                authorRole: 'PROFISSIONAL',
+                authorRole: specialty === 'PSIQUIATRA' ? UserRole.PSIQUIATRA : UserRole.PSICOLOGO,
                 read: false,
                 createdAt: new Date().toISOString()
             };
@@ -1031,9 +1031,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                     {entryNotes.length > 0 && (
                                                                         <div className="mt-4 space-y-3 border-t border-white/5 pt-3">
                                                                             {entryNotes.map(note => (
-                                                                                <div key={note.id} className={`flex flex-col ${(note.authorRole === 'PATIENT' || note.authorRole === 'PACIENTE') ? 'items-start' : 'items-end'}`}>
-                                                                                    <div className={`max-w-[85%] p-2 rounded-xl text-xs break-words overflow-hidden [overflow-wrap:anywhere] whitespace-pre-wrap ${(note.authorRole === 'PATIENT' || note.authorRole === 'PACIENTE') ? 'bg-neutral-800 text-gray-300' : 'bg-blue-900/30 text-blue-100 border border-blue-900/50'}`}>
-                                                                                        <span className="font-bold block text-[10px] opacity-50 mb-1">{(note.authorRole === 'PATIENT' || note.authorRole === 'PACIENTE') ? (patients.find(p => p.id === selectedPatientId)?.name || 'Paciente') : 'Dr. ' + user.name}</span>
+                                                                                <div key={note.id} className={`flex flex-col ${(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? 'items-start' : 'items-end'}`}>
+                                                                                    <div className={`max-w-[85%] p-2 rounded-xl text-xs break-words overflow-hidden [overflow-wrap:anywhere] whitespace-pre-wrap ${(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? 'bg-neutral-800 text-gray-300' : 'bg-blue-900/30 text-blue-100 border border-blue-900/50'}`}>
+                                                                                        <span className="font-bold block text-[10px] opacity-50 mb-1">{(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? (patients.find(p => p.id === selectedPatientId)?.name || 'Paciente') : 'Dr. ' + user.name}</span>
                                                                                         {note.text}
                                                                                     </div>
                                                                                 </div>

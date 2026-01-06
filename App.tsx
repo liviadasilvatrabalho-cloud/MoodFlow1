@@ -100,7 +100,7 @@ export default function App() {
                     threadId: thread.id,
                     text: val,
                     isShared: true,
-                    authorRole: 'PATIENT',
+                    authorRole: 'PACIENTE',
                     read: false,
                     status: 'active',
                     createdAt: new Date().toISOString()
@@ -329,9 +329,9 @@ export default function App() {
                                                     <span>🧠</span> Anotações do Psicólogo
                                                 </h5>
                                                 {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === UserRole.PSICOLOGO).map(note => (
-                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFISSIONAL' ? 'bg-[#1e1b4b] border-[#8b5cf6]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
-                                                        <div className={`absolute -top-2 ${note.authorRole === 'PROFISSIONAL' ? 'left-4 bg-[#8b5cf6]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
-                                                            {note.authorRole === 'PROFISSIONAL' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psicólogo'}` : 'Sua Resposta'}
+                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole !== 'PACIENTE' ? 'bg-[#1e1b4b] border-[#8b5cf6]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                        <div className={`absolute -top-2 ${note.authorRole !== 'PACIENTE' ? 'left-4 bg-[#8b5cf6]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                            {note.authorRole !== 'PACIENTE' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psicólogo'}` : 'Sua Resposta'}
                                                         </div>
                                                         <p className="text-gray-200 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                         <span className="text-[9px] text-gray-500 block mt-2 font-black uppercase tracking-widest">
@@ -349,9 +349,9 @@ export default function App() {
                                                     <span>💊</span> Anotações do Psiquiatra
                                                 </h5>
                                                 {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === UserRole.PSIQUIATRA).map(note => (
-                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole === 'PROFISSIONAL' ? 'bg-[#064e3b]/30 border-[#10b981]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
-                                                        <div className={`absolute -top-2 ${note.authorRole === 'PROFISSIONAL' ? 'left-4 bg-[#10b981]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
-                                                            {note.authorRole === 'PROFISSIONAL' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psiquiatra'}` : 'Sua Resposta'}
+                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole !== 'PACIENTE' ? 'bg-[#064e3b]/30 border-[#10b981]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                        <div className={`absolute -top-2 ${note.authorRole !== 'PACIENTE' ? 'left-4 bg-[#10b981]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                            {note.authorRole !== 'PACIENTE' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psiquiatra'}` : 'Sua Resposta'}
                                                         </div>
                                                         <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                         <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">

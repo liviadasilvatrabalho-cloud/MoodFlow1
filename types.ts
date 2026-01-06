@@ -55,7 +55,7 @@ export interface DoctorNote {
   threadId?: string; // New: Link to a message thread
   text: string;
   isShared: boolean;
-  authorRole: 'PROFISSIONAL' | 'PACIENTE';
+  authorRole: 'PSICOLOGO' | 'PSIQUIATRA' | 'ADMIN_CLINICA' | 'PACIENTE';
   visibility?: 'PRIVATE' | 'PATIENT_VISIBLE'; // New for admin segregation
   professionalType?: string;
   parentNoteId?: string;
