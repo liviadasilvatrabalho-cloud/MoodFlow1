@@ -249,15 +249,15 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
         const currentComment = entryComment;
         try {
-            // Normalize clinical role to what DB expects (uppercase)
-            const specialty = (user.clinicalRole === 'psychologist' || user.clinicalRole === 'PSICOLOGO') ? 'PSICOLOGO' : 'PSIQUIATRA';
+            // Normalize clinical role to what DB expects (uppercase) - Default to PSICOLOGO as it's the primary role
+            const specialty = (user.clinicalRole === 'psychiatrist' || user.clinicalRole === 'PSIQUIATRA') ? 'PSIQUIATRA' : 'PSICOLOGO';
             const thread = await storageService.getOrCreateThread(selectedPatientId, user.id, specialty);
 
             const newNote: DoctorNote = {
                 id: crypto.randomUUID(),
                 doctorId: user.id,
                 doctorName: user.name,
-                doctorRole: (user.clinicalRole === 'psychologist' || user.clinicalRole === 'PSICOLOGO') ? UserRole.PSICOLOGO : UserRole.PSIQUIATRA,
+                doctorRole: (user.clinicalRole === 'psychiatrist' || user.clinicalRole === 'PSIQUIATRA') ? UserRole.PSIQUIATRA : UserRole.PSICOLOGO,
                 patientId: selectedPatientId,
                 entryId,
                 threadId: thread.id,
