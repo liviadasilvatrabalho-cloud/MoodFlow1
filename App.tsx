@@ -177,7 +177,7 @@ export default function App() {
                 }}
             />
 
-            <main className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-0">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pb-24 md:pb-0">
                 {view === 'home' && (
                     <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-10 animate-in fade-in duration-700">
                         {/* Header Section */}
@@ -230,17 +230,16 @@ export default function App() {
 
                             <div className="bg-gradient-to-br from-[#1A1A1A] to-[#0D0D0D] p-8 rounded-[36px] border border-white/5 shadow-2xl flex flex-col justify-between h-48 group hover:border-white/10 transition-all relative overflow-hidden">
                                 <div className="z-10 relative">
-                                    <h2 className="text-2xl font-black text-white tracking-tight mb-2">{t.diaryTitle}</h2>
-                                    <p className="text-xs text-gray-500 font-medium leading-relaxed max-w-[200px]">{t.diarySubtitle}</p>
+                                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">{t.diaryTitle}</h2>
+                                    <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-[250px]">{t.diarySubtitle}</p>
                                 </div>
                                 <button
-
                                     onClick={() => { setShowEntryForm(true); setEntryMode('diary'); }}
-                                    className="bg-white text-black font-black text-[11px] uppercase tracking-widest py-3 px-6 rounded-2xl shadow-xl w-max z-10 hover:scale-[1.05] transition-all"
+                                    className="bg-white text-black font-black text-xs uppercase tracking-widest py-3 px-6 rounded-2xl shadow-xl w-max z-10 hover:scale-[1.05] transition-all"
                                 >
                                     {t.writeNew}
                                 </button>
-                                <div className="absolute top-0 right-0 p-8 opacity-5 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-700">
+                                <div className="absolute top-0 right-0 p-8 opacity-10 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-700">
                                     <svg className="w-40 h-40 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 2H5C3.34 2 2 3.34 2 5V21C2 21.55 2.45 22 3 22H19C19.55 22 20 21.55 20 21V5C20 3.34 18.66 2 17 2H19V2ZM18 20H4V5C4 4.45 4.45 4 5 4H17C17.55 4 18 4.45 18 5V20Z" /></svg>
                                 </div>
                             </div>
@@ -548,9 +547,9 @@ export default function App() {
                                             <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">{t.role}</span>
                                             <span className="bg-[#1A1A1A] text-[10px] px-3 py-1 rounded-full text-white font-black border border-white/10 uppercase">{user.role}</span>
                                         </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">Idioma</span>
-                                            <div className="flex flex-wrap gap-2 mt-2">
+                                        <div className="flex flex-col gap-3">
+                                            <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">{t.language}</span>
+                                            <div className="flex flex-wrap gap-2">
                                                 {[
                                                     { code: 'pt', label: 'PT', flag: '🇧🇷' },
                                                     { code: 'en', label: 'EN', flag: '🇺🇸' },
@@ -569,7 +568,7 @@ export default function App() {
                                                                 storageService.saveUser({ ...user, language: l.code as Language }).catch(console.error);
                                                             }
                                                         }}
-                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${lang === l.code
+                                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all flex-1 justify-center min-w-[80px] ${lang === l.code
                                                             ? 'bg-white text-black border-white shadow-sm'
                                                             : 'bg-transparent text-gray-500 border-white/10 hover:border-white/30 hover:text-gray-300'
                                                             }`}
@@ -615,7 +614,6 @@ export default function App() {
                             onCancel={() => setShowEntryForm(false)}
                             initialMode={entryMode}
                             lang={lang}
-                            // FIX 2: Correct prop name and value
                             connectedDoctors={connectedDoctors}
                         />
                     </div>

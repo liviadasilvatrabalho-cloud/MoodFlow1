@@ -149,7 +149,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                 key={m}
                                 type="button"
                                 onClick={() => setMode(m)}
-                                className={`flex-1 py-3.5 text-[14px] font-black rounded-[18px] transition-all duration-300 flex items-center justify-center gap-2 tracking-tight ${isSelected
+                                className={`flex-1 py-3.5 text-[11px] sm:text-[14px] font-black rounded-[18px] transition-all duration-300 flex items-center justify-center gap-2 tracking-tight ${isSelected
                                     ? 'bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white shadow-[0_8px_24px_rgba(109,40,217,0.4)] scale-[1.02]'
                                     : 'text-[#6B7280] hover:text-white hover:bg-white/5'
                                     }`}
