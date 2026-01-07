@@ -108,9 +108,8 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({ steps, isOpen, onCompl
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed]" />
 
                     <div className="flex justify-between items-start mb-4">
-                        <div className="bg-[#8b5cf6]/10 text-[#8b5cf6] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#8b5cf6]/20">
-                            Passo {currentStep + 1} de {steps.length}
-                        </div>
+                        <div></div> {/* Spacer to keep 'Pular Tour' right aligned if needed, or just remove flex justify-between if we want strict right alignment. 
+                                     But keeping structure similar is safer. Let's just remove the pill. */}
                         <button onClick={onSkip} className="text-gray-500 hover:text-white text-xs font-bold transition-colors">
                             Pular Tour
                         </button>
