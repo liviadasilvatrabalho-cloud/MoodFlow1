@@ -53,7 +53,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 import { ExportReportModal } from './ExportReportModal';
-import { TourOverlay } from '../ui/TourOverlay';
+
 
 export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAdminPortal = false }) => {
     const [patients, setPatients] = useState<User[]>([]);
@@ -96,15 +96,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const t = TRANSLATIONS[lang];
     const recognitionRef = useRef<any>(null);
 
-    const [isTourOpen, setIsTourOpen] = useState(false);
 
-    useEffect(() => {
-        const hasSeen = localStorage.getItem('hasSeenDoctorTour_v2');
-        if (!hasSeen && !isAdminPortal) {
-            // Only show tour for initial clinical view usually, but let's show for both if not seen
-            setTimeout(() => setIsTourOpen(true), 1500);
-        }
-    }, [isAdminPortal]);
 
     // Initial Load & Polling
     useEffect(() => {
@@ -631,14 +623,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {portalView === 'clinical' ? (
                         <>
-                            <div data-tour="connect-form" className="p-4 bg-neutral-900/30 border-b border-neutral-800 mx-2 my-2 rounded-xl">
+                            <div className="p-4 bg-neutral-900/30 border-b border-neutral-800 mx-2 my-2 rounded-xl">
                                 <h3 className="text-[10px] font-bold text-textMuted uppercase tracking-wider mb-2">{t.connectPatient}</h3>
                                 <form onSubmit={handleConnectPatient} className="flex gap-2">
                                     <input type="email" placeholder={t.enterPatientEmail} required value={connectEmail} onChange={e => setConnectEmail(e.target.value)} className="flex-1 bg-black border border-neutral-700 rounded-lg px-3 py-2 text-xs text-white focus:border-primary focus:outline-none min-w-0" />
                                     <button type="submit" className="bg-primary text-white px-3 rounded-lg text-sm font-bold">+</button>
                                 </form>
                             </div>
-                            <div data-tour="patient-list">
+                            <div>
                                 <div className="p-4 text-[10px] font-bold text-textMuted uppercase tracking-wider sticky top-0 bg-surfaceHighlight/95 backdrop-blur-sm">{t.yourPatients}</div>
                                 {patients.length === 0 && <p className="text-textMuted text-sm text-center italic p-4 opacity-50">{t.noPatients}</p>}
                                 {patients.map(patient => (
@@ -1147,29 +1139,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                 />
             )}
 
-            <TourOverlay
-                isOpen={isTourOpen}
-                onComplete={() => {
-                    setIsTourOpen(false);
-                    localStorage.setItem('hasSeenDoctorTour_v2', 'true');
-                }}
-                onSkip={() => {
-                    setIsTourOpen(false);
-                    localStorage.setItem('hasSeenDoctorTour_v2', 'true');
-                }}
-                steps={[
-                    {
-                        target: 'connect-form',
-                        title: 'Conecte Pacientes',
-                        content: 'Adicione pacientes usando o email de cadastro deles no app.'
-                    },
-                    {
-                        target: 'patient-list',
-                        title: 'Seus Pacientes',
-                        content: 'Selecione um paciente na lista para visualizar o dashboard completo, gráficos e histórico.'
-                    }
-                ]}
-            />
+
         </div >
     );
 };

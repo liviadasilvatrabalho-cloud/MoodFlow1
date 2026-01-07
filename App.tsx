@@ -11,7 +11,7 @@ import { Sidebar } from './components/ui/Sidebar';
 import { BottomNav } from './components/ui/BottomNav';
 import Auth from './components/Auth';
 import { ConsentSettings } from './components/settings/ConsentSettings';
-import { TourOverlay, TourStep } from './components/ui/TourOverlay';
+
 
 export default function App() {
     const [user, setUser] = useState<User | null>(null);
@@ -28,7 +28,7 @@ export default function App() {
     const [isEditingName, setIsEditingName] = useState(false);
     const [tempName, setTempName] = useState('');
 
-    const [isTourOpen, setIsTourOpen] = useState(false);
+
 
     useEffect(() => {
         // Simple listener for URL changes (optional if using a router, but here we use simple state)
@@ -58,14 +58,6 @@ export default function App() {
             });
             // FIX 1: Set full objects, not just IDs
             storageService.getConnectedDoctors(user.id).then(docs => setConnectedDoctors(docs));
-
-            // Check Tour Status
-            const hasSeen = localStorage.getItem('hasSeenPatientTour_v2');
-            if (!hasSeen) {
-                // Short delay to ensure UI is ready
-                setTimeout(() => setIsTourOpen(true), 1500);
-            }
-
             return () => { unsub(); unsubNotes(); }
         }
     }, [user]);
@@ -196,14 +188,14 @@ export default function App() {
                             </div>
                             <div className="flex gap-3 w-full md:w-auto">
                                 <button
-                                    data-tour="log-mood-btn"
+
                                     onClick={() => { setShowEntryForm(true); setEntryMode('mood'); }}
                                     className="flex-1 md:flex-none px-6 py-3.5 bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_8px_20px_-4px_rgba(124,58,237,0.4)] hover:scale-[1.02] transition-all"
                                 >
                                     {t.logMood}
                                 </button>
                                 <button
-                                    data-tour="voice-btn"
+
                                     onClick={() => { setShowEntryForm(true); setEntryMode('voice'); }}
                                     className="px-4 py-3.5 bg-[#1A1A1A] text-white rounded-2xl border border-white/5 hover:bg-white/5 transition-all"
                                     title={t.voiceLog}
@@ -242,7 +234,7 @@ export default function App() {
                                     <p className="text-xs text-gray-500 font-medium leading-relaxed max-w-[200px]">{t.diarySubtitle}</p>
                                 </div>
                                 <button
-                                    data-tour="diary-btn"
+
                                     onClick={() => { setShowEntryForm(true); setEntryMode('diary'); }}
                                     className="bg-white text-black font-black text-[11px] uppercase tracking-widest py-3 px-6 rounded-2xl shadow-xl w-max z-10 hover:scale-[1.05] transition-all"
                                 >
@@ -645,34 +637,6 @@ export default function App() {
                 #root { height: 100%; }
             `}} />
 
-            <TourOverlay
-                isOpen={isTourOpen}
-                onComplete={() => {
-                    setIsTourOpen(false);
-                    localStorage.setItem('hasSeenPatientTour_v2', 'true');
-                }}
-                onSkip={() => {
-                    setIsTourOpen(false);
-                    localStorage.setItem('hasSeenPatientTour_v2', 'true');
-                }}
-                steps={[
-                    {
-                        target: 'log-mood-btn',
-                        title: 'Registre seu Humor',
-                        content: 'Comece registrando como você se sente hoje. Acompanhe sua evolução ao longo do tempo.'
-                    },
-                    {
-                        target: 'voice-btn',
-                        title: 'Diário de Voz com IA',
-                        content: 'Sem tempo para escrever? Grave um áudio e nossa IA transcreverá e analisará suas emoções automaticamente.'
-                    },
-                    {
-                        target: 'diary-btn',
-                        title: 'Seu Espaço Seguro',
-                        content: 'Escreva livremente em seu diário. Seus registros são privados por padrão, mas você pode compartilhá-los com seu médico.'
-                    }
-                ]}
-            />
-        </div>
+        </div >
     );
 }
