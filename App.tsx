@@ -551,33 +551,44 @@ export default function App() {
                                         <div className="flex flex-col gap-3">
                                             <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">{t.language}</span>
 
-                                            <div className="relative">
+                                            <div className="relative z-50">
                                                 <button
                                                     onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                                                    className={`w-full bg-[#1A1A1A] border border-white/10 rounded-2xl px-5 py-4 flex items-center justify-between group hover:border-white/20 transition-all ${isLangMenuOpen ? 'border-white/20 bg-[#222]' : ''}`}
+                                                    className={`w-full bg-[#151515] border border-white/10 rounded-xl px-4 py-3.5 flex items-center justify-between group hover:border-[#8b5cf6]/50 hover:shadow-[0_0_20px_-5px_rgba(139,92,246,0.3)] transition-all duration-300 ${isLangMenuOpen ? 'border-[#8b5cf6] bg-[#1a1a1a]' : ''}`}
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-2xl">
+                                                        <span className="text-2xl drop-shadow-md">
                                                             {{
                                                                 'pt': '🇧🇷', 'en': '🇺🇸', 'es': '🇪🇸', 'fr': '🇫🇷',
                                                                 'de': '🇩🇪', 'ja': '🇯🇵', 'zh': '🇨🇳', 'ar': '🇦🇪'
                                                             }[lang]}
                                                         </span>
-                                                        <span className="text-sm font-bold text-white tracking-wide">
-                                                            {{
-                                                                'pt': 'Português (Brasil)', 'en': 'English (US)', 'es': 'Español (España)',
-                                                                'fr': 'Français (France)', 'de': 'Deutsch (Deutschland)', 'ja': '日本語 (Japan)',
-                                                                'zh': '中文 (China)', 'ar': 'العربية (UAE)'
-                                                            }[lang]}
-                                                        </span>
+                                                        <div className="flex flex-col items-start text-left">
+                                                            <span className="text-[10px] text-gray-500 font-extrabold uppercase tracking-widest mb-0.5">Idioma Selecionado</span>
+                                                            <span className="text-sm font-bold text-white tracking-tight">
+                                                                {{
+                                                                    'pt': 'Português (Brasil)', 'en': 'English (US)', 'es': 'Español (España)',
+                                                                    'fr': 'Français (France)', 'de': 'Deutsch (Deutschland)', 'ja': '日本語 (Japan)',
+                                                                    'zh': '中文 (China)', 'ar': 'العربية (UAE)'
+                                                                }[lang]}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <svg className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isLangMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                    </svg>
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/5 group-hover:bg-white/10 transition-all ${isLangMenuOpen ? 'rotate-180 bg-[#8b5cf6]/20 text-[#8b5cf6]' : 'text-gray-500'}`}>
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </div>
                                                 </button>
 
-                                                <div className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${isLangMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                                                    <div className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+                                                {/* Backdrop for closing on click outside (mobile friendly) */}
+                                                {isLangMenuOpen && (
+                                                    <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsLangMenuOpen(false)} />
+                                                )}
+
+                                                {/* Popover Menu */}
+                                                <div className={`absolute bottom-full left-0 right-0 mb-2 bg-[#151515]/95 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-[0_20px_40px_-5px_rgba(0,0,0,0.8)] z-50 transition-all duration-200 origin-bottom ${isLangMenuOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2 pointer-events-none'}`}>
+                                                    <div className="max-h-[320px] overflow-y-auto custom-scrollbar p-1.5 space-y-0.5">
                                                         {[
                                                             { code: 'pt', label: 'Português (Brasil)', flag: '🇧🇷' },
                                                             { code: 'en', label: 'English (US)', flag: '🇺🇸' },
@@ -597,18 +608,16 @@ export default function App() {
                                                                     }
                                                                     setIsLangMenuOpen(false);
                                                                 }}
-                                                                className={`w-full flex items-center justify-between px-5 py-3.5 hover:bg-[#1A1A1A] transition-colors border-b border-white/5 last:border-none group ${lang === l.code ? 'bg-[#1A1A1A]' : ''}`}
+                                                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all group ${lang === l.code ? 'bg-[#8b5cf6]/10 border border-[#8b5cf6]/20' : 'hover:bg-white/5 border border-transparent'}`}
                                                             >
                                                                 <div className="flex items-center gap-3">
-                                                                    <span className="text-xl">{l.flag}</span>
+                                                                    <span className="text-xl filter drop-shadow-sm">{l.flag}</span>
                                                                     <span className={`text-sm tracking-wide ${lang === l.code ? 'text-white font-black' : 'text-gray-400 font-medium group-hover:text-gray-200'}`}>
                                                                         {l.label}
                                                                     </span>
                                                                 </div>
                                                                 {lang === l.code && (
-                                                                    <svg className="w-4 h-4 text-[#8b5cf6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                                    </svg>
+                                                                    <div className="w-2 h-2 rounded-full bg-[#8b5cf6] shadow-[0_0_10px_#8b5cf6]" />
                                                                 )}
                                                             </button>
                                                         ))}
