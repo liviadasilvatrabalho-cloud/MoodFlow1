@@ -107,11 +107,11 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({ steps, isOpen, onCompl
                 <div className="bg-[#1A1A1A] border border-white/10 p-6 rounded-3xl shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed]" />
 
-                    <div className="flex justify-between items-start mb-4">
-                        <div></div> {/* Spacer to keep 'Pular Tour' right aligned if needed, or just remove flex justify-between if we want strict right alignment. 
-                                     But keeping structure similar is safer. Let's just remove the pill. */}
-                        <button onClick={onSkip} className="text-gray-500 hover:text-white text-xs font-bold transition-colors">
-                            Pular Tour
+                    <div className="flex justify-end mb-2">
+                        <button onClick={onSkip} className="text-gray-500 hover:text-white transition-colors p-1">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </button>
                     </div>
 
@@ -120,14 +120,7 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({ steps, isOpen, onCompl
                         {step.content}
                     </p>
 
-                    <div className="flex items-center justify-between gap-4">
-                        <button
-                            onClick={handlePrev}
-                            disabled={currentStep === 0}
-                            className={`text-xs font-bold uppercase tracking-widest transition-colors ${currentStep === 0 ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            Anterior
-                        </button>
+                    <div className="flex items-center justify-end">
                         <button
                             onClick={handleNext}
                             className="bg-white text-black px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
