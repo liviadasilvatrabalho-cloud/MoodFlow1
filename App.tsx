@@ -1,5 +1,5 @@
 // MoodFlow v2.0.1 - High Fidelity Update
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, MoodEntry, UserRole, Language, DoctorNote } from './types';
 import { storageService } from './services/storageService';
 import { TRANSLATIONS, MOODS } from './constants';
@@ -105,42 +105,70 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
 
 // Internal component for Audio Player
 const AudioPlayer = ({ url, duration }: { url: string, duration?: number }) => {
-    const [audio] = useState(new Audio());
+    const [signedUrl, setSignedUrl] = useState<string | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [signedUrl, setSignedUrl] = useState<string | null>(null);
+    const [error, setError] = useState(false);
 
     useEffect(() => {
-        // Fetch signed URL on mount
-        storageService.getAudioUrl(url).then(setSignedUrl);
+        let active = true;
+        storageService.getAudioUrl(url).then(u => {
+            if (active) setSignedUrl(u);
+        });
+        return () => { active = false; };
     }, [url]);
 
     useEffect(() => {
+        setIsPlaying(false);
+        setProgress(0);
+        setError(false);
+
         if (!signedUrl) return;
-        audio.src = signedUrl;
 
-        audio.onended = () => {
-            setIsPlaying(false);
-            setProgress(0);
-        };
+        const audio = new Audio(signedUrl);
+        audioRef.current = audio;
 
-        audio.ontimeupdate = () => {
+        const updateProgress = () => {
             if (audio.duration) {
                 setProgress((audio.currentTime / audio.duration) * 100);
             }
         };
 
-        return () => {
-            audio.pause();
-            audio.src = '';
+        const handleEnded = () => {
+            setIsPlaying(false);
+            setProgress(0);
         };
-    }, [signedUrl, audio]);
+
+        const handleError = (e: any) => {
+            console.error("Audio playback error", e);
+            setError(true);
+            setIsPlaying(false);
+        };
+
+        audio.addEventListener('timeupdate', updateProgress);
+        audio.addEventListener('ended', handleEnded);
+        audio.addEventListener('error', handleError);
+
+        return () => {
+            audio.removeEventListener('timeupdate', updateProgress);
+            audio.removeEventListener('ended', handleEnded);
+            audio.removeEventListener('error', handleError);
+            audio.pause();
+            audioRef.current = null;
+        };
+    }, [signedUrl]);
 
     const togglePlay = () => {
+        if (!audioRef.current) return;
+
         if (isPlaying) {
-            audio.pause();
+            audioRef.current.pause();
         } else {
-            audio.play().catch(console.error);
+            audioRef.current.play().catch(err => {
+                console.error("Play failed", err);
+                setError(true);
+            });
         }
         setIsPlaying(!isPlaying);
     };
@@ -150,6 +178,12 @@ const AudioPlayer = ({ url, duration }: { url: string, duration?: number }) => {
         const s = Math.floor(sec % 60);
         return `${m}:${s < 10 ? '0' : ''}${s}`;
     };
+
+    if (error) {
+        return <div className="text-red-500 text-[10px]">Erro ao carregar áudio</div>;
+    }
+
+    if (!signedUrl) return <div className="text-gray-500 text-[10px]">Carregando áudio...</div>;
 
     return (
         <div className="flex items-center gap-3 bg-black/20 rounded-lg p-2 mt-2 w-full max-w-[200px]">
@@ -164,7 +198,7 @@ const AudioPlayer = ({ url, duration }: { url: string, duration?: number }) => {
                 <div className="h-full bg-[#8b5cf6] transition-all duration-100" style={{ width: `${progress}%` }} />
             </div>
             <span className="text-[10px] text-gray-400 font-mono">
-                {duration ? formatTime(duration) : (audio.duration ? formatTime(audio.duration) : '--:--')}
+                {duration ? formatTime(duration) : (audioRef.current?.duration ? formatTime(audioRef.current.duration) : '--:--')}
             </span>
         </div>
     );
@@ -536,8 +570,26 @@ export default function App() {
                                                             ) : (
                                                                 <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                             )}
-                                                            <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
-                                                                {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest flex items-center justify-between">
+                                                                <span>{new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                {(note.patientId === user.id && note.authorRole === 'PACIENTE') && (
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            if (window.confirm("Apagar esta mensagem?")) {
+                                                                                try {
+                                                                                    await storageService.deleteDoctorNote(note.id);
+                                                                                    // Optimistic update handled by subscription
+                                                                                } catch (e) {
+                                                                                    alert("Erro ao excluir mensagem.");
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                        className="text-red-500 hover:text-red-400 p-1"
+                                                                        title="Excluir"
+                                                                    >
+                                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                                    </button>
+                                                                )}
                                                             </span>
                                                         </div>
                                                     );

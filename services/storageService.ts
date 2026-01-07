@@ -960,5 +960,10 @@ export const storageService = {
 
         if (error) return null;
         return data.signedUrl;
+    },
+
+    deleteDoctorNote: async (noteId: string) => {
+        const { error } = await supabase.from('doctor_notes').delete().eq('id', noteId);
+        if (error) throw error;
     }
 };
