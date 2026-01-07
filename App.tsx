@@ -179,7 +179,7 @@ export default function App() {
 
             <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pb-24 md:pb-0">
                 {view === 'home' && (
-                    <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-10 animate-in fade-in duration-700">
+                    <div className="px-4 pt-14 pb-4 md:p-10 max-w-5xl mx-auto space-y-10 animate-in fade-in duration-700">
                         {/* Header Section */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                             <div>
@@ -472,7 +472,7 @@ export default function App() {
 
                 {
                     view === 'stats' && (
-                        <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-8">
+                        <div className="px-4 pt-14 pb-4 md:p-10 max-w-5xl mx-auto space-y-8">
                             <h2 className="text-3xl font-black text-white tracking-tighter">{t.stats}</h2>
                             <Analytics entries={entries} lang={lang} />
                         </div>
@@ -481,7 +481,7 @@ export default function App() {
 
                 {
                     view === 'settings' && user && (
-                        <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-10 animate-in fade-in duration-500">
+                        <div className="px-4 pt-14 pb-4 md:p-10 max-w-3xl mx-auto space-y-10 animate-in fade-in duration-500">
                             <h2 className="text-3xl font-black text-white tracking-tighter">{t.accountSettings}</h2>
                             <div className="space-y-6">
                                 <div className="bg-[#0D0D0D] p-8 rounded-[36px] border border-white/5 space-y-8 shadow-2xl">
@@ -591,7 +591,7 @@ export default function App() {
 
                 {
                     view === 'consent' && user && (
-                        <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-8 py-10">
+                        <div className="px-4 pt-14 pb-4 md:p-10 max-w-3xl mx-auto space-y-8 py-10">
                             <button onClick={() => setView('settings')} className="text-xs text-gray-500 font-black uppercase tracking-widest hover:text-white flex items-center gap-2 mb-6 transition-all">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                                 Voltar
