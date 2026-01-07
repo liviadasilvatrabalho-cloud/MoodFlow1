@@ -184,6 +184,7 @@ export default function App() {
     const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([]);
     const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string, role?: string }[]>([]);
     const [replyRecipients, setReplyRecipients] = useState<{ [key: string]: 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH' | null }>({});
+    const [replyTexts, setReplyTexts] = useState<{ [key: string]: string }>({});
     const [isAdminPath, setIsAdminPath] = useState(window.location.search.includes('admin=true'));
     const [isEditingName, setIsEditingName] = useState(false);
     const [tempName, setTempName] = useState('');
@@ -583,7 +584,7 @@ export default function App() {
                                                             const [rId, rSpec] = recipient.split('|');
                                                             targets.push({ id: rId, specialty: rSpec });
                                                         } else {
-                                                            const connected = doctors.filter(d =>
+                                                            const connected = connectedDoctors.filter(d =>
                                                                 (d.role === 'PSICOLOGO' && entry.visible_to_psychologist) ||
                                                                 (d.role === 'PSIQUIATRA' && entry.visible_to_psychiatrist)
                                                             );
