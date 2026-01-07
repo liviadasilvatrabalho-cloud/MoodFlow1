@@ -547,35 +547,6 @@ export default function App() {
 
                                         {/* REPLY INPUT (Global for the entry, logic handles details) */}
                                         {/* REPLY INPUT WITH AUDIO RECORDER */}
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex-1 relative flex items-center">
-                                                <input
-                                                    type="text"
-                                                    value={replyTexts[entry.id] || ''}
-                                                    onChange={e => setReplyTexts(prev => ({ ...prev, [entry.id]: e.target.value }))}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                                            e.preventDefault();
-                                                            handleSendReply(entry.id, replyTexts[entry.id]);
-                                                        }
-                                                    }}
-                                                    placeholder={t.writeReply}
-                                                    className="w-full bg-[#111] border border-white/10 rounded-xl pl-4 pr-12 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#8b5cf6]/50 transition-colors"
-                                                />
-                                            </div>
-
-
-
-                                            <button
-                                                onClick={() => handleSendReply(entry.id, replyTexts[entry.id])}
-                                                disabled={!replyTexts[entry.id]?.trim()}
-                                                className="bg-[#8b5cf6] text-white p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#7c3aed] transition-colors"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                                </svg>
-                                            </button>
-                                        </div>
                                         <div className="pt-6 border-t border-white/5 flex flex-col gap-3">
                                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Para quem você quer escrever?</span>
 
