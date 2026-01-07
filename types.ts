@@ -107,6 +107,28 @@ export interface RiskAlert {
   createdAt: string;
 }
 
+export interface DoctorNote {
+  id: string;
+  doctorId: string;
+  doctorName?: string;
+  doctorRole?: UserRole;
+  patientId: string;
+  entryId?: string;
+  threadId?: string;
+  text: string;
+  isShared: boolean;
+  authorRole: 'PSICOLOGO' | 'PSIQUIATRA' | 'ADMIN_CLINICA' | 'PACIENTE';
+  visibility?: 'PRIVATE' | 'PATIENT_VISIBLE';
+  professionalType?: string;
+  parentNoteId?: string;
+  read: boolean;
+  status?: 'active' | 'resolved' | 'hidden';
+  createdAt: string;
+  type?: 'text' | 'audio';
+  audioUrl?: string;
+  duration?: number;
+}
+
 export interface ViewLog {
   id: string;
   viewerId: string;

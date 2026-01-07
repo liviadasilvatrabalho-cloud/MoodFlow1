@@ -538,7 +538,10 @@ export const storageService = {
                     authorRole: row.author_role,
                     read: row.read,
                     status: row.status,
-                    createdAt: row.created_at
+                    createdAt: row.created_at,
+                    type: row.type || 'text',
+                    audioUrl: row.audio_url,
+                    duration: row.duration
                 }));
                 callback(mapped as DoctorNote[]);
             }
@@ -585,7 +588,10 @@ export const storageService = {
             authorRole: row.author_role,
             read: row.read,
             status: row.status,
-            createdAt: row.created_at
+            createdAt: row.created_at,
+            type: row.type || 'text',
+            audioUrl: row.audio_url,
+            duration: row.duration
         }));
     },
 
@@ -599,7 +605,10 @@ export const storageService = {
             is_shared: note.isShared,
             author_role: note.authorRole,
             read: note.read,
-            status: 'active'
+            status: 'active',
+            type: note.type || 'text',
+            audio_url: note.audioUrl,
+            duration: note.duration
         };
         const { data, error } = await supabase.from('doctor_notes').insert(dbNote).select().single();
         if (error) {
@@ -920,5 +929,36 @@ export const storageService = {
             target_id: targetId,
             entity_type: entityType
         });
+    },
+
+    uploadAudio: async (audioBlob: Blob): Promise<string> => {
+        const fileName = `audio_${crypto.randomUUID()}.webm`;
+        const { data, error } = await supabase.storage
+            .from('audio-comments')
+            .upload(fileName, audioBlob, {
+                contentType: 'audio/webm'
+            });
+
+        if (error) throw error;
+
+        // Return signed URL or public URL depending on bucket privacy.
+        // Assuming private bucket for security as per request (access via RLS/Policies on object)
+        // But for simplicity in frontend, we often use createSignedUrl if it's strictly private, 
+        // OR if policies allow public read for authenticated users, we get publicUrl.
+        // Given constraints: "Acesso somente via regras já existentes (RLS / policies)", 
+        // we'll use the path and let the frontend decide how to load, OR return a signed URL.
+        // actually, let's return the path and generic getUrl if needed, but simplistic is publicURL if policy allows.
+        // Use createSignedUrl for better security compliance.
+
+        return data.path;
+    },
+
+    getAudioUrl: async (path: string): Promise<string | null> => {
+        const { data, error } = await supabase.storage
+            .from('audio-comments')
+            .createSignedUrl(path, 3600); // 1 hour validity
+
+        if (error) return null;
+        return data.signedUrl;
     }
 };
