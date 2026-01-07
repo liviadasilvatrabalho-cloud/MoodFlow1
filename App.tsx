@@ -103,45 +103,66 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
     );
 };
 
-// Internal component for Audio Player
 const AudioPlayer = ({ url, duration }: { url: string, duration?: number }) => {
     const [signedUrl, setSignedUrl] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let active = true;
+        if (!url) {
+            setError(true);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
         storageService.getAudioUrl(url).then(u => {
-            if (active) setSignedUrl(u);
+            if (active) {
+                if (u) {
+                    console.log("Audio signed URL acquired");
+                    setSignedUrl(u);
+                } else {
+                    console.error("Failed to get signed URL for:", url);
+                    setError(true);
+                }
+                setLoading(false);
+            }
+        }).catch(err => {
+            console.error("Error fetching audio URL:", err);
+            if (active) {
+                setError(true);
+                setLoading(false);
+            }
         });
+
         return () => { active = false; };
     }, [url]);
 
     useEffect(() => {
-        setIsPlaying(false);
-        setProgress(0);
-        setError(false);
-
         if (!signedUrl) return;
 
         const audio = new Audio(signedUrl);
+        audio.preload = 'auto'; // Force preload for better response
         audioRef.current = audio;
 
         const updateProgress = () => {
-            if (audio.duration) {
+            if (audio.duration && !isNaN(audio.duration)) {
                 setProgress((audio.currentTime / audio.duration) * 100);
             }
         };
 
         const handleEnded = () => {
+            console.log("Audio playback ended");
             setIsPlaying(false);
             setProgress(0);
         };
 
         const handleError = (e: any) => {
-            console.error("Audio playback error", e);
+            console.error("Audio playback error event:", e);
             setError(true);
             setIsPlaying(false);
         };
@@ -160,52 +181,61 @@ const AudioPlayer = ({ url, duration }: { url: string, duration?: number }) => {
     }, [signedUrl]);
 
     const togglePlay = () => {
-        if (!audioRef.current) return;
+        console.log("Toggle play clicked. Current state:", { isPlaying, hasAudio: !!audioRef.current, hasUrl: !!signedUrl });
+        if (!audioRef.current || !signedUrl) {
+            console.warn("Cannot play: audio not ready or no URL");
+            return;
+        }
 
         if (isPlaying) {
             audioRef.current.pause();
+            setIsPlaying(false);
         } else {
-            audioRef.current.play().catch(err => {
-                console.error("Play failed", err);
-                setError(true);
-            });
+            audioRef.current.play()
+                .then(() => {
+                    console.log("Playback started successfully");
+                    setIsPlaying(true);
+                })
+                .catch(err => {
+                    console.error("Play execution failed:", err);
+                    // Browsers require interaction, but this is a button click.
+                    // If it fails, maybe it's a codec or 403 on the signed URL?
+                    setError(true);
+                });
         }
-        setIsPlaying(!isPlaying);
     };
 
     const formatTime = (sec: number) => {
+        if (!sec || isNaN(sec)) return "0:00";
         const m = Math.floor(sec / 60);
         const s = Math.floor(sec % 60);
         return `${m}:${s < 10 ? '0' : ''}${s}`;
     };
 
-    if (error) {
-        return <div className="text-red-500 text-[10px]">Erro ao carregar áudio</div>;
-    }
-
-    if (!signedUrl) return <div className="text-gray-500 text-[10px]">Carregando áudio...</div>;
+    if (error) return <div className="text-red-500 text-[10px] bg-red-500/10 px-2 py-1 rounded">Erro ao reproduzir</div>;
+    if (loading) return <div className="text-white/40 text-[10px] animate-pulse">Carregando...</div>;
 
     return (
-        <div className="flex items-center gap-3 bg-black/20 rounded-lg p-2 mt-2 w-full max-w-[200px]">
-            <button onClick={togglePlay} className="text-white hover:scale-110 transition-transform">
+        <div className="flex items-center gap-3 bg-black/40 rounded-2xl p-3 mt-2 w-full max-w-[240px] border border-white/5">
+            <button
+                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-[#8b5cf6] text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+            >
                 {isPlaying ? (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
                 ) : (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                 )}
             </button>
-            <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-[#8b5cf6] transition-all duration-100" style={{ width: `${progress}%` }} />
+            <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden relative">
+                <div className="h-full bg-[#8b5cf6] shadow-[0_0_8px_rgba(139,92,246,0.5)] transition-all duration-100" style={{ width: `${progress}%` }} />
             </div>
-            <span className="text-[10px] text-gray-400 font-mono">
+            <span className="text-[10px] text-gray-400 font-mono tracking-tighter">
                 {duration ? formatTime(duration) : (audioRef.current?.duration ? formatTime(audioRef.current.duration) : '--:--')}
             </span>
         </div>
     );
 };
-
-
-
 
 export default function App() {
     const [user, setUser] = useState<User | null>(null);
@@ -543,9 +573,28 @@ export default function App() {
                                                             ) : (
                                                                 <p className="text-gray-200 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                             )}
-                                                            <span className="text-[9px] text-gray-500 block mt-2 font-black uppercase tracking-widest">
+                                                            <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
                                                                 {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                             </span>
+                                                            {note.authorRole === 'PACIENTE' && (
+                                                                <button
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        if (window.confirm("Apagar esta mensagem para todos?")) {
+                                                                            try {
+                                                                                await storageService.deleteDoctorNote(note.id);
+                                                                            } catch (e) {
+                                                                                console.error(e);
+                                                                                alert("Erro ao excluir.");
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-700 hover:scale-110 active:scale-95 transition-all z-20"
+                                                                    title="Apagar"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
@@ -570,27 +619,28 @@ export default function App() {
                                                             ) : (
                                                                 <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
                                                             )}
-                                                            <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest flex items-center justify-between">
-                                                                <span>{new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                {(note.patientId === user.id && note.authorRole === 'PACIENTE') && (
-                                                                    <button
-                                                                        onClick={async () => {
-                                                                            if (window.confirm("Apagar esta mensagem?")) {
-                                                                                try {
-                                                                                    await storageService.deleteDoctorNote(note.id);
-                                                                                    // Optimistic update handled by subscription
-                                                                                } catch (e) {
-                                                                                    alert("Erro ao excluir mensagem.");
-                                                                                }
-                                                                            }
-                                                                        }}
-                                                                        className="text-red-500 hover:text-red-400 p-1"
-                                                                        title="Excluir"
-                                                                    >
-                                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                                    </button>
-                                                                )}
+                                                            <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
+                                                                {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                             </span>
+                                                            {note.authorRole === 'PACIENTE' && (
+                                                                <button
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        if (window.confirm("Apagar esta mensagem para todos?")) {
+                                                                            try {
+                                                                                await storageService.deleteDoctorNote(note.id);
+                                                                            } catch (e) {
+                                                                                console.error(e);
+                                                                                alert("Erro ao excluir.");
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-700 hover:scale-110 active:scale-95 transition-all z-20"
+                                                                    title="Apagar"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
