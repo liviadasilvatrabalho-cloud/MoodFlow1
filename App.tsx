@@ -548,7 +548,7 @@ export default function App() {
                                         {/* REPLY INPUT (Global for the entry, logic handles details) */}
                                         {/* REPLY INPUT WITH AUDIO RECORDER */}
                                         <div className="flex items-center gap-3">
-                                            <div className="flex-1 relative">
+                                            <div className="flex-1 relative flex items-center">
                                                 <input
                                                     type="text"
                                                     value={replyTexts[entry.id] || ''}
@@ -560,63 +560,11 @@ export default function App() {
                                                         }
                                                     }}
                                                     placeholder={t.writeReply}
-                                                    className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#8b5cf6]/50 transition-colors pr-10"
+                                                    className="w-full bg-[#111] border border-white/10 rounded-xl pl-4 pr-12 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-[#8b5cf6]/50 transition-colors"
                                                 />
                                             </div>
 
-                                            {/* Audio Recorder Button */}
-                                            <AudioRecorder
-                                                onSend={async (blob, duration) => {
-                                                    try {
-                                                        const path = await storageService.uploadAudio(blob);
-                                                        // Send audio note
-                                                        // We need to match the logic of handleSendReply but for audio
-                                                        // Since handleSendReply is text-only, we'll implement a specialized version or extended logic here inline
-                                                        // For MVP/Safety, let's call a specific service method or adapt handleSendReply logic
 
-                                                        // Replicating handleSendReply logic for AUDIO
-                                                        const recipient = replyRecipients[entry.id];
-                                                        if (!user || (!recipient && !Object.keys(replyRecipients).length)) return; // Simple check
-
-                                                        // Identify targets (logic copied from handleSendReply)
-                                                        const targets: { id: string, specialty: string }[] = [];
-                                                        if (recipient) {
-                                                            const [rId, rSpec] = recipient.split('|');
-                                                            targets.push({ id: rId, specialty: rSpec });
-                                                        } else {
-                                                            const connected = connectedDoctors.filter(d =>
-                                                                (d.role === 'PSICOLOGO' && entry.visible_to_psychologist) ||
-                                                                (d.role === 'PSIQUIATRA' && entry.visible_to_psychiatrist)
-                                                            );
-                                                            connected.forEach(d => targets.push({ id: d.id, specialty: d.role || 'PSICOLOGO' }));
-                                                        }
-
-                                                        for (const target of targets) {
-                                                            const thread = await storageService.getOrCreateThread(user.id, target.id, target.specialty);
-                                                            const newNote: any = { // Cast to any to bypass strict type checks if types.ts isn't fully propagated yet
-                                                                doctorId: target.id,
-                                                                patientId: user.id,
-                                                                entryId: entry.id,
-                                                                threadId: thread.id,
-                                                                text: '', // Empty text for audio
-                                                                isShared: true,
-                                                                authorRole: 'PACIENTE',
-                                                                read: false,
-                                                                status: 'active',
-                                                                createdAt: new Date().toISOString(),
-                                                                type: 'audio',
-                                                                audioUrl: path,
-                                                                duration: duration
-                                                            };
-                                                            await storageService.saveDoctorNote(newNote);
-                                                        }
-                                                        // Notify success (optional)
-                                                    } catch (err) {
-                                                        console.error("Failed to send audio", err);
-                                                        alert("Erro ao enviar áudio.");
-                                                    }
-                                                }}
-                                            />
 
                                             <button
                                                 onClick={() => handleSendReply(entry.id, replyTexts[entry.id])}
@@ -696,6 +644,73 @@ export default function App() {
                                                     }}
                                                 />
                                                 <div className="absolute right-3 bottom-3 flex items-center gap-3">
+                                                    <AudioRecorder
+                                                        onSend={async (blob, duration) => {
+                                                            try {
+                                                                const path = await storageService.uploadAudio(blob);
+                                                                const recipient = replyRecipients[entry.id];
+                                                                if (!user || !recipient) {
+                                                                    alert("Selecione um destinatário acima antes de gravar.");
+                                                                    return;
+                                                                }
+
+                                                                const targets: { id: string, specialty: string }[] = [];
+                                                                if (recipient === 'BOTH') {
+                                                                    connectedDoctors.forEach(d => {
+                                                                        if ((d.role === 'PSICOLOGO' && entry.visible_to_psychologist) ||
+                                                                            (d.role === 'PSIQUIATRA' && entry.visible_to_psychiatrist)) {
+                                                                            targets.push({ id: d.id, specialty: d.role });
+                                                                        }
+                                                                    });
+                                                                } else {
+                                                                    const [rId, rSpec] = recipient.split('|'); // This might be wrong if recipient is just 'PSYCHOLOGIST' enum key.
+                                                                    // Wait, replyRecipients stores 'PSYCHOLOGIST' | 'PSIQUIATRA' | 'BOTH'
+                                                                    // OR does it store ID|Role?
+                                                                    // Looking at lines 640/651: onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHOLOGIST' }))}
+                                                                    // It stores the ROLE KEY.
+
+                                                                    // Converting Role Key to ID lookup
+                                                                    if (recipient === 'PSYCHOLOGIST') {
+                                                                        const doc = connectedDoctors.find(d => d.role === 'PSICOLOGO');
+                                                                        if (doc) targets.push({ id: doc.id, specialty: 'PSICOLOGO' });
+                                                                    } else if (recipient === 'PSYCHIATRIST') {
+                                                                        const doc = connectedDoctors.find(d => d.role === 'PSIQUIATRA');
+                                                                        if (doc) targets.push({ id: doc.id, specialty: 'PSIQUIATRA' });
+                                                                    }
+                                                                }
+
+                                                                if (targets.length === 0) {
+                                                                    alert("Médico não encontrado ou não conectado.");
+                                                                    return;
+                                                                }
+
+                                                                for (const target of targets) {
+                                                                    const thread = await storageService.getOrCreateThread(user.id, target.id, target.specialty);
+                                                                    const newNote: any = {
+                                                                        id: crypto.randomUUID(),
+                                                                        doctorId: target.id,
+                                                                        patientId: user.id,
+                                                                        entryId: entry.id,
+                                                                        threadId: thread.id,
+                                                                        text: '',
+                                                                        type: 'audio',
+                                                                        audioUrl: path,
+                                                                        duration: duration,
+                                                                        isShared: true,
+                                                                        authorRole: 'PACIENTE',
+                                                                        read: false,
+                                                                        status: 'active',
+                                                                        createdAt: new Date().toISOString()
+                                                                    };
+                                                                    await storageService.saveDoctorNote(newNote);
+                                                                }
+                                                                console.log("Audio sent successfully");
+                                                            } catch (err: any) {
+                                                                console.error("Error sending audio:", err);
+                                                                alert(`Erro ao enviar áudio: ${err.message || 'Verifique conexão/permissões'}`);
+                                                            }
+                                                        }}
+                                                    />
                                                     <span className="text-[9px] text-gray-600 font-bold uppercase tracking-tight hidden md:block pointer-events-none">
                                                         Enter p/ enviar
                                                     </span>
