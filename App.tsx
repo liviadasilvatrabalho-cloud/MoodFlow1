@@ -27,6 +27,7 @@ export default function App() {
     const [isAdminPath, setIsAdminPath] = useState(window.location.search.includes('admin=true'));
     const [isEditingName, setIsEditingName] = useState(false);
     const [tempName, setTempName] = useState('');
+    const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
 
 
@@ -549,34 +550,70 @@ export default function App() {
                                         </div>
                                         <div className="flex flex-col gap-3">
                                             <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">{t.language}</span>
-                                            <div className="flex flex-wrap gap-2">
-                                                {[
-                                                    { code: 'pt', label: 'PT', flag: '🇧🇷' },
-                                                    { code: 'en', label: 'EN', flag: '🇺🇸' },
-                                                    { code: 'es', label: 'ES', flag: '🇪🇸' },
-                                                    { code: 'fr', label: 'FR', flag: '🇫🇷' },
-                                                    { code: 'de', label: 'DE', flag: '🇩🇪' },
-                                                    { code: 'ja', label: 'JP', flag: '🇯🇵' },
-                                                    { code: 'zh', label: 'CN', flag: '🇨🇳' },
-                                                    { code: 'ar', label: 'AE', flag: '🇦🇪' }
-                                                ].map(l => (
-                                                    <button
-                                                        key={l.code}
-                                                        onClick={() => {
-                                                            setLang(l.code as Language);
-                                                            if (user) {
-                                                                storageService.saveUser({ ...user, language: l.code as Language }).catch(console.error);
-                                                            }
-                                                        }}
-                                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all flex-1 justify-center min-w-[80px] ${lang === l.code
-                                                            ? 'bg-white text-black border-white shadow-sm'
-                                                            : 'bg-transparent text-gray-500 border-white/10 hover:border-white/30 hover:text-gray-300'
-                                                            }`}
-                                                    >
-                                                        <span className="text-sm">{l.flag}</span>
-                                                        <span className="tracking-wider">{l.label}</span>
-                                                    </button>
-                                                ))}
+
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                                                    className={`w-full bg-[#1A1A1A] border border-white/10 rounded-2xl px-5 py-4 flex items-center justify-between group hover:border-white/20 transition-all ${isLangMenuOpen ? 'border-white/20 bg-[#222]' : ''}`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-2xl">
+                                                            {{
+                                                                'pt': '🇧🇷', 'en': '🇺🇸', 'es': '🇪🇸', 'fr': '🇫🇷',
+                                                                'de': '🇩🇪', 'ja': '🇯🇵', 'zh': '🇨🇳', 'ar': '🇦🇪'
+                                                            }[lang]}
+                                                        </span>
+                                                        <span className="text-sm font-bold text-white tracking-wide">
+                                                            {{
+                                                                'pt': 'Português (Brasil)', 'en': 'English (US)', 'es': 'Español (España)',
+                                                                'fr': 'Français (France)', 'de': 'Deutsch (Deutschland)', 'ja': '日本語 (Japan)',
+                                                                'zh': '中文 (China)', 'ar': 'العربية (UAE)'
+                                                            }[lang]}
+                                                        </span>
+                                                    </div>
+                                                    <svg className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isLangMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+
+                                                <div className={`mt-2 overflow-hidden transition-all duration-300 ease-in-out ${isLangMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                                    <div className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+                                                        {[
+                                                            { code: 'pt', label: 'Português (Brasil)', flag: '🇧🇷' },
+                                                            { code: 'en', label: 'English (US)', flag: '🇺🇸' },
+                                                            { code: 'es', label: 'Español (España)', flag: '🇪🇸' },
+                                                            { code: 'fr', label: 'Français (France)', flag: '🇫🇷' },
+                                                            { code: 'de', label: 'Deutsch (Deutschland)', flag: '🇩🇪' },
+                                                            { code: 'ja', label: '日本語 (Japan)', flag: '🇯🇵' },
+                                                            { code: 'zh', label: '中文 (China)', flag: '🇨🇳' },
+                                                            { code: 'ar', label: 'العربية (UAE)', flag: '🇦🇪' }
+                                                        ].map((l) => (
+                                                            <button
+                                                                key={l.code}
+                                                                onClick={() => {
+                                                                    setLang(l.code as Language);
+                                                                    if (user) {
+                                                                        storageService.saveUser({ ...user, language: l.code as Language }).catch(console.error);
+                                                                    }
+                                                                    setIsLangMenuOpen(false);
+                                                                }}
+                                                                className={`w-full flex items-center justify-between px-5 py-3.5 hover:bg-[#1A1A1A] transition-colors border-b border-white/5 last:border-none group ${lang === l.code ? 'bg-[#1A1A1A]' : ''}`}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="text-xl">{l.flag}</span>
+                                                                    <span className={`text-sm tracking-wide ${lang === l.code ? 'text-white font-black' : 'text-gray-400 font-medium group-hover:text-gray-200'}`}>
+                                                                        {l.label}
+                                                                    </span>
+                                                                </div>
+                                                                {lang === l.code && (
+                                                                    <svg className="w-4 h-4 text-[#8b5cf6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
