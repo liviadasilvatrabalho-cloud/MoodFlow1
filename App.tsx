@@ -184,7 +184,7 @@ export default function App() {
                         {/* Header Section */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                             <div>
-                                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">{t.hello} {user.name.split(' ')[0]}!</h1>
+                                <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight">{t.hello} {user.name.split(' ')[0]}!</h1>
                                 <p className="text-sm text-gray-500 mt-1 font-medium">{t.readyTrack}</p>
                             </div>
                             <div className="flex gap-3 w-full md:w-auto">
@@ -207,16 +207,16 @@ export default function App() {
                         </div>
 
                         {/* Top Cards Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-[#0D0D0D] p-8 rounded-[36px] border border-white/5 shadow-2xl flex items-center justify-between group h-48 hover:border-white/10 transition-all">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                            <div className="bg-[#0D0D0D] p-6 md:p-8 rounded-[36px] border border-white/5 shadow-2xl flex items-center justify-between group h-40 md:h-48 hover:border-white/10 transition-all">
                                 <div>
-                                    <label className="text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4 block">{t.lastMood}</label>
+                                    <label className="text-[10px] md:text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2 md:mb-4 block">{t.lastMood}</label>
                                     {latestEntry ? (
                                         <div className="space-y-1">
-                                            <h3 className="text-3xl font-black text-white tracking-tight">
+                                            <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">
                                                 {isMoodEntry ? (lastMood?.label || 'Okay') : t.diary}
                                             </h3>
-                                            <p className="text-xs text-gray-600 font-bold uppercase tracking-tight">
+                                            <p className="text-[10px] md:text-xs text-gray-600 font-bold uppercase tracking-tight">
                                                 {new Date(latestEntry.timestamp).toLocaleDateString('pt-BR')} • {new Date(latestEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
@@ -224,31 +224,31 @@ export default function App() {
                                         <p className="text-sm text-gray-500 font-medium italic">{t.noEntries}</p>
                                     )}
                                 </div>
-                                <div className="text-7xl md:text-8xl drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform group-hover:scale-110 transition-transform duration-500">
+                                <div className="text-6xl md:text-8xl drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform group-hover:scale-110 transition-transform duration-500">
                                     {isMoodEntry ? (lastMood?.emoji || '😐') : '📖'}
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-[#1A1A1A] to-[#0D0D0D] p-8 rounded-[36px] border border-white/5 shadow-2xl flex flex-col justify-between h-48 group hover:border-white/10 transition-all relative overflow-hidden">
+                            <div className="bg-gradient-to-br from-[#1A1A1A] to-[#0D0D0D] p-6 md:p-8 rounded-[36px] border border-white/5 shadow-2xl flex flex-col justify-between h-40 md:h-48 group hover:border-white/10 transition-all relative overflow-hidden">
                                 <div className="z-10 relative">
-                                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">{t.diaryTitle}</h2>
-                                    <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-[250px]">{t.diarySubtitle}</p>
+                                    <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">{t.diaryTitle}</h2>
+                                    <p className="text-[11px] md:text-sm text-gray-400 font-medium leading-relaxed max-w-[200px] md:max-w-[250px]">{t.diarySubtitle}</p>
                                 </div>
                                 <button
                                     onClick={() => { setShowEntryForm(true); setEntryMode('diary'); }}
-                                    className="bg-white text-black font-black text-xs uppercase tracking-widest py-3 px-6 rounded-2xl shadow-xl w-max z-10 hover:scale-[1.05] transition-all"
+                                    className="bg-white text-black font-black text-[10px] md:text-xs uppercase tracking-widest py-2.5 md:py-3 px-5 md:px-6 rounded-2xl shadow-xl w-max z-10 hover:scale-[1.05] transition-all"
                                 >
                                     {t.writeNew}
                                 </button>
-                                <div className="absolute top-0 right-0 p-8 opacity-10 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-700">
-                                    <svg className="w-40 h-40 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 2H5C3.34 2 2 3.34 2 5V21C2 21.55 2.45 22 3 22H19C19.55 22 20 21.55 20 21V5C20 3.34 18.66 2 17 2H19V2ZM18 20H4V5C4 4.45 4.45 4 5 4H17C17.55 4 18 4.45 18 5V20Z" /></svg>
+                                <div className="absolute top-0 right-0 p-6 md:p-8 opacity-10 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-700">
+                                    <svg className="w-32 h-32 md:w-40 md:h-40 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19 2H5C3.34 2 2 3.34 2 5V21C2 21.55 2.45 22 3 22H19C19.55 22 20 21.55 20 21V5C20 3.34 18.66 2 17 2H19V2ZM18 20H4V5C4 4.45 4.45 4 5 4H17C17.55 4 18 4.45 18 5V20Z" /></svg>
                                 </div>
                             </div>
                         </div>
 
                         {/* Recent Activity List */}
                         <div className="space-y-6">
-                            <h3 className="text-xl font-black text-white tracking-tight flex items-center gap-3">
+                            <h3 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-3">
                                 {t.recentActivity}
                                 <span className="text-xs bg-white/5 text-gray-500 px-3 py-1 rounded-full border border-white/5 font-bold">{entries.length}</span>
                             </h3>
@@ -336,17 +336,20 @@ export default function App() {
                                                 <h5 className="text-[10px] uppercase font-black tracking-widest text-[#8b5cf6] flex items-center gap-2">
                                                     <span>🧠</span> Anotações do Psicólogo
                                                 </h5>
-                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === UserRole.PSICOLOGO).map(note => (
-                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole !== 'PACIENTE' ? 'bg-[#1e1b4b] border-[#8b5cf6]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
-                                                        <div className={`absolute -top-2 ${note.authorRole !== 'PACIENTE' ? 'left-4 bg-[#8b5cf6]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
-                                                            {note.authorRole !== 'PACIENTE' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psicólogo'}` : 'Sua Resposta'}
+                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === UserRole.PSICOLOGO).map(note => {
+                                                    const isDoctor = [UserRole.PSICOLOGO, UserRole.PSIQUIATRA, UserRole.ADMIN_CLINICA].includes(note.authorRole as UserRole) || (note.authorRole as string) === 'DOCTOR';
+                                                    return (
+                                                        <div key={note.id} className={`rounded-2xl p-4 border relative ${isDoctor ? 'bg-[#1e1b4b] border-[#8b5cf6]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                            <div className={`absolute -top-2 ${isDoctor ? 'left-4 bg-[#8b5cf6]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                                {isDoctor ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psicólogo'}` : 'Sua Resposta'}
+                                                            </div>
+                                                            <p className="text-gray-200 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
+                                                            <span className="text-[9px] text-gray-500 block mt-2 font-black uppercase tracking-widest">
+                                                                {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
                                                         </div>
-                                                        <p className="text-gray-200 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
-                                                        <span className="text-[9px] text-gray-500 block mt-2 font-black uppercase tracking-widest">
-                                                            {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         )}
 
@@ -356,17 +359,20 @@ export default function App() {
                                                 <h5 className="text-[10px] uppercase font-black tracking-widest text-[#10b981] flex items-center gap-2">
                                                     <span>💊</span> Anotações do Psiquiatra
                                                 </h5>
-                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === UserRole.PSIQUIATRA).map(note => (
-                                                    <div key={note.id} className={`rounded-2xl p-4 border relative ${note.authorRole !== 'PACIENTE' ? 'bg-[#064e3b]/30 border-[#10b981]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
-                                                        <div className={`absolute -top-2 ${note.authorRole !== 'PACIENTE' ? 'left-4 bg-[#10b981]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
-                                                            {note.authorRole !== 'PACIENTE' ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psiquiatra'}` : 'Sua Resposta'}
+                                                {doctorNotes.filter(n => n.entryId === entry.id && n.status === 'active' && n.doctorRole === UserRole.PSIQUIATRA).map(note => {
+                                                    const isDoctor = [UserRole.PSICOLOGO, UserRole.PSIQUIATRA, UserRole.ADMIN_CLINICA].includes(note.authorRole as UserRole) || (note.authorRole as string) === 'DOCTOR';
+                                                    return (
+                                                        <div key={note.id} className={`rounded-2xl p-4 border relative ${isDoctor ? 'bg-[#064e3b]/30 border-[#10b981]/30 ml-0 mr-4' : 'bg-[#111] border-white/10 ml-8 mr-0'}`}>
+                                                            <div className={`absolute -top-2 ${isDoctor ? 'left-4 bg-[#10b981]' : 'right-4 bg-gray-700'} text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-lg`}>
+                                                                {isDoctor ? `Dr. ${note.doctorName?.split(' ')[0] || 'Psiquiatra'}` : 'Sua Resposta'}
+                                                            </div>
+                                                            <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
+                                                            <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
+                                                                {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
                                                         </div>
-                                                        <p className="text-gray-300 text-sm mt-2 whitespace-pre-wrap break-words overflow-hidden [overflow-wrap:anywhere]">{note.text}</p>
-                                                        <span className="text-[9px] text-gray-600 block mt-2 font-black uppercase tracking-widest">
-                                                            {new Date(note.createdAt).toLocaleDateString('pt-BR')} • {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         )}
 
