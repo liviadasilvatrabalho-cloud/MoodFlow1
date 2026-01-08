@@ -559,6 +559,54 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         doc.save(`relatorio_${report.reportType}_${patient?.name.replace(/\s+/g, '_') || 'paciente'}.pdf`);
     };
 
+    const handlePrintClinicalReportPDF = (report: ClinicalReport) => {
+        const patient = patients.find(p => p.id === selectedPatientId);
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(22);
+        doc.setTextColor(124, 58, 237); // Brand Primary
+        doc.text('MoodFlow Enterprise', 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text('Relatório Clínico Individual', 14, 30);
+
+        doc.setDrawColor(200);
+        doc.line(14, 35, 196, 35);
+
+        // Metadata
+        doc.setFontSize(10);
+        doc.setTextColor(0);
+        doc.text(`Paciente: ${patient?.name || 'N/A'}`, 14, 45);
+        doc.text(`Data: ${new Date(report.createdAt).toLocaleDateString()} ${new Date(report.createdAt).toLocaleTimeString()}`, 14, 50);
+        doc.text(`Profissional: Dr(a). ${user.name} (${user.clinicalRole === 'psychologist' ? 'Psicólogo(a)' : user.clinicalRole === 'psychiatrist' ? 'Psiquiatra' : 'Profissional'})`, 14, 55);
+        doc.text(`Tipo: ${report.reportType.toUpperCase()}`, 14, 60);
+
+        // Title
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(report.title, 14, 75);
+
+        // Content
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(50);
+
+        const splitText = doc.splitTextToSize(report.content, 180);
+        doc.text(splitText, 14, 85);
+
+        // Footer signature line
+        const pageHeight = doc.internal.pageSize.height;
+        doc.setDrawColor(100);
+        doc.line(14, pageHeight - 30, 80, pageHeight - 30);
+        doc.setFontSize(8);
+        doc.text(`Dr(a). ${user.name}`, 14, pageHeight - 25);
+
+        doc.autoPrint();
+        window.open(doc.output('bloburl'), '_blank');
+    };
+
     const handleExportXLSX = () => {
         if (!selectedPatientId) return;
         const patient = patients.find(p => p.id === selectedPatientId);
@@ -1086,6 +1134,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                     title="Exportar PDF"
                                                                 >
                                                                     📥
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handlePrintClinicalReportPDF(report)}
+                                                                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                                                                    title="Imprimir"
+                                                                >
+                                                                    🖨️
                                                                 </button>
                                                                 <button
                                                                     onClick={async () => {
