@@ -234,24 +234,24 @@ export const storageService = {
     // --- DOCTORS ---
     getConnectedDoctors: async (patientId: string): Promise<User[]> => {
         const { data } = await supabase
-            .from('patient_doctors')
-            .select('doctor_id, profiles!patient_doctors_doctor_id_fkey(*)')
+            .from('doctor_patients')
+            .select('doctor_id, profiles!doctor_patients_doctor_id_fkey(*)')
             .eq('patient_id', patientId);
         return data ? data.map((d: any) => mapDbUserToUser(d.profiles)) : [];
     },
 
     getPatientsForDoctor: async (doctorId: string): Promise<User[]> => {
         const { data } = await supabase
-            .from('patient_doctors')
-            .select('patient_id, profiles!patient_doctors_patient_id_fkey(*)')
+            .from('doctor_patients')
+            .select('patient_id, profiles!doctor_patients_patient_id_fkey(*)')
             .eq('doctor_id', doctorId);
         return data ? data.map((d: any) => mapDbUserToUser(d.profiles)) : [];
     },
 
     getMedicalDashboard: async (doctorId: string): Promise<any[]> => {
         const { data } = await supabase
-            .from('patient_doctors')
-            .select('patient_id, profiles!patient_doctors_patient_id_fkey(name, email)')
+            .from('doctor_patients')
+            .select('patient_id, profiles!doctor_patients_patient_id_fkey(name, email)')
             .eq('doctor_id', doctorId);
         return data ? data.map((d: any) => ({
             patient_id: d.patient_id,
@@ -263,14 +263,14 @@ export const storageService = {
     connectDoctor: async (patientId: string, doctorCode: string) => {
         const { data: doc } = await supabase.from('profiles').select('id').eq('id', doctorCode).single();
         if (!doc) throw new Error("Doctor not found");
-        await supabase.from('patient_doctors').insert({ patient_id: patientId, doctor_id: doc.id });
+        await supabase.from('doctor_patients').insert({ patient_id: patientId, doctor_id: doc.id });
     },
 
     connectPatient: async (doctorId: string, patientEmail: string) => {
         const { data: patient } = await supabase.from('profiles').select('id').eq('email', patientEmail).single();
         if (!patient) return { success: false, message: 'patientNotFound' };
 
-        const { error } = await supabase.from('patient_doctors').insert({ patient_id: patient.id, doctor_id: doctorId });
+        const { error } = await supabase.from('doctor_patients').insert({ patient_id: patient.id, doctor_id: doctorId });
         if (error) {
             if (error.code === '23505') return { success: false, message: 'alreadyConnected' };
             throw error;
