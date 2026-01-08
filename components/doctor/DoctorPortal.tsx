@@ -1365,7 +1365,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                         <div className="mt-4 space-y-3 border-t border-white/5 pt-3">
                                                                             {entryNotes.map(note => (
                                                                                 <div key={note.id} className={`flex flex-col ${(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? 'items-start' : 'items-end'}`}>
-                                                                                    <div className={`relative group max-w-[85%] p-2 rounded-xl text-xs break-words overflow-hidden [overflow-wrap:anywhere] whitespace-pre-wrap ${(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? 'bg-neutral-800 text-gray-300' : 'bg-blue-900/30 text-blue-100 border border-blue-900/50'}`}>
+                                                                                    <div className={`relative group max-w-[85%] p-2 rounded-xl text-xs break-words [overflow-wrap:anywhere] whitespace-pre-wrap ${(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? 'bg-neutral-800 text-gray-300' : 'bg-blue-900/30 text-blue-100 border border-blue-900/50'}`}>
                                                                                         <span className="font-bold block text-[10px] opacity-50 mb-1">{(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? (patients.find(p => p.id === selectedPatientId)?.name || 'Paciente') : 'Dr. ' + user.name}</span>
                                                                                         {note.type === 'audio' && note.audioUrl ? (
                                                                                             <AudioPlayer url={note.audioUrl} duration={note.duration} />
@@ -1387,7 +1387,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                                                         alert('Erro ao excluir mensagem.');
                                                                                                     }
                                                                                                 }}
-                                                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110"
+                                                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110 z-10"
                                                                                                 title="Excluir mensagem"
                                                                                             >
                                                                                                 ×
