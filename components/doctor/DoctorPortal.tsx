@@ -1129,13 +1129,6 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                     ✏️
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => handleExportClinicalReportPDF(report)}
-                                                                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
-                                                                    title="Exportar PDF"
-                                                                >
-                                                                    📥
-                                                                </button>
-                                                                <button
                                                                     onClick={() => handlePrintClinicalReportPDF(report)}
                                                                     className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
                                                                     title="Imprimir"
