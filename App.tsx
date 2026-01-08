@@ -122,17 +122,12 @@ const AudioPlayer = ({ url, duration }: { url: string, duration?: number }) => {
         setLoading(true);
         storageService.getAudioUrl(url).then(u => {
             if (active) {
-                if (u) {
-                    console.log("Audio signed URL acquired");
-                    setSignedUrl(u);
-                } else {
-                    console.error("Failed to get signed URL for:", url);
-                    setError(true);
-                }
+                if (u) setSignedUrl(u);
+                else setError(true);
                 setLoading(false);
             }
         }).catch(err => {
-            console.error("Error fetching audio URL:", err);
+            console.error(err);
             if (active) {
                 setError(true);
                 setLoading(false);
@@ -142,66 +137,16 @@ const AudioPlayer = ({ url, duration }: { url: string, duration?: number }) => {
         return () => { active = false; };
     }, [url]);
 
-    useEffect(() => {
-        if (!signedUrl) return;
-
-        const audio = new Audio(signedUrl);
-        audio.preload = 'auto'; // Force preload for better response
-        audioRef.current = audio;
-
-        const updateProgress = () => {
-            if (audio.duration && !isNaN(audio.duration)) {
-                setProgress((audio.currentTime / audio.duration) * 100);
-            }
-        };
-
-        const handleEnded = () => {
-            console.log("Audio playback ended");
-            setIsPlaying(false);
-            setProgress(0);
-        };
-
-        const handleError = (e: any) => {
-            console.error("Audio playback error event:", e);
-            setError(true);
-            setIsPlaying(false);
-        };
-
-        audio.addEventListener('timeupdate', updateProgress);
-        audio.addEventListener('ended', handleEnded);
-        audio.addEventListener('error', handleError);
-
-        return () => {
-            audio.removeEventListener('timeupdate', updateProgress);
-            audio.removeEventListener('ended', handleEnded);
-            audio.removeEventListener('error', handleError);
-            audio.pause();
-            audioRef.current = null;
-        };
-    }, [signedUrl]);
-
     const togglePlay = () => {
-        console.log("Toggle play clicked. Current state:", { isPlaying, hasAudio: !!audioRef.current, hasUrl: !!signedUrl });
-        if (!audioRef.current || !signedUrl) {
-            console.warn("Cannot play: audio not ready or no URL");
-            return;
-        }
+        if (!audioRef.current) return;
 
         if (isPlaying) {
             audioRef.current.pause();
-            setIsPlaying(false);
         } else {
-            audioRef.current.play()
-                .then(() => {
-                    console.log("Playback started successfully");
-                    setIsPlaying(true);
-                })
-                .catch(err => {
-                    console.error("Play execution failed:", err);
-                    // Browsers require interaction, but this is a button click.
-                    // If it fails, maybe it's a codec or 403 on the signed URL?
-                    setError(true);
-                });
+            audioRef.current.play().catch(err => {
+                console.error("Playback error:", err);
+                setError(true);
+            });
         }
     };
 
@@ -212,14 +157,31 @@ const AudioPlayer = ({ url, duration }: { url: string, duration?: number }) => {
         return `${m}:${s < 10 ? '0' : ''}${s}`;
     };
 
-    if (error) return <div className="text-red-500 text-[10px] bg-red-500/10 px-2 py-1 rounded">Erro ao reproduzir</div>;
-    if (loading) return <div className="text-white/40 text-[10px] animate-pulse">Carregando...</div>;
+    if (error) return <div className="text-red-500 text-[10px] bg-red-500/10 px-2 py-1 rounded">Erro ao carregar áudio</div>;
+    if (loading) return <div className="text-white/40 text-[10px] animate-pulse">...</div>;
 
     return (
-        <div className="flex items-center gap-3 bg-black/40 rounded-2xl p-3 mt-2 w-full max-w-[240px] border border-white/5">
+        <div className="flex items-center gap-3 bg-black/40 rounded-2xl p-3 mt-2 w-full max-w-[240px] border border-white/5 group">
+            <audio
+                ref={audioRef}
+                src={signedUrl || undefined}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => { setIsPlaying(false); setProgress(0); }}
+                onTimeUpdate={() => {
+                    if (audioRef.current) {
+                        const cur = audioRef.current.currentTime;
+                        const dur = audioRef.current.duration;
+                        if (dur) setProgress((cur / dur) * 100);
+                    }
+                }}
+                onError={() => setError(true)}
+                preload="auto"
+            />
             <button
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                 className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-[#8b5cf6] text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                disabled={error || loading}
             >
                 {isPlaying ? (
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
