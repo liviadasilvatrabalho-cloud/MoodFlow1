@@ -33,6 +33,10 @@ export default function Auth({ isAdminMode = false }: AuthProps) {
 
         try {
             if (isSignUp) {
+                if (isAdminMode || role === UserRole.ADMIN_CLINICA) {
+                    setMessage({ type: 'error', text: 'Cadastro de administradores não permitido via interface.' });
+                    return;
+                }
                 await storageService.signupEmail(email, password, fullName, role);
                 setMessage({ type: 'success', text: 'Conta criada! Verifique seu email ou faça login.' })
             } else {
@@ -204,6 +208,19 @@ export default function Auth({ isAdminMode = false }: AuthProps) {
                                 {isSignUp ? 'Entre aqui' : 'Cadastre-se grátis'}
                             </span>
                         </button>
+
+                        <div className="mt-4">
+                            <a
+                                href="/admin/login"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    window.location.href = window.location.origin + '/?admin=true';
+                                }}
+                                className="text-[9px] text-gray-700 hover:text-gray-500 transition-colors uppercase font-mono tracking-tight"
+                            >
+                                Acesso administrativo
+                            </a>
+                        </div>
                     </div>
                 )}
             </div>

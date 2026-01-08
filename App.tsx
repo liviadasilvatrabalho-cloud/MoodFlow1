@@ -27,7 +27,12 @@ export default function App() {
     const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string, role?: string }[]>([]);
     const [replyRecipients, setReplyRecipients] = useState<{ [key: string]: 'PSYCHOLOGIST' | 'PSYCHIATRIST' | 'BOTH' | null }>({});
     const [replyTexts, setReplyTexts] = useState<{ [key: string]: string }>({});
-    const [isAdminPath, setIsAdminPath] = useState(window.location.search.includes('admin=true'));
+    // Detect admin access path (query string or pathname)
+    const [isAdminPath, setIsAdminPath] = useState(
+        window.location.search.includes('admin=true') ||
+        window.location.pathname.includes('/admin/login') ||
+        window.location.hash.includes('admin=true')
+    );
     const [isEditingName, setIsEditingName] = useState(false);
     const [tempName, setTempName] = useState('');
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -35,10 +40,18 @@ export default function App() {
 
 
     useEffect(() => {
-        // Simple listener for URL changes (optional if using a router, but here we use simple state)
-        const checkPath = () => setIsAdminPath(window.location.search.includes('admin=true'));
+        // Listen for URL changes to detect admin path
+        const checkPath = () => setIsAdminPath(
+            window.location.search.includes('admin=true') ||
+            window.location.pathname.includes('/admin/login') ||
+            window.location.hash.includes('admin=true')
+        );
         window.addEventListener('popstate', checkPath);
-        return () => window.removeEventListener('popstate', checkPath);
+        window.addEventListener('hashchange', checkPath);
+        return () => {
+            window.removeEventListener('popstate', checkPath);
+            window.removeEventListener('hashchange', checkPath);
+        };
     }, []);
 
     useEffect(() => {
@@ -165,8 +178,22 @@ export default function App() {
     );
 
 
-    if (!user) return <Auth isAdminMode={isAdminPath} />;
-    if (user.role === UserRole.PSICOLOGO || user.role === UserRole.PSIQUIATRA || user.role === UserRole.ADMIN_CLINICA) return <DoctorPortal user={user} onLogout={storageService.logout} isAdminPortal={user.role === UserRole.ADMIN_CLINICA} />;
+    // Route Protection: If trying to access admin path but user is not ADMIN_CLINICA, redirect to public login
+    if (!user) {
+        return <Auth isAdminMode={isAdminPath} />;
+    }
+
+    // Security: Non-admin users should never access admin login area
+    if (isAdminPath && user.role !== UserRole.ADMIN_CLINICA) {
+        // Redirect to public login
+        window.location.href = window.location.origin;
+        return null;
+    }
+
+    // Redirect professionals and admins to DoctorPortal
+    if (user.role === UserRole.PSICOLOGO || user.role === UserRole.PSIQUIATRA || user.role === UserRole.ADMIN_CLINICA) {
+        return <DoctorPortal user={user} onLogout={storageService.logout} isAdminPortal={user.role === UserRole.ADMIN_CLINICA} />;
+    }
 
     const t = TRANSLATIONS[lang] || TRANSLATIONS['pt'];
     const latestEntry = entries[0];
