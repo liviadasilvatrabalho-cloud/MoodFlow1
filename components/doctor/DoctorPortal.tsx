@@ -786,7 +786,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     return (
         <div className="min-h-screen md:h-screen w-full bg-background text-textMain flex flex-col md:flex-row overflow-hidden">
             <aside className={`w-full md:w-80 bg-surfaceHighlight border-r border-neutral-800 flex flex-col flex-shrink-0 md:h-full absolute md:relative z-20 h-full transition-transform duration-300 ${selectedPatientId && portalView === 'clinical' ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
-                <div className="p-6 border-b border-neutral-800">
+                <div className="p-6 pt-12 md:pt-6 border-b border-neutral-800">
                     <div className="flex justify-between items-center mb-4">
                         <h1 className="font-black text-xl md:text-2xl text-primary mb-1">MoodFlow <span className="text-xs text-white bg-primary px-2 py-0.5 rounded ml-1">PRO</span></h1>
                         <button onClick={onLogout} className="md:hidden p-2 text-textMuted">
