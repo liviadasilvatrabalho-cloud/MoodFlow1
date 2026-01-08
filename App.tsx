@@ -289,7 +289,7 @@ export default function App() {
                 )}
 
                 {view === 'diary' && (
-                    <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-10 animate-in slide-in-from-bottom-8 duration-700">
+                    <div className="px-4 pt-20 pb-4 md:p-10 max-w-5xl mx-auto space-y-10 animate-in slide-in-from-bottom-8 duration-700">
                         <div className="flex justify-between items-center">
                             <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter">{t.diaryTitle}</h2>
                             <button onClick={() => { setShowEntryForm(true); setEntryMode('diary'); }} className="bg-white text-black px-6 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all">
