@@ -248,10 +248,34 @@ export const storageService = {
         return data ? data.map((d: any) => mapDbUserToUser(d.profiles)) : [];
     },
 
+    getMedicalDashboard: async (doctorId: string): Promise<any[]> => {
+        const { data } = await supabase
+            .from('patient_doctors')
+            .select('patient_id, profiles!patient_doctors_patient_id_fkey(name, email)')
+            .eq('doctor_id', doctorId);
+        return data ? data.map((d: any) => ({
+            patient_id: d.patient_id,
+            patient_name: d.profiles?.name,
+            patient_email: d.profiles?.email
+        })) : [];
+    },
+
     connectDoctor: async (patientId: string, doctorCode: string) => {
         const { data: doc } = await supabase.from('profiles').select('id').eq('id', doctorCode).single();
         if (!doc) throw new Error("Doctor not found");
         await supabase.from('patient_doctors').insert({ patient_id: patientId, doctor_id: doc.id });
+    },
+
+    connectPatient: async (doctorId: string, patientEmail: string) => {
+        const { data: patient } = await supabase.from('profiles').select('id').eq('email', patientEmail).single();
+        if (!patient) return { success: false, message: 'patientNotFound' };
+
+        const { error } = await supabase.from('patient_doctors').insert({ patient_id: patient.id, doctor_id: doctorId });
+        if (error) {
+            if (error.code === '23505') return { success: false, message: 'alreadyConnected' };
+            throw error;
+        }
+        return { success: true, message: 'success' };
     },
 
     // --- NOTES ---
@@ -286,6 +310,13 @@ export const storageService = {
         } as DoctorNote;
     },
 
+    markNotesAsRead: async (patientId: string, role: 'DOCTOR' | 'PATIENT') => {
+        // Updated to actually perform a useful update if possible, or just stub correctly
+        await supabase.from('doctor_notes')
+            .update({ read: true })
+            .eq('patient_id', patientId);
+    },
+
     getNotes: async (entryId: string): Promise<DoctorNote[]> => {
         const { data } = await supabase
             .from('doctor_notes')
@@ -298,8 +329,23 @@ export const storageService = {
             threadId: n.thread_id, text: n.text, type: n.type, audioUrl: n.audio_url,
             duration: n.duration, isShared: n.is_shared, authorRole: n.author_role,
             read: n.read, status: n.status, createdAt: n.created_at,
-            doctorName: (n as any).profiles?.name,
-            doctorRole: normalizeRole((n as any).profiles?.role)
+            doctorName: n.profiles?.name, doctorRole: n.profiles?.role
+        })) as DoctorNote[] : [];
+    },
+
+    getPatientNotes: async (patientId: string): Promise<DoctorNote[]> => {
+        const { data } = await supabase
+            .from('doctor_notes')
+            .select('*, profiles:doctor_id(name, role)')
+            .eq('patient_id', patientId)
+            .order('created_at', { ascending: true });
+
+        return data ? data.map(n => ({
+            id: n.id, doctorId: n.doctor_id, patientId: n.patient_id, entryId: n.entry_id,
+            threadId: n.thread_id, text: n.text, type: n.type, audioUrl: n.audio_url,
+            duration: n.duration, isShared: n.is_shared, authorRole: n.author_role,
+            read: n.read, status: n.status, createdAt: n.created_at,
+            doctorName: n.profiles?.name, doctorRole: n.profiles?.role
         })) as DoctorNote[] : [];
     },
 
@@ -325,69 +371,104 @@ export const storageService = {
             })) as DoctorNote[]);
         };
         fetch();
-        const chan = supabase.channel('notes-p-' + patientId)
+        const chan = supabase.channel('doctor_notes-' + patientId)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'doctor_notes', filter: `patient_id=eq.${patientId}` }, fetch)
             .subscribe();
         return () => { supabase.removeChannel(chan); };
     },
 
     deleteDoctorNote: async (noteId: string) => {
-        await supabase.from('doctor_notes').delete().eq('id', noteId);
+        const { error } = await supabase.from('doctor_notes').delete().eq('id', noteId);
+        if (error) throw error;
     },
 
     // --- THREADS ---
     getOrCreateThread: async (patientId: string, professionalId: string, specialty: string): Promise<MessageThread> => {
-        const { data: existing } = await supabase.from('message_threads').select('*').eq('patient_id', patientId).eq('professional_id', professionalId).eq('specialty', specialty).maybeSingle();
-        if (existing) return { id: existing.id, patientId: existing.patient_id, professionalId: existing.professional_id, specialty: existing.specialty, createdAt: existing.created_at } as MessageThread;
+        const { data: existing } = await supabase.from('message_threads')
+            .select('*')
+            .eq('patient_id', patientId)
+            .eq('professional_id', professionalId)
+            .maybeSingle();
 
-        const { data: created, error } = await supabase.from('message_threads').insert({ patient_id: patientId, professional_id: professionalId, specialty: specialty }).select().maybeSingle();
-        if (error && error.code === '23505') {
-            const { data: retry } = await supabase.from('message_threads').select('*').eq('patient_id', patientId).eq('professional_id', professionalId).eq('specialty', specialty).single();
-            if (retry) return { id: retry.id, patientId: retry.patient_id, professionalId: retry.professional_id, specialty: retry.specialty, createdAt: retry.created_at } as MessageThread;
-        }
+        if (existing) return existing as MessageThread;
+
+        const newThread = {
+            id: crypto.randomUUID(),
+            patient_id: patientId,
+            professional_id: professionalId,
+            professional_specialty: specialty,
+            status: 'active',
+            created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase.from('message_threads').insert(newThread).select().single();
         if (error) throw error;
-        return { id: created!.id, patientId: created!.patient_id, professionalId: created!.professional_id, specialty: created!.specialty, createdAt: created!.created_at } as MessageThread;
+        return data as MessageThread;
     },
 
     getThreads: async (userId: string, role: UserRole): Promise<MessageThread[]> => {
-        const col = role === UserRole.PACIENTE ? 'patient_id' : 'professional_id';
-        const { data } = await supabase.from('message_threads').select('*').eq(col, userId).order('created_at', { ascending: false });
-        return data ? data.map(row => ({ id: row.id, patientId: row.patient_id, professionalId: row.professional_id, specialty: row.specialty, createdAt: row.created_at })) as MessageThread[] : [];
+        const field = role === UserRole.PACIENTE ? 'patient_id' : 'professional_id';
+        const { data } = await supabase.from('message_threads').select('*').eq(field, userId);
+        return (data || []) as MessageThread[];
+    },
+
+    // --- CLINICS & CHARTS ---
+    getClinics: async (userId: string): Promise<any[]> => {
+        const { data } = await supabase.from('clinics').select('*');
+        return data || [];
+    },
+
+    createClinic: async (clinicName: string) => {
+        await supabase.from('clinics').insert({ name: clinicName });
+    },
+
+    getPatientCharts: async (pid: string): Promise<any[]> => {
+        const { data } = await supabase.from('charts').select('*').eq('patient_id', pid);
+        return data || [];
     },
 
     // --- AUDIO ---
     uploadAudio: async (audioBlob: Blob): Promise<string> => {
-        const ext = audioBlob.type.includes('mp4') ? 'm4a' : 'webm';
-        const name = `audio_${crypto.randomUUID()}.${ext}`;
-        const { data, error } = await supabase.storage.from('audio-comments').upload(name, audioBlob, { contentType: audioBlob.type });
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        const fileName = `${user.id}/${Date.now()}.webm`;
+        const { data, error } = await supabase.storage.from('audio-comments').upload(fileName, audioBlob);
         if (error) throw error;
         return data.path;
     },
 
     getAudioUrl: async (path: string): Promise<string | null> => {
-        const { data } = await supabase.storage.from('audio-comments').createSignedUrl(path, 3600);
-        return data ? data.signedUrl : null;
+        const { data, error } = await supabase.storage.from('audio-comments').createSignedUrl(path, 3600);
+        return data?.signedUrl || null;
     },
 
     // --- LOGS & NOTIFS ---
     logView: async (viewerId: string, targetId: string, entityType: string) => {
-        await supabase.from('view_logs').insert({ viewer_id: viewerId, target_id: targetId, entity_type: entityType });
+        await supabase.from('audit_logs').insert({ actor_id: viewerId, action: 'VIEW', target_id: targetId, entity_type: entityType });
+    },
+
+    logAudit: async (actorId: string, action: string, targetId: string) => {
+        await supabase.from('audit_logs').insert({ actor_id: actorId, action, target_id: targetId });
+    },
+
+    createRiskAlert: async (patientId: string, score: number, level: string, reason: string) => {
+        await supabase.from('risk_alerts').insert({ patient_id: patientId, score, level, reason });
     },
 
     subscribeNotifications: (userId: string, callback: (notifications: Notification[]) => void) => {
         const fetch = async () => {
-            const { data } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
-            if (data) callback(data.map(row => ({
-                id: row.id, userId: row.user_id, type: row.type, title: row.title, message: row.message,
-                data: row.data, readAt: row.read_at, createdAt: row.created_at
-            })) as Notification[]);
+            const { data } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+            if (data) callback(data as Notification[]);
         };
         fetch();
-        const chan = supabase.channel('notifs-' + userId).on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetch).subscribe();
+        const chan = supabase.channel('notifications-' + userId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetch)
+            .subscribe();
         return () => { supabase.removeChannel(chan); };
     },
 
     createNotification: async (notif: Partial<Notification>) => {
-        await supabase.from('notifications').insert({ user_id: notif.userId, type: notif.type, title: notif.title, message: notif.message, data: notif.data });
-    },
+        await supabase.from('notifications').insert(notif);
+    }
 };

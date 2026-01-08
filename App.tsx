@@ -242,11 +242,18 @@ export default function App() {
     useEffect(() => {
         if (user && user.role === UserRole.PACIENTE) {
             const unsub = storageService.subscribeEntries(user.id, (data) => setEntries(data));
+            // Patient: subscribe to shared notes for self
             const unsubNotes = storageService.subscribeNotes(undefined, user.id, (notes) => {
                 setDoctorNotes(notes);
             });
-            // FIX 1: Set full objects, not just IDs
-            storageService.getConnectedDoctors(user.id).then(docs => setConnectedDoctors(docs));
+
+            // Fetch connected doctors to enable reply buttons
+            storageService.getConnectedDoctors(user.id).then(docs => {
+                console.log("DEBUG: connectedDoctors fetched:", docs);
+                setConnectedDoctors(docs);
+            }).catch(err => {
+                console.error("DEBUG: Failed to fetch connected doctors:", err);
+            });
             return () => { unsub(); unsubNotes(); }
         }
     }, [user]);
@@ -663,7 +670,7 @@ export default function App() {
                                                 <textarea
                                                     id={`reply-input-${entry.id}`}
                                                     disabled={!replyRecipients[entry.id]}
-                                                    placeholder={!replyRecipients[entry.id] ? "Selecione um destinatário acima para escrever..." : "Digite sua mensagem..."}
+                                                    placeholder={!replyRecipients[entry.id] ? "Selecione um destinatário acima para escrever..." : t.writeReply || "Digite sua mensagem..."}
                                                     className={`w-full bg-[#0A0A0A] border rounded-xl pl-4 pr-14 py-4 text-sm text-white outline-none transition-all placeholder:text-gray-700 resize-none min-h-[80px] ${!replyRecipients[entry.id]
                                                         ? 'border-white/5 cursor-not-allowed opacity-50'
                                                         : replyRecipients[entry.id] === 'PSYCHOLOGIST'
@@ -694,26 +701,17 @@ export default function App() {
                                                                 const targets: { id: string, specialty: string }[] = [];
                                                                 if (recipient === 'BOTH') {
                                                                     connectedDoctors.forEach(d => {
-                                                                        if ((d.role === 'PSICOLOGO' && entry.visible_to_psychologist) ||
-                                                                            (d.role === 'PSIQUIATRA' && entry.visible_to_psychiatrist)) {
+                                                                        if ((d.role === 'PSICOLOGO' && entry.visible_to_psychologist !== false) ||
+                                                                            (d.role === 'PSIQUIATRA' && entry.visible_to_psychiatrist !== false)) {
                                                                             targets.push({ id: d.id, specialty: d.role });
                                                                         }
                                                                     });
-                                                                } else {
-                                                                    const [rId, rSpec] = recipient.split('|'); // This might be wrong if recipient is just 'PSYCHOLOGIST' enum key.
-                                                                    // Wait, replyRecipients stores 'PSYCHOLOGIST' | 'PSIQUIATRA' | 'BOTH'
-                                                                    // OR does it store ID|Role?
-                                                                    // Looking at lines 640/651: onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHOLOGIST' }))}
-                                                                    // It stores the ROLE KEY.
-
-                                                                    // Converting Role Key to ID lookup
-                                                                    if (recipient === 'PSYCHOLOGIST') {
-                                                                        const doc = connectedDoctors.find(d => d.role === 'PSICOLOGO');
-                                                                        if (doc) targets.push({ id: doc.id, specialty: 'PSICOLOGO' });
-                                                                    } else if (recipient === 'PSYCHIATRIST') {
-                                                                        const doc = connectedDoctors.find(d => d.role === 'PSIQUIATRA');
-                                                                        if (doc) targets.push({ id: doc.id, specialty: 'PSIQUIATRA' });
-                                                                    }
+                                                                } else if (recipient === 'PSYCHOLOGIST') {
+                                                                    const doc = connectedDoctors.find(d => d.role === 'PSICOLOGO');
+                                                                    if (doc) targets.push({ id: doc.id, specialty: 'PSICOLOGO' });
+                                                                } else if (recipient === 'PSYCHIATRIST') {
+                                                                    const doc = connectedDoctors.find(d => d.role === 'PSIQUIATRA');
+                                                                    if (doc) targets.push({ id: doc.id, specialty: 'PSIQUIATRA' });
                                                                 }
 
                                                                 if (targets.length === 0) {

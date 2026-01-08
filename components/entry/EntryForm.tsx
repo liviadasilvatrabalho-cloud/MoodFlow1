@@ -84,8 +84,26 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
         const entryDate = new Date(date);
         const finalTimestamp = new Date(getLocalISOString()).getTime();
 
-        // Use selectedDoctorIds directly for permissions
-        const permissionsToSave = selectedDoctorIds;
+        // Business Logic for Visibility:
+        // 如果 cadeado aberto (isLocked === false):
+        //   - none selected -> both see (fallback)
+        //   - specific selected -> only those see
+        // 如果 cadeado fechado (isLocked === true):
+        //   - both null (patient only)
+
+        let finalVisiblePsychologist = null;
+        let finalVisiblePsychiatrist = null;
+
+        if (!isLocked) {
+            if (!visiblePsychologist && !visiblePsychiatrist) {
+                // "🔓 Cadeado aberto + nenhuma opção marcada → Psicólogo e Psiquiatra veem"
+                finalVisiblePsychologist = true;
+                finalVisiblePsychiatrist = true;
+            } else {
+                finalVisiblePsychologist = visiblePsychologist;
+                finalVisiblePsychiatrist = visiblePsychiatrist;
+            }
+        }
 
         const newEntry: MoodEntry = {
             id: crypto.randomUUID(),
@@ -97,10 +115,9 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
             energy: mode === 'mood' ? energy : undefined,
             text,
             tags: mode === 'mood' ? selectedTags : [],
-            isLocked: permissionsToSave.length === 0, // If no doctors selected, it's private/locked
-            permissions: permissionsToSave,
-            visible_to_psychologist: !isLocked ? visiblePsychologist : null,
-            visible_to_psychiatrist: !isLocked ? visiblePsychiatrist : null,
+            isLocked,
+            visible_to_psychologist: finalVisiblePsychologist,
+            visible_to_psychiatrist: finalVisiblePsychiatrist,
             entryMode: mode
         };
 
@@ -273,17 +290,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                             />
                         </div>
 
-                        {/* Permission Sharing (Granular) */}
-                        {/* Permission Sharing (Simplified) */}
                         {/* Permission Sharing (Granular - New) */}
-                        {!isLocked && connectedDoctors.length > 0 && (
+                        {!isLocked && (
                             <div className="space-y-4 pt-4 animate-in fade-in duration-500 border-t border-white/5">
-                                <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90 block mb-3">
+                                <label className="text-[12px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] font-black ml-1 opacity-90 block mb-3">
                                     QUEM PODE VER ESTE REGISTRO?
                                 </label>
                                 <div className="flex flex-col gap-3">
                                     <label className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
-                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychologist ? 'bg-indigo-500 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.4)]' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychologist ? 'bg-indigo-500 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.4)]' : 'border-neutral-700 group-hover:border-neutral-600'}`}>
                                             {visiblePsychologist && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                         </div>
                                         <input
@@ -292,14 +307,14 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                             checked={visiblePsychologist}
                                             onChange={(e) => setVisiblePsychologist(e.target.checked)}
                                         />
-                                        <div className="flex flex-col">
-                                            <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychologist ? 'text-white' : 'text-gray-500'}`}>Psicólogo</span>
-                                            <span className="text-[10px] text-gray-500 font-medium">Compartilhar com seu terapeuta</span>
+                                        <div className="flex flex-col text-left">
+                                            <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychologist ? 'text-white' : 'text-neutral-500'}`}>Psicólogo</span>
+                                            <span className="text-[10px] text-neutral-600 font-medium">Compartilhar com seu terapeuta</span>
                                         </div>
                                     </label>
 
                                     <label className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
-                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychiatrist ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychiatrist ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'border-neutral-700 group-hover:border-neutral-600'}`}>
                                             {visiblePsychiatrist && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                         </div>
                                         <input
@@ -308,12 +323,17 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                                             checked={visiblePsychiatrist}
                                             onChange={(e) => setVisiblePsychiatrist(e.target.checked)}
                                         />
-                                        <div className="flex flex-col">
-                                            <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychiatrist ? 'text-white' : 'text-gray-500'}`}>Psiquiatra</span>
-                                            <span className="text-[10px] text-gray-500 font-medium">Compartilhar com a equipe médica</span>
+                                        <div className="flex flex-col text-left">
+                                            <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychiatrist ? 'text-white' : 'text-neutral-500'}`}>Psiquiatra</span>
+                                            <span className="text-[10px] text-neutral-600 font-medium">Compartilhar com a equipe médica</span>
                                         </div>
                                     </label>
                                 </div>
+                                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-tight mt-1 ml-1 italic opacity-70">
+                                    {(!visiblePsychologist && !visiblePsychiatrist)
+                                        ? "Dica: Se nada for marcado, ambos poderão ver."
+                                        : "O registro ficará visível apenas para os profissionais selecionados."}
+                                </p>
                             </div>
                         )}
                     </form>

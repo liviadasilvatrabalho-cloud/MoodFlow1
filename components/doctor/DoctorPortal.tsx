@@ -133,8 +133,24 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
             // Entries (Realtime)
             const unsubEntries = storageService.subscribeEntries(selectedPatientId, (data) => {
-                const unlockedEntries = data.filter(e => !e.isLocked || (e.permissions && e.permissions.includes(user.id)));
-                setPatientEntries(unlockedEntries);
+                const filtered = data.filter(e => {
+                    // 1. Basic visibility: unlocked OR user explicitly allowed (legacy)
+                    const isBasicVisible = !e.isLocked || (e.permissions && e.permissions.includes(user.id));
+                    if (!isBasicVisible) return false;
+
+                    // 2. Granular Visibility Check:
+                    // Psicólogos NUNCA podem ver registros onde: visible_to_psychologist === false
+                    if (user.role === UserRole.PSICOLOGO) {
+                        return e.visible_to_psychologist !== false;
+                    }
+                    // Psiquiatras NUNCA podem ver registros onde: visible_to_psychiatrist === false
+                    if (user.role === UserRole.PSIQUIATRA) {
+                        return e.visible_to_psychiatrist !== false;
+                    }
+
+                    return true;
+                });
+                setPatientEntries(filtered);
             });
 
             // Notes (Realtime)
@@ -292,7 +308,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             setCommentingEntryId(null);
 
             // Refresh notes for current patient (Subscription also handles this, but explicit refresh for immediate feedback)
-            const patientNotes = await storageService.getNotes(user.id, selectedPatientId);
+            const patientNotes = await storageService.getPatientNotes(selectedPatientId);
             setNotes(patientNotes);
         } catch (err: any) {
             console.error("Fail to save threaded comment", err);
