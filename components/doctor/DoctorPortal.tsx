@@ -1244,7 +1244,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                     <div className="flex-1 min-h-0 w-full overflow-x-auto overflow-y-hidden no-scrollbar cursor-grab active:cursor-grabbing select-none"
                                                         ref={chartScrollRef}>
                                                         <div style={{
-                                                            width: typeof window !== 'undefined' && window.innerWidth < 768 ? `${Math.max(100, filteredChartData.length * 60)}px` : '100%',
+                                                            width: typeof window !== 'undefined' && window.innerWidth < 768 ? `${Math.max(100, filteredChartData.length * 100)}px` : '100%',
                                                             height: '100%'
                                                         }}>
                                                             <ResponsiveContainer width="100%" height="100%">
