@@ -34,12 +34,16 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
     }, [isRecording]);
 
     const startRecording = async () => {
+        console.log('[AudioRecorder] startRecording called');
         isPressedRef.current = true;
         try {
+            console.log('[AudioRecorder] Requesting microphone access...');
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log('[AudioRecorder] Microphone access granted');
 
             // Safety check: if user already released button, abort
             if (!isPressedRef.current) {
+                console.log('[AudioRecorder] User released button, aborting');
                 stream.getTracks().forEach(t => t.stop());
                 return;
             }
@@ -53,21 +57,29 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
                 'audio/aac'
             ];
             const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+            console.log('[AudioRecorder] Selected MIME type:', mimeType || 'default');
 
             const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             const chunks: Blob[] = [];
 
             recorder.ondataavailable = (e) => {
-                if (e.data.size > 0) chunks.push(e.data);
+                if (e.data.size > 0) {
+                    console.log('[AudioRecorder] Chunk received:', e.data.size, 'bytes');
+                    chunks.push(e.data);
+                }
             };
 
             recorder.onstop = () => {
+                console.log('[AudioRecorder] Recording stopped, chunks:', chunks.length);
                 const finalDuration = Math.ceil((Date.now() - startTimeRef.current) / 1000);
                 const type = mimeType || recorder.mimeType || 'audio/webm';
                 const blob = new Blob(chunks, { type });
 
                 if (chunks.length > 0) {
+                    console.log('[AudioRecorder] Sending audio blob:', blob.size, 'bytes, duration:', finalDuration, 's');
                     onSend(blob, finalDuration);
+                } else {
+                    console.warn('[AudioRecorder] No audio data recorded');
                 }
 
                 stream.getTracks().forEach(track => track.stop());
@@ -75,18 +87,21 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
 
             startTimeRef.current = Date.now();
             recorder.start();
+            console.log('[AudioRecorder] Recording started');
             mediaRecorderRef.current = recorder;
             setIsRecording(true);
         } catch (err) {
-            console.error("Error accessing microphone:", err);
+            console.error('[AudioRecorder] Error:', err);
             alert("Permissão de microfone negada ou erro ao iniciar.");
             isPressedRef.current = false;
         }
     };
 
     const stopRecording = () => {
+        console.log('[AudioRecorder] stopRecording called');
         isPressedRef.current = false;
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            console.log('[AudioRecorder] Stopping recorder');
             mediaRecorderRef.current.stop();
             setIsRecording(false);
             mediaRecorderRef.current = null;
@@ -96,6 +111,7 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
     return (
         <div className="relative">
             <button
+                type="button"
                 onMouseDown={startRecording}
                 onMouseUp={stopRecording}
                 onMouseLeave={stopRecording}
