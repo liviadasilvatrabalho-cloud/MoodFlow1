@@ -887,12 +887,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             </aside>
 
             <main className="flex-1 h-full overflow-y-auto bg-black relative w-full">
-                <div className="md:hidden p-4 border-b border-neutral-800 flex items-center gap-4 sticky top-0 bg-black/90 backdrop-blur z-10">
-                    <button onClick={() => setSelectedPatientId(null)} className="text-white flex items-center gap-2 text-sm font-bold">
+                <div className="md:hidden p-4 border-b border-neutral-800 flex items-center gap-3 sticky top-0 bg-black/90 backdrop-blur z-10 w-full overflow-hidden">
+                    <button onClick={() => setSelectedPatientId(null)} className="text-white flex items-center gap-2 text-sm font-bold flex-shrink-0 hover:text-primary transition-colors">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                        Back to Patients
+                        Back
                     </button>
-                    {selectedPatientId && <span className="text-xs text-gray-500">| {patients.find(p => p.id === selectedPatientId)?.name}</span>}
+                    {selectedPatientId && <span className="text-xs text-gray-500 truncate flex-1 block border-l border-neutral-800 pl-3 py-1"> {patients.find(p => p.id === selectedPatientId)?.name}</span>}
                 </div>
 
                 {!selectedPatientId && viewMode === 'dashboard' ? (
@@ -952,7 +952,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
                             {/* CLINICAL REPORTS TAB SWITCHER (NEW ENTERPRISE FEATURE) */}
                             {viewMode === 'dashboard' && selectedPatientId && (user.role === UserRole.PSICOLOGO || user.role === UserRole.PSIQUIATRA) && (
-                                <div className="flex border-b border-neutral-800 mb-6">
+                                <div className="flex border-b border-neutral-800 mb-6 overflow-x-auto no-scrollbar">
                                     <button
                                         onClick={() => setPatientTab('dashboard')}
                                         className={`px-6 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 ${patientTab !== 'reports' ? 'border-primary text-white' : 'border-transparent text-gray-500 hover:text-white'}`}
@@ -1285,7 +1285,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
                                             {/* AI Clinical Insights Section */}
                                             <div className="bg-gradient-to-br from-neutral-900 to-indigo-950/20 p-6 md:p-8 rounded-3xl border border-indigo-500/20 shadow-2xl space-y-6">
-                                                <div className="flex justify-between items-center">
+                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-xl">✨</div>
                                                         <div>
@@ -1293,30 +1293,33 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                             <p className="text-[10px] text-indigo-300/60 uppercase font-black">Powered by Gemini 1.5</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        onClick={() => setIsExportModalOpen(true)}
-                                                        className="h-10 px-4 bg-neutral-800 hover:bg-neutral-700 text-white/70 border border-white/5 gap-2"
-                                                    >
-                                                        <span>📄</span> Relatórios
-                                                    </Button>
-                                                    <Button
-                                                        onClick={handleGenerateAISummary}
-                                                        disabled={isGeneratingSummary || patientEntries.length === 0}
-                                                        className={`h-10 px-6 gap-2 print:hidden ${isGeneratingSummary ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-700 shadow-[0_0_20px_rgba(79,70,229,0.3)]'}`}
-                                                    >
-                                                        {isGeneratingSummary ? (
-                                                            <>
-                                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                                                Analisando...
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                                                {t.generateClinicalSummary}
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                                                        <Button
+                                                            onClick={() => setIsExportModalOpen(true)}
+                                                            className="h-10 px-4 flex-1 md:flex-none bg-neutral-800 hover:bg-neutral-700 text-white/70 border border-white/5 gap-2"
+                                                        >
+                                                            <span>📄</span> Relatórios
+                                                        </Button>
+                                                        <Button
+                                                            onClick={handleGenerateAISummary}
+                                                            disabled={isGeneratingSummary || patientEntries.length === 0}
+                                                            className={`h-10 px-6 gap-2 flex-1 md:flex-none print:hidden ${isGeneratingSummary ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-700 shadow-[0_0_20px_rgba(79,70,229,0.3)]'}`}
+                                                        >
+                                                            {isGeneratingSummary ? (
+                                                                <>
+                                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                                    Analisando...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                                    {t.generateClinicalSummary}
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
                                                 </div>
+
 
                                                 {!aiSummary && !isGeneratingSummary && (
                                                     <div className="py-10 border border-dashed border-indigo-500/10 rounded-2xl flex flex-col items-center justify-center text-center px-6 print:hidden">
@@ -1509,17 +1512,19 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             </main >
 
             {/* EXPORT MODAL */}
-            {selectedPatientId && (
-                <ExportReportModal
-                    isOpen={isExportModalOpen}
-                    onClose={() => setIsExportModalOpen(false)}
-                    entries={patientEntries}
-                    notes={notes}
-                    userRole={user.role || ''}
-                    userName={user.name || 'Doutor'}
-                    patientName={patients.find(p => p.id === selectedPatientId)?.name || 'Paciente'}
-                />
-            )}
+            {
+                selectedPatientId && (
+                    <ExportReportModal
+                        isOpen={isExportModalOpen}
+                        onClose={() => setIsExportModalOpen(false)}
+                        entries={patientEntries}
+                        notes={notes}
+                        userRole={user.role || ''}
+                        userName={user.name || 'Doutor'}
+                        patientName={patients.find(p => p.id === selectedPatientId)?.name || 'Paciente'}
+                    />
+                )
+            }
 
 
         </div >
