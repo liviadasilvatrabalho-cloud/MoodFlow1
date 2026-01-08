@@ -433,7 +433,10 @@ export const storageService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
 
-        const fileName = `${user.id}/${Date.now()}.webm`;
+        // Determine extension from MIME type or default to webm
+        const ext = audioBlob.type.split('/')[1]?.split(';')[0] || 'webm';
+        const fileName = `${user.id}/${Date.now()}.${ext}`;
+
         const { data, error } = await supabase.storage.from('audio-comments').upload(fileName, audioBlob);
         if (error) throw error;
         return data.path;

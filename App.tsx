@@ -16,7 +16,8 @@ import { ConsentSettings } from './components/settings/ConsentSettings';
 
 const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => void }) => {
     const [isRecording, setIsRecording] = useState(false);
-    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const isPressedRef = useRef(false);
     const startTimeRef = useRef<number>(0);
     const [duration, setDuration] = useState(0);
 
@@ -33,12 +34,25 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
     }, [isRecording]);
 
     const startRecording = async () => {
+        isPressedRef.current = true;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-            // Try different mime types for cross-device compatibility
-            const mimeTypes = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
-            const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
+            // Safety check: if user already released button, abort
+            if (!isPressedRef.current) {
+                stream.getTracks().forEach(t => t.stop());
+                return;
+            }
+
+            // iOS/Safari compatibility: prioritize supported mime types
+            const mimeTypes = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/mp4',
+                'audio/ogg',
+                'audio/aac'
+            ];
+            const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
 
             const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             const chunks: Blob[] = [];
@@ -49,9 +63,10 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
 
             recorder.onstop = () => {
                 const finalDuration = Math.ceil((Date.now() - startTimeRef.current) / 1000);
-                const blob = new Blob(chunks, { type: mimeType || recorder.mimeType || 'audio/webm' });
+                const type = mimeType || recorder.mimeType || 'audio/webm';
+                const blob = new Blob(chunks, { type });
 
-                if (chunks.length > 0 && finalDuration > 0) {
+                if (chunks.length > 0) {
                     onSend(blob, finalDuration);
                 }
 
@@ -60,43 +75,41 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
 
             startTimeRef.current = Date.now();
             recorder.start();
-            setMediaRecorder(recorder);
+            mediaRecorderRef.current = recorder;
             setIsRecording(true);
         } catch (err) {
             console.error("Error accessing microphone:", err);
-            alert("Permissão de microfone negada ou não disponível.");
+            alert("Permissão de microfone negada ou erro ao iniciar.");
+            isPressedRef.current = false;
         }
     };
 
     const stopRecording = () => {
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
+        isPressedRef.current = false;
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
             setIsRecording(false);
+            mediaRecorderRef.current = null;
         }
     };
-
-    // Simple interaction: Mouse/Touch Down to start, Up to stop/send.
-    // "Arrastar para cancelar" logic requires more complex gesture tracking.
-    // Implementing a basic version: if cursor leaves button while pressed, cancel? 
-    // Or adds a "Cancel" button while recording? 
-    // Request asked for "Arrastar para cancelar". 
-    // Let's stick to simple "Hold to Record" for now to ensure stability.
 
     return (
         <div className="relative">
             <button
                 onMouseDown={startRecording}
                 onMouseUp={stopRecording}
+                onMouseLeave={stopRecording}
                 onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
                 onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
-                className={`p-3 rounded-xl transition-all duration-200 ${isRecording ? 'bg-red-500 scale-110' : 'bg-[#1A1A1A] text-gray-400 hover:text-white'}`}
+                className={`p-3 rounded-xl transition-all duration-200 ${isRecording ? 'bg-red-500 scale-110 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-[#1A1A1A] text-gray-400 hover:text-white'}`}
+                title="Segure para gravar"
             >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
             </button>
             {isRecording && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md whitespace-nowrap animate-pulse">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md whitespace-nowrap animate-pulse shadow-lg z-50">
                     Gravando {duration}s
                 </div>
             )}
