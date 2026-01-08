@@ -516,10 +516,19 @@ export const storageService = {
     },
 
     createClinicalReport: async (report: { patientId: string, professionalId: string, professionalRole: string, title: string, reportType: string, content: string }) => {
+        // Ensure role matches strictly what the DB Expects ('PSICOLOGO' or 'PSIQUIATRA')
+        let finalRole = report.professionalRole;
+        const normalized = finalRole.toUpperCase();
+        if (normalized.includes('PSIC') || normalized.includes('PSYCH')) finalRole = 'PSICOLOGO';
+        if (normalized.includes('PSIQ') || normalized.includes('PSYCHIA')) finalRole = 'PSIQUIATRA';
+
+        // Final fallback if something weird comes in, though distinct from defaults
+        if (finalRole !== 'PSICOLOGO' && finalRole !== 'PSIQUIATRA') finalRole = 'PSICOLOGO';
+
         const payload = {
             patient_id: report.patientId,
             professional_id: report.professionalId,
-            professional_role: report.professionalRole,
+            professional_role: finalRole,
             title: report.title,
             report_type: report.reportType,
             content: report.content

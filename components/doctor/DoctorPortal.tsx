@@ -117,8 +117,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         setClinicalReports(reports);
     };
 
+    const [isSaving, setIsSaving] = useState(false);
+
     const handleSaveReport = async () => {
         if (!selectedPatientId || !editingReport.title || !editingReport.content) return;
+        setIsSaving(true);
         try {
             if (editingReport.id) {
                 await storageService.updateClinicalReport(editingReport.id, {
@@ -139,9 +142,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             await loadClinicalReports();
             setIsEditingReport(false);
             setEditingReport({ id: '', title: '', reportType: 'evolucao', content: '' });
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            alert('Erro ao salvar relatório.');
+            alert(`Erro ao salvar relatório: ${e.message || 'Erro desconhecido'}`);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -982,13 +987,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             </div>
 
                                             <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-                                                <Button variant="ghost" onClick={() => setIsEditingReport(false)}>Cancelar</Button>
+                                                <Button variant="ghost" onClick={() => setIsEditingReport(false)} disabled={isSaving}>Cancelar</Button>
                                                 <Button
                                                     onClick={handleSaveReport}
-                                                    disabled={!editingReport.title || !editingReport.content}
+                                                    disabled={!editingReport.title || !editingReport.content || isSaving}
                                                     className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                                                 >
-                                                    Salvar Relatório
+                                                    {isSaving ? 'Salvando...' : 'Salvar Relatório'}
                                                 </Button>
                                             </div>
                                         </div>
