@@ -17,26 +17,30 @@ import { ConsentSettings } from './components/settings/ConsentSettings';
 const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => void }) => {
     const [isRecording, setIsRecording] = useState(false);
     const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-    const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-    const [startTime, setStartTime] = useState<number>(0);
+    const startTimeRef = useRef<number>(0);
     const [duration, setDuration] = useState(0);
 
     useEffect(() => {
         let interval: any;
         if (isRecording) {
             interval = setInterval(() => {
-                setDuration(Math.floor((Date.now() - startTime) / 1000));
+                setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
             }, 100);
         } else {
             setDuration(0);
         }
         return () => clearInterval(interval);
-    }, [isRecording, startTime]);
+    }, [isRecording]);
 
     const startRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
+
+            // Try different mime types for cross-device compatibility
+            const mimeTypes = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+            const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
+
+            const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             const chunks: Blob[] = [];
 
             recorder.ondataavailable = (e) => {
@@ -44,22 +48,19 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
             };
 
             recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'audio/webm' });
-                // If duration is too short (click instead of hold), ignore?
-                // For now, assume intentional.
-                // Duration calculation from state might be slightly off due to react updates, 
-                // but good enough for UI. Better to measure exact time diff.
-                const finalDuration = Math.ceil((Date.now() - startTime) / 1000);
-                onSend(blob, finalDuration);
+                const finalDuration = Math.ceil((Date.now() - startTimeRef.current) / 1000);
+                const blob = new Blob(chunks, { type: mimeType || recorder.mimeType || 'audio/webm' });
 
-                // Cleanup tracks
+                if (chunks.length > 0 && finalDuration > 0) {
+                    onSend(blob, finalDuration);
+                }
+
                 stream.getTracks().forEach(track => track.stop());
             };
 
+            startTimeRef.current = Date.now();
             recorder.start();
             setMediaRecorder(recorder);
-            setAudioChunks([]);
-            setStartTime(Date.now());
             setIsRecording(true);
         } catch (err) {
             console.error("Error accessing microphone:", err);
@@ -68,7 +69,7 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
     };
 
     const stopRecording = () => {
-        if (mediaRecorder && isRecording) {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
             setIsRecording(false);
         }
