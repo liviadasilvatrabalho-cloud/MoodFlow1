@@ -125,6 +125,9 @@ export const storageService = {
     },
 
     signupEmail: async (email: string, pass: string, name: string, role: UserRole): Promise<void> => {
+        if (role === UserRole.ADMIN_CLINICA) {
+            throw new Error("Cadastro de administradores não é permitido. Consulte o suporte.");
+        }
         const clinicalRole = (role === UserRole.PSICOLOGO ? 'PSICOLOGO' : role === UserRole.PSIQUIATRA ? 'PSIQUIATRA' : 'none') as ClinicalRole;
         const { error } = await supabase.auth.signUp({
             email, password: pass,
@@ -276,6 +279,29 @@ export const storageService = {
             throw error;
         }
         return { success: true, message: 'success' };
+    },
+
+    getPatientConnections: async (patientId: string): Promise<any[]> => {
+        const { data } = await supabase
+            .from('doctor_patients')
+            .select('doctor_id, profiles!doctor_patients_doctor_id_fkey(name, role)')
+            .eq('patient_id', patientId);
+
+        return data ? data.map((d: any) => ({
+            doctor_id: d.doctor_id,
+            doctor_name: d.profiles?.name,
+            doctor_role: normalizeRole(d.profiles?.role)
+        })) : [];
+    },
+
+    disconnectDoctor: async (patientId: string, doctorId: string) => {
+        const { error } = await supabase
+            .from('doctor_patients')
+            .delete()
+            .eq('patient_id', patientId)
+            .eq('doctor_id', doctorId);
+
+        if (error) throw error;
     },
 
     // --- NOTES ---
@@ -487,6 +513,25 @@ export const storageService = {
 
     createNotification: async (notif: Partial<Notification>) => {
         await supabase.from('notifications').insert(notif);
+    },
+
+    markNotificationAsRead: async (notificationId: string) => {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ read_at: new Date().toISOString() })
+            .eq('id', notificationId);
+
+        if (error) throw error;
+    },
+
+    markAllNotificationsAsRead: async (userId: string) => {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ read_at: new Date().toISOString() })
+            .eq('user_id', userId)
+            .is('read_at', null);
+
+        if (error) throw error;
     },
 
     // --- CLINICAL REPORTS (NEW ENTERPRISE FEATURE) ---
