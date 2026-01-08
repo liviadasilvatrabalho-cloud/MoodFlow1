@@ -1296,14 +1296,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                     <div className="flex flex-wrap gap-2 w-full md:w-auto">
                                                         <Button
                                                             onClick={() => setIsExportModalOpen(true)}
-                                                            className="h-10 px-4 flex-1 md:flex-none bg-neutral-800 hover:bg-neutral-700 text-white/70 border border-white/5 gap-2"
+                                                            className="h-10 px-2 md:px-4 text-xs font-bold flex-1 md:flex-none bg-neutral-800 hover:bg-neutral-700 text-white/70 border border-white/5 gap-2"
                                                         >
                                                             <span>📄</span> Relatórios
                                                         </Button>
                                                         <Button
                                                             onClick={handleGenerateAISummary}
                                                             disabled={isGeneratingSummary || patientEntries.length === 0}
-                                                            className={`h-10 px-6 gap-2 flex-1 md:flex-none print:hidden ${isGeneratingSummary ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-700 shadow-[0_0_20px_rgba(79,70,229,0.3)]'}`}
+                                                            className={`h-10 px-2 md:px-6 text-xs font-bold whitespace-nowrap gap-2 flex-1 md:flex-none print:hidden ${isGeneratingSummary ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-700 shadow-[0_0_20px_rgba(79,70,229,0.3)]'}`}
                                                         >
                                                             {isGeneratingSummary ? (
                                                                 <>
