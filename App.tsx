@@ -582,10 +582,13 @@ export default function App() {
                                                                         e.stopPropagation();
                                                                         if (window.confirm("Apagar esta mensagem para todos?")) {
                                                                             try {
+                                                                                // Optimistic Update
+                                                                                setDoctorNotes(prev => prev.filter(p => p.id !== note.id));
                                                                                 await storageService.deleteDoctorNote(note.id);
                                                                             } catch (e) {
                                                                                 console.error(e);
                                                                                 alert("Erro ao excluir.");
+                                                                                // Re-fetch or let subscription restore it if it fails
                                                                             }
                                                                         }
                                                                     }}
@@ -628,6 +631,8 @@ export default function App() {
                                                                         e.stopPropagation();
                                                                         if (window.confirm("Apagar esta mensagem para todos?")) {
                                                                             try {
+                                                                                // Optimistic Update
+                                                                                setDoctorNotes(prev => prev.filter(p => p.id !== note.id));
                                                                                 await storageService.deleteDoctorNote(note.id);
                                                                             } catch (e) {
                                                                                 console.error(e);
