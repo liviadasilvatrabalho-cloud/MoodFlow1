@@ -1460,10 +1460,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                     {commentingEntryId === entry.id ? (
                                                                         <div className="mt-4">
                                                                             <textarea className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2 text-sm text-white focus:outline-none min-h-[80px]" placeholder="Write a comment..." value={entryComment} onChange={e => setEntryComment(e.target.value)} autoFocus />
-                                                                            <div className="flex flex-col sm:flex-row justify-end gap-2 mt-2">
+                                                                            <div className="flex items-center justify-between gap-2 mt-3">
                                                                                 <AudioRecorder onSend={(blob, duration) => handleSendAudio(entry.id, blob, duration)} />
-                                                                                <Button variant="ghost" className="h-10 text-xs flex-1 sm:flex-none" onClick={() => setCommentingEntryId(null)}>Cancel</Button>
-                                                                                <Button className={`h-10 text-xs flex-1 sm:flex-none ${user.clinicalRole === 'psychologist' ? 'bg-[#8b5cf6] hover:bg-[#7c3aed]' : 'bg-[#10b981] hover:bg-[#059669]'}`} onClick={() => handleSaveEntryComment(entry.id)}>Send</Button>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <Button variant="ghost" className="h-10 text-xs px-4" onClick={() => setCommentingEntryId(null)}>Cancel</Button>
+                                                                                    <Button className={`h-10 text-xs px-6 ${user.clinicalRole === 'psychologist' ? 'bg-[#8b5cf6] hover:bg-[#7c3aed]' : 'bg-[#10b981] hover:bg-[#059669]'}`} onClick={() => handleSaveEntryComment(entry.id)}>Send</Button>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     ) : (
