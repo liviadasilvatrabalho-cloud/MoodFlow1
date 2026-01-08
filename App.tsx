@@ -542,16 +542,14 @@ export default function App() {
                                                                 <button
                                                                     onClick={async (e) => {
                                                                         e.stopPropagation();
-                                                                        if (window.confirm("Apagar esta mensagem para todos?")) {
-                                                                            try {
-                                                                                // Optimistic Update
-                                                                                setDoctorNotes(prev => prev.filter(p => p.id !== note.id));
-                                                                                await storageService.deleteDoctorNote(note.id);
-                                                                            } catch (e) {
-                                                                                console.error(e);
-                                                                                alert("Erro ao excluir.");
-                                                                                // Re-fetch or let subscription restore it if it fails
-                                                                            }
+                                                                        try {
+                                                                            // Optimistic Update
+                                                                            setDoctorNotes(prev => prev.filter(p => p.id !== note.id));
+                                                                            await storageService.deleteDoctorNote(note.id);
+                                                                        } catch (e) {
+                                                                            console.error(e);
+                                                                            alert("Erro ao excluir.");
+                                                                            // Re-fetch or let subscription restore it if it fails
                                                                         }
                                                                     }}
                                                                     className="absolute -top-2 -right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-700 hover:scale-110 active:scale-95 transition-all z-20"
@@ -591,15 +589,13 @@ export default function App() {
                                                                 <button
                                                                     onClick={async (e) => {
                                                                         e.stopPropagation();
-                                                                        if (window.confirm("Apagar esta mensagem para todos?")) {
-                                                                            try {
-                                                                                // Optimistic Update
-                                                                                setDoctorNotes(prev => prev.filter(p => p.id !== note.id));
-                                                                                await storageService.deleteDoctorNote(note.id);
-                                                                            } catch (e) {
-                                                                                console.error(e);
-                                                                                alert("Erro ao excluir.");
-                                                                            }
+                                                                        try {
+                                                                            // Optimistic Update
+                                                                            setDoctorNotes(prev => prev.filter(p => p.id !== note.id));
+                                                                            await storageService.deleteDoctorNote(note.id);
+                                                                        } catch (e) {
+                                                                            console.error(e);
+                                                                            alert("Erro ao excluir.");
                                                                         }
                                                                     }}
                                                                     className="absolute -top-2 -right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-700 hover:scale-110 active:scale-95 transition-all z-20"
