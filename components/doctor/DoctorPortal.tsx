@@ -1377,17 +1377,24 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                                         {!(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') && note.doctorId === user.id && (
                                                                                             <button
                                                                                                 onClick={async (e) => {
+                                                                                                    e.preventDefault();
                                                                                                     e.stopPropagation();
+
+                                                                                                    // 1. Optimistic Update (Immediate Feedback)
+                                                                                                    const previousNotes = [...notes];
+                                                                                                    setNotes(prev => prev.filter(n => n.id !== note.id));
+
                                                                                                     try {
+                                                                                                        // 2. Perform actual delete
                                                                                                         await storageService.deleteDoctorNote(note.id);
-                                                                                                        // State update handled by subscription usually, but we can optimistically remove if needed.
-                                                                                                        // Given subscription is active, it should auto-update.
                                                                                                     } catch (err) {
                                                                                                         console.error(err);
+                                                                                                        // 3. Rollback locally if failed
+                                                                                                        setNotes(previousNotes);
                                                                                                         alert('Erro ao excluir mensagem.');
                                                                                                     }
                                                                                                 }}
-                                                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110 z-10"
+                                                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110 z-10 cursor-pointer"
                                                                                                 title="Excluir mensagem"
                                                                                             >
                                                                                                 ×
