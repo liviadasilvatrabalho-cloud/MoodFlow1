@@ -430,12 +430,12 @@ export default function App() {
                                         <div className="pt-6 border-t border-white/5 flex flex-col gap-3">
                                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Para quem você quer escrever?</span>
 
-                                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                                            <div className="flex gap-2 flex-wrap pb-1">
                                                 {/* Psychologist Option */}
                                                 {connectedDoctors.some(d => d.role === UserRole.PSICOLOGO) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHOLOGIST' }))}
-                                                        className={`flex-1 min-w-[120px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#1e1b4b] border-[#8b5cf6] text-[#8b5cf6] shadow-[0_0_15px_rgba(139,92,246,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                        className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#1e1b4b] border-[#8b5cf6] text-[#8b5cf6] shadow-[0_0_15px_rgba(139,92,246,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
                                                     >
                                                         <span className="text-lg">🧠</span>
                                                         <span className="text-[10px] font-black uppercase tracking-wider">Psicólogo</span>
@@ -446,7 +446,7 @@ export default function App() {
                                                 {connectedDoctors.some(d => d.role === UserRole.PSIQUIATRA) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHIATRIST' }))}
-                                                        className={`flex-1 min-w-[120px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#064e3b] border-[#10b981] text-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                        className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#064e3b] border-[#10b981] text-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
                                                     >
                                                         <span className="text-lg">💊</span>
                                                         <span className="text-[10px] font-black uppercase tracking-wider">Psiquiatra</span>
@@ -457,7 +457,7 @@ export default function App() {
                                                 {connectedDoctors.some(d => d.role === UserRole.PSICOLOGO) && connectedDoctors.some(d => d.role === UserRole.PSIQUIATRA) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'BOTH' }))}
-                                                        className={`flex-1 min-w-[120px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'BOTH' ? 'bg-indigo-900/40 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                        className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'BOTH' ? 'bg-indigo-900/40 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
                                                     >
                                                         <span className="text-lg">👥</span>
                                                         <span className="text-[10px] font-black uppercase tracking-wider">Ambos</span>
