@@ -35,7 +35,7 @@ export interface MoodEntry {
   text: string;
   tags: string[]; // Activities/Symptoms
   isLocked: boolean; // Privacy for doctor view
-  entryMode?: 'mood' | 'voice' | 'diary';
+  entryMode?: 'mood' | 'diary';
   permissions?: string[]; // List of doctor IDs who can view this entry
   visible_to_psychologist?: boolean | null; // Granular control
   visible_to_psychiatrist?: boolean | null; // Granular control

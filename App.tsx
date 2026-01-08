@@ -21,7 +21,7 @@ export default function App() {
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState<'home' | 'diary' | 'stats' | 'settings' | 'consent'>('home');
     const [showEntryForm, setShowEntryForm] = useState(false);
-    const [entryMode, setEntryMode] = useState<'mood' | 'voice' | 'diary'>('mood');
+    const [entryMode, setEntryMode] = useState<'mood' | 'diary'>('mood');
     const [lang, setLang] = useState<Language>('pt');
     const [doctorNotes, setDoctorNotes] = useState<DoctorNote[]>([]);
     const [connectedDoctors, setConnectedDoctors] = useState<{ id: string, name: string, role?: string }[]>([]);
@@ -204,14 +204,6 @@ export default function App() {
                                     className="flex-1 md:flex-none px-6 py-3.5 bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_8px_20px_-4px_rgba(124,58,237,0.4)] hover:scale-[1.02] transition-all"
                                 >
                                     {t.logMood}
-                                </button>
-                                <button
-
-                                    onClick={() => { setShowEntryForm(true); setEntryMode('voice'); }}
-                                    className="px-4 py-3.5 bg-[#1A1A1A] text-white rounded-2xl border border-white/5 hover:bg-white/5 transition-all"
-                                    title={t.voiceLog}
-                                >
-                                    <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                                 </button>
                             </div>
                         </div>

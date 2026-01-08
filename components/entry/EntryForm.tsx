@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MOODS, ACTIVITIES, SYMPTOMS, TRANSLATIONS } from '../../constants';
 import { Button } from '../ui/Button';
-import { VoiceRecorder } from './VoiceRecorder';
 import { aiService } from '../../services/aiService';
 import { storageService } from '../../services/storageService';
 import { MoodEntry, UserRole, Language } from '../../types';
@@ -11,7 +10,7 @@ interface EntryFormProps {
     userRole: UserRole;
     onSave: (entry: MoodEntry) => void;
     onCancel: () => void;
-    initialMode?: 'mood' | 'voice' | 'diary';
+    initialMode?: 'mood' | 'diary';
     lang: Language;
     connectedDoctors?: { id: string, name: string, role?: string }[];
 }
@@ -23,7 +22,7 @@ const getLocalISOString = () => {
 };
 
 export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, onCancel, initialMode = 'mood', lang, connectedDoctors = [] }) => {
-    const [mode, setMode] = useState<'mood' | 'voice' | 'diary'>(initialMode);
+    const [mode, setMode] = useState<'mood' | 'diary'>(initialMode);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     // Translations
@@ -49,27 +48,6 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
 
     const [visiblePsychologist, setVisiblePsychologist] = useState(true);
     const [visiblePsychiatrist, setVisiblePsychiatrist] = useState(true);
-
-    // Voice Handler
-    const handleVoiceTranscription = async (transcribedText: string) => {
-        setIsAnalyzing(true);
-        const analysis = await aiService.analyzeEntry(transcribedText);
-
-        if (analysis) {
-            setText(analysis.transcription || transcribedText);
-            if (analysis.moodScore) setMood(analysis.moodScore);
-            if (analysis.energyLevel) setEnergy(analysis.energyLevel);
-            if (analysis.detectedTags && Array.isArray(analysis.detectedTags)) {
-                setSelectedTags(prev => Array.from(new Set([...prev, ...analysis.detectedTags])));
-            }
-            if (analysis.mode === 'diary') setMode('diary');
-            else if (analysis.mode === 'mood') setMode('mood');
-        } else {
-            setText(transcribedText);
-            setMode('diary');
-        }
-        setIsAnalyzing(false);
-    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -133,7 +111,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
             }
             onSave(newEntry);
             setIsAnalyzing(false);
-        }, mode === 'voice' ? 1500 : 500);
+        }, 500);
     };
 
     const handleToggleDoctor = (docId: string) => {
@@ -159,7 +137,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
             {/* Dark Mode Tab Switcher */}
             <div className="px-6 py-4 shrink-0 bg-black/20 border-b border-white/5">
                 <div className="flex p-1.5 bg-[#0A0A0A] rounded-[24px] border border-white/5 relative z-10 w-full transition-all">
-                    {(['mood', 'diary', 'voice'] as const).map((m) => {
+                    {(['mood', 'diary'] as const).map((m) => {
                         const isSelected = mode === m;
                         return (
                             <button
@@ -173,7 +151,6 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
                             >
                                 {m === 'mood' && <span>📊 Humor</span>}
                                 {m === 'diary' && <span>📖 Diário</span>}
-                                {m === 'voice' && <span>🎙️ Voz IA</span>}
                             </button>
                         );
                     })}
@@ -181,163 +158,138 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-8 sm:space-y-10 scroll-smooth bg-[#121212]">
-                {mode === 'voice' ? (
-                    <div className="flex flex-col items-center justify-center min-h-[450px] text-center space-y-10 py-6 animate-in fade-in duration-500">
-                        <div className="space-y-4">
-                            <h3 className="text-white font-black text-3xl tracking-tighter">Estou ouvindo...</h3>
-                            <p className="text-gray-500 text-[15px] max-w-[340px] mx-auto leading-relaxed font-medium">
-                                Conte sobre seu dia ou como se sente. A IA detectará seu humor e escreverá no diário.
-                            </p>
-                        </div>
+                <form id="entry-form" onSubmit={handleSubmit} className="space-y-12 animate-in slide-in-from-bottom-4 duration-500">
 
-                        <div className="w-full bg-[#0A0A0A] rounded-[32px] border border-white/5 p-10 h-56 flex items-center justify-center shadow-inner relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-                            <p className={`text-base text-center transition-all px-4 leading-relaxed font-medium ${text ? 'text-gray-200' : 'text-gray-600 italic opacity-80'}`}>
-                                {isAnalyzing ? 'Processando insights da IA...' : (text || 'O texto aparecerá aqui enquanto você fala...')}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col items-center gap-8">
-                            <div className="transform scale-[1.4] transition-all active:scale-95">
-                                <VoiceRecorder onTranscription={handleVoiceTranscription} isProcessing={isAnalyzing} />
-                            </div>
-                            <span className="text-[12px] font-black text-gray-500 uppercase tracking-[0.25em] ml-1 opacity-80">Toque para gravar</span>
-                        </div>
-                    </div>
-                ) : (
-                    <form id="entry-form" onSubmit={handleSubmit} className="space-y-12 animate-in slide-in-from-bottom-4 duration-500">
-
-                        {mode === 'mood' && (
-                            <>
-                                {/* Mood Selection Grid */}
-                                <div className="space-y-6">
-                                    <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">COMO VOCÊ ESTÁ SE SENTINDO?</label>
-                                    <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
-                                        {MOODS.map((m) => {
-                                            const isSelected = mood === m.value;
-                                            return (
-                                                <button
-                                                    key={m.value}
-                                                    type="button"
-                                                    onClick={() => setMood(m.value)}
-                                                    className={`aspect-square flex flex-col items-center justify-center rounded-[22px] transition-all duration-400 border-[1.5px] ${isSelected
-                                                        ? 'bg-[#1A1A1A] border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] scale-[1.05] z-10'
-                                                        : 'bg-white/5 border-transparent opacity-30 hover:opacity-100'
-                                                        }`}
-                                                >
-                                                    <span className={`text-2xl sm:text-4xl mb-1 select-none transform transition-all ${isSelected ? 'scale-110 drop-shadow-md' : ''}`}>{m.emoji}</span>
-                                                    {isSelected && <span className="text-[8px] sm:text-[10px] font-black uppercase text-white tracking-tighter animate-in fade-in zoom-in-50">{m.label}</span>}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Energy Slider */}
-                                <div className="space-y-6 bg-[#0A0A0A] p-6 sm:p-10 rounded-3xl sm:rounded-[40px] border border-white/5 shadow-inner relative group isolate">
-                                    <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-                                    <div className="flex justify-between items-center relative z-10">
-                                        <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black opacity-90">NÍVEL DE ENERGIA</label>
-                                        <span className="text-[#FBBF24] font-black text-2xl sm:text-3xl tracking-tighter drop-shadow-lg">{energy}<span className="text-gray-700 text-sm sm:text-base font-bold ml-1">/10</span></span>
-                                    </div>
-                                    <div className="relative pt-8 pb-6 cursor-pointer group/slider">
-                                        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-2 bg-gradient-to-r from-[#EF4444] via-[#FBBF24] to-[#10B981] rounded-full shadow-inner opacity-90 pointer-events-none" />
-                                        <input
-                                            type="range" min="1" max="10" value={energy}
-                                            onChange={(e) => setEnergy(Number(e.target.value))}
-                                            className="relative w-full h-10 bg-transparent appearance-none cursor-pointer z-20 energy-range-input focus:outline-none"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Tags Pillbox */}
-                                <div className="space-y-6">
-                                    <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">TAGS</label>
-                                    <div className="flex flex-wrap gap-2 sm:gap-2.5">
-                                        {[...ACTIVITIES, ...SYMPTOMS].map(tag => (
+                    {mode === 'mood' && (
+                        <>
+                            {/* Mood Selection Grid */}
+                            <div className="space-y-6">
+                                <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">COMO VOCÊ ESTÁ SE SENTINDO?</label>
+                                <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
+                                    {MOODS.map((m) => {
+                                        const isSelected = mood === m.value;
+                                        return (
                                             <button
-                                                key={tag}
+                                                key={m.value}
                                                 type="button"
-                                                onClick={() => toggleTag(tag)}
-                                                className={`px-4 py-2 rounded-xl text-[11px] font-black transition-all border duration-300 ${selectedTags.includes(tag)
-                                                    ? 'bg-white text-black border-white shadow-[0_4px_12px_rgba(255,255,255,0.15)]'
-                                                    : 'bg-[#1A1A1A] border-white/5 text-[#9CA3AF] hover:text-white hover:border-white/20'
+                                                onClick={() => setMood(m.value)}
+                                                className={`aspect-square flex flex-col items-center justify-center rounded-[22px] transition-all duration-400 border-[1.5px] ${isSelected
+                                                    ? 'bg-[#1A1A1A] border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] scale-[1.05] z-10'
+                                                    : 'bg-white/5 border-transparent opacity-30 hover:opacity-100'
                                                     }`}
                                             >
-                                                {tag}
+                                                <span className={`text-2xl sm:text-4xl mb-1 select-none transform transition-all ${isSelected ? 'scale-110 drop-shadow-md' : ''}`}>{m.emoji}</span>
+                                                {isSelected && <span className="text-[8px] sm:text-[10px] font-black uppercase text-white tracking-tighter animate-in fade-in zoom-in-50">{m.label}</span>}
                                             </button>
-                                        ))}
-                                    </div>
+                                        )
+                                    })}
                                 </div>
-                            </>
-                        )}
-
-                        {/* Notes Section */}
-                        <div className="space-y-6">
-                            <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 flex items-center gap-2 opacity-90">
-                                {mode === 'diary' ? '📖 DIÁRIO' : (
-                                    <>
-                                        <span>📝</span> NOTAS
-                                    </>
-                                )}
-                            </label>
-                            <textarea
-                                className={`w-full bg-[#0A0A0A] border-[1.5px] border-white/5 rounded-[24px] p-5 sm:p-6 text-[#F3F4F6] placeholder-gray-700 focus:outline-none focus:border-white/10 focus:ring-4 focus:ring-white/[0.01] transition-all resize-none shadow-inner leading-relaxed font-medium text-sm sm:text-base ${mode === 'diary' ? 'h-[300px] sm:h-[400px]' : 'h-[140px]'
-                                    }`}
-                                placeholder={mode === 'diary' ? 'Como foi o seu dia? Escreva livremente sobre seus sentimentos e eventos...' : 'Algo a acrescentar?'}
-                                value={text}
-                                onChange={(e) => setText(e.target.value)}
-                            />
-                        </div>
-
-                        {/* Permission Sharing (Granular - New) */}
-                        {!isLocked && (
-                            <div className="space-y-4 pt-4 animate-in fade-in duration-500 border-t border-white/5">
-                                <label className="text-[12px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] font-black ml-1 opacity-90 block mb-3">
-                                    QUEM PODE VER ESTE REGISTRO?
-                                </label>
-                                <div className="flex flex-col gap-3">
-                                    <label className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
-                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychologist ? 'bg-indigo-500 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.4)]' : 'border-neutral-700 group-hover:border-neutral-600'}`}>
-                                            {visiblePsychologist && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                        </div>
-                                        <input
-                                            type="checkbox"
-                                            className="hidden"
-                                            checked={visiblePsychologist}
-                                            onChange={(e) => setVisiblePsychologist(e.target.checked)}
-                                        />
-                                        <div className="flex flex-col text-left">
-                                            <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychologist ? 'text-white' : 'text-neutral-500'}`}>Psicólogo</span>
-                                            <span className="text-[10px] text-neutral-600 font-medium">Compartilhar com seu terapeuta</span>
-                                        </div>
-                                    </label>
-
-                                    <label className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
-                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychiatrist ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'border-neutral-700 group-hover:border-neutral-600'}`}>
-                                            {visiblePsychiatrist && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                        </div>
-                                        <input
-                                            type="checkbox"
-                                            className="hidden"
-                                            checked={visiblePsychiatrist}
-                                            onChange={(e) => setVisiblePsychiatrist(e.target.checked)}
-                                        />
-                                        <div className="flex flex-col text-left">
-                                            <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychiatrist ? 'text-white' : 'text-neutral-500'}`}>Psiquiatra</span>
-                                            <span className="text-[10px] text-neutral-600 font-medium">Compartilhar com a equipe médica</span>
-                                        </div>
-                                    </label>
-                                </div>
-                                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-tight mt-1 ml-1 italic opacity-70">
-                                    {(!visiblePsychologist && !visiblePsychiatrist)
-                                        ? "Dica: Se nada for marcado, ambos poderão ver."
-                                        : "O registro ficará visível apenas para os profissionais selecionados."}
-                                </p>
                             </div>
-                        )}
-                    </form>
-                )}
+
+                            {/* Energy Slider */}
+                            <div className="space-y-6 bg-[#0A0A0A] p-6 sm:p-10 rounded-3xl sm:rounded-[40px] border border-white/5 shadow-inner relative group isolate">
+                                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+                                <div className="flex justify-between items-center relative z-10">
+                                    <label className="text-[10px] sm:text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black opacity-90">NÍVEL DE ENERGIA</label>
+                                    <span className="text-[#FBBF24] font-black text-2xl sm:text-3xl tracking-tighter drop-shadow-lg">{energy}<span className="text-gray-700 text-sm sm:text-base font-bold ml-1">/10</span></span>
+                                </div>
+                                <div className="relative pt-8 pb-6 cursor-pointer group/slider">
+                                    <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-2 bg-gradient-to-r from-[#EF4444] via-[#FBBF24] to-[#10B981] rounded-full shadow-inner opacity-90 pointer-events-none" />
+                                    <input
+                                        type="range" min="1" max="10" value={energy}
+                                        onChange={(e) => setEnergy(Number(e.target.value))}
+                                        className="relative w-full h-10 bg-transparent appearance-none cursor-pointer z-20 energy-range-input focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Tags Pillbox */}
+                            <div className="space-y-6">
+                                <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 opacity-90">TAGS</label>
+                                <div className="flex flex-wrap gap-2 sm:gap-2.5">
+                                    {[...ACTIVITIES, ...SYMPTOMS].map(tag => (
+                                        <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => toggleTag(tag)}
+                                            className={`px-4 py-2 rounded-xl text-[11px] font-black transition-all border duration-300 ${selectedTags.includes(tag)
+                                                ? 'bg-white text-black border-white shadow-[0_4px_12px_rgba(255,255,255,0.15)]'
+                                                : 'bg-[#1A1A1A] border-white/5 text-[#9CA3AF] hover:text-white hover:border-white/20'
+                                                }`}
+                                        >
+                                            {tag}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Notes Section */}
+                    <div className="space-y-6">
+                        <label className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-black ml-1 flex items-center gap-2 opacity-90">
+                            {mode === 'diary' ? '📖 DIÁRIO' : (
+                                <>
+                                    <span>📝</span> NOTAS
+                                </>
+                            )}
+                        </label>
+                        <textarea
+                            className={`w-full bg-[#0A0A0A] border-[1.5px] border-white/5 rounded-[24px] p-5 sm:p-6 text-[#F3F4F6] placeholder-gray-700 focus:outline-none focus:border-white/10 focus:ring-4 focus:ring-white/[0.01] transition-all resize-none shadow-inner leading-relaxed font-medium text-sm sm:text-base ${mode === 'diary' ? 'h-[300px] sm:h-[400px]' : 'h-[140px]'
+                                }`}
+                            placeholder={mode === 'diary' ? 'Como foi o seu dia? Escreva livremente sobre seus sentimentos e eventos...' : 'Algo a acrescentar?'}
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Permission Sharing (Granular - New) */}
+                    {!isLocked && (
+                        <div className="space-y-4 pt-4 animate-in fade-in duration-500 border-t border-white/5">
+                            <label className="text-[12px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] font-black ml-1 opacity-90 block mb-3">
+                                QUEM PODE VER ESTE REGISTRO?
+                            </label>
+                            <div className="flex flex-col gap-3">
+                                <label className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
+                                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychologist ? 'bg-indigo-500 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.4)]' : 'border-neutral-700 group-hover:border-neutral-600'}`}>
+                                        {visiblePsychologist && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={visiblePsychologist}
+                                        onChange={(e) => setVisiblePsychologist(e.target.checked)}
+                                    />
+                                    <div className="flex flex-col text-left">
+                                        <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychologist ? 'text-white' : 'text-neutral-500'}`}>Psicólogo</span>
+                                        <span className="text-[10px] text-neutral-600 font-medium">Compartilhar com seu terapeuta</span>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-center gap-3 p-4 bg-[#0A0A0A] border border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
+                                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${visiblePsychiatrist ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'border-neutral-700 group-hover:border-neutral-600'}`}>
+                                        {visiblePsychiatrist && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={visiblePsychiatrist}
+                                        onChange={(e) => setVisiblePsychiatrist(e.target.checked)}
+                                    />
+                                    <div className="flex flex-col text-left">
+                                        <span className={`text-sm font-bold uppercase tracking-wide transition-colors ${visiblePsychiatrist ? 'text-white' : 'text-neutral-500'}`}>Psiquiatra</span>
+                                        <span className="text-[10px] text-neutral-600 font-medium">Compartilhar com a equipe médica</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-tight mt-1 ml-1 italic opacity-70">
+                                {(!visiblePsychologist && !visiblePsychiatrist)
+                                    ? "Dica: Se nada for marcado, ambos poderão ver."
+                                    : "O registro ficará visível apenas para os profissionais selecionados."}
+                            </p>
+                        </div>
+                    )}
+                </form>
             </div>
 
             {/* Premium Sticky Footer - Enhanced Responsiveness */}
