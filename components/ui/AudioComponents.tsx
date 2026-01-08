@@ -174,7 +174,7 @@ export const AudioPlayer = ({ url, duration }: { url: string, duration?: number 
     if (loading) return <div className="text-white/40 text-[10px] animate-pulse">...</div>;
 
     return (
-        <div className="flex items-center gap-3 bg-black/40 rounded-2xl p-3 mt-2 w-full max-w-[240px] border border-white/5 group">
+        <div className="flex items-center gap-3 bg-black/40 rounded-2xl p-3 mt-2 w-full border border-white/5 group">
             <audio
                 ref={audioRef}
                 src={signedUrl || undefined}
