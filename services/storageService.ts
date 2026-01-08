@@ -396,7 +396,7 @@ export const storageService = {
             id: crypto.randomUUID(),
             patient_id: patientId,
             professional_id: professionalId,
-            professional_specialty: specialty,
+            specialty: specialty,
             status: 'active',
             created_at: new Date().toISOString()
         };
