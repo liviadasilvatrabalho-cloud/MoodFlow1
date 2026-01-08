@@ -1035,13 +1035,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                 </button>
                                                                 <button
                                                                     onClick={async () => {
-                                                                        if (confirm('Tem certeza que deseja excluir este relatório?')) {
-                                                                            try {
-                                                                                await storageService.softDeleteClinicalReport(report.id, user.id);
-                                                                                setClinicalReports(prev => prev.filter(r => r.id !== report.id));
-                                                                            } catch (e) {
-                                                                                alert('Erro ao excluir relatório.');
-                                                                            }
+                                                                        try {
+                                                                            await storageService.softDeleteClinicalReport(report.id, user.id);
+                                                                            setClinicalReports(prev => prev.filter(r => r.id !== report.id));
+                                                                        } catch (e) {
+                                                                            alert('Erro ao excluir relatório.');
                                                                         }
                                                                     }}
                                                                     className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
