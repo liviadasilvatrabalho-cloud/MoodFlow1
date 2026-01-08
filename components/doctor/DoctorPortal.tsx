@@ -4,6 +4,7 @@ import { storageService } from '../../services/storageService';
 import { aiService } from '../../services/aiService';
 import { MoodEntry, User, DoctorNote, Language, UserRole } from '../../types';
 import { Button } from '../ui/Button';
+import { AudioRecorder, AudioPlayer } from '../ui/AudioComponents';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -314,6 +315,47 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             console.error("Fail to save threaded comment", err);
             alert("Falha ao enviar mensagem: " + (err.message || "Erro desconhecido"));
             setEntryComment(currentComment);
+        }
+    };
+
+    const handleSendAudio = async (entryId: string, blob: Blob, duration: number) => {
+        if (!selectedPatientId) return;
+
+        try {
+            // Upload audio to storage
+            const audioPath = await storageService.uploadAudio(blob);
+
+            // Create audio note
+            const specialty = (user.clinicalRole === 'psychiatrist' || user.clinicalRole === 'PSIQUIATRA') ? 'PSIQUIATRA' : 'PSICOLOGO';
+            const thread = await storageService.getOrCreateThread(selectedPatientId, user.id, specialty);
+
+            const audioNote: DoctorNote = {
+                id: crypto.randomUUID(),
+                doctorId: user.id,
+                doctorName: user.name,
+                doctorRole: (user.clinicalRole === 'psychiatrist' || user.clinicalRole === 'PSIQUIATRA') ? UserRole.PSIQUIATRA : UserRole.PSICOLOGO,
+                patientId: selectedPatientId,
+                entryId,
+                threadId: thread.id,
+                text: '',
+                type: 'audio',
+                audioUrl: audioPath,
+                duration,
+                isShared: true,
+                authorRole: specialty === 'PSIQUIATRA' ? UserRole.PSIQUIATRA : UserRole.PSICOLOGO,
+                read: false,
+                createdAt: new Date().toISOString()
+            };
+
+            await storageService.saveDoctorNote(audioNote);
+            setCommentingEntryId(null);
+
+            // Refresh notes
+            const patientNotes = await storageService.getPatientNotes(selectedPatientId);
+            setNotes(patientNotes);
+        } catch (err: any) {
+            console.error("Failed to send audio", err);
+            alert("Falha ao enviar áudio: " + (err.message || "Erro desconhecido"));
         }
     };
 
@@ -1071,7 +1113,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                                 <div key={note.id} className={`flex flex-col ${(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? 'items-start' : 'items-end'}`}>
                                                                                     <div className={`max-w-[85%] p-2 rounded-xl text-xs break-words overflow-hidden [overflow-wrap:anywhere] whitespace-pre-wrap ${(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? 'bg-neutral-800 text-gray-300' : 'bg-blue-900/30 text-blue-100 border border-blue-900/50'}`}>
                                                                                         <span className="font-bold block text-[10px] opacity-50 mb-1">{(note.authorRole === 'PACIENTE' || note.authorRole === 'PATIENT') ? (patients.find(p => p.id === selectedPatientId)?.name || 'Paciente') : 'Dr. ' + user.name}</span>
-                                                                                        {note.text}
+                                                                                        {note.type === 'audio' && note.audioUrl ? (
+                                                                                            <AudioPlayer url={note.audioUrl} duration={note.duration} />
+                                                                                        ) : (
+                                                                                            note.text
+                                                                                        )}
                                                                                     </div>
                                                                                 </div>
                                                                             ))}
@@ -1087,6 +1133,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                                                 </button>
                                                                             </div>
                                                                             <div className="flex flex-col sm:flex-row justify-end gap-2 mt-2">
+                                                                                <AudioRecorder onSend={(blob, duration) => handleSendAudio(entry.id, blob, duration)} />
                                                                                 <Button variant="ghost" className="h-10 text-xs flex-1 sm:flex-none" onClick={() => setCommentingEntryId(null)}>Cancel</Button>
                                                                                 <Button className={`h-10 text-xs flex-1 sm:flex-none ${user.clinicalRole === 'psychologist' ? 'bg-[#8b5cf6] hover:bg-[#7c3aed]' : 'bg-[#10b981] hover:bg-[#059669]'}`} onClick={() => handleSaveEntryComment(entry.id)}>Send</Button>
                                                                             </div>
