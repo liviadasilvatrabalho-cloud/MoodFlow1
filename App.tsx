@@ -17,8 +17,9 @@ import { ConsentSettings } from './components/settings/ConsentSettings';
 const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => void }) => {
     const [isRecording, setIsRecording] = useState(false);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const isPressedRef = useRef(false);
+    const streamRef = useRef<MediaStream | null>(null);
     const startTimeRef = useRef<number>(0);
+    const chunksRef = useRef<Blob[]>([]);
     const [duration, setDuration] = useState(0);
 
     useEffect(() => {
@@ -33,78 +34,75 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
         return () => clearInterval(interval);
     }, [isRecording]);
 
-    const startRecording = async () => {
-        console.log('[AudioRecorder] startRecording called');
-        isPressedRef.current = true;
-        try {
-            console.log('[AudioRecorder] Requesting microphone access...');
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            console.log('[AudioRecorder] Microphone access granted');
-
-            // Safety check: if user already released button, abort
-            if (!isPressedRef.current) {
-                console.log('[AudioRecorder] User released button, aborting');
-                stream.getTracks().forEach(t => t.stop());
-                return;
+    const toggleRecording = async () => {
+        if (isRecording) {
+            // Stop recording
+            console.log('[AudioRecorder] Stopping recording...');
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                mediaRecorderRef.current.stop();
             }
+        } else {
+            // Start recording
+            console.log('[AudioRecorder] Starting recording...');
+            try {
+                console.log('[AudioRecorder] Requesting microphone access...');
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('[AudioRecorder] Microphone access granted');
 
-            // iOS/Safari compatibility: prioritize supported mime types
-            const mimeTypes = [
-                'audio/webm;codecs=opus',
-                'audio/webm',
-                'audio/mp4',
-                'audio/ogg',
-                'audio/aac'
-            ];
-            const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
-            console.log('[AudioRecorder] Selected MIME type:', mimeType || 'default');
+                streamRef.current = stream;
+                chunksRef.current = [];
 
-            const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-            const chunks: Blob[] = [];
+                // iOS/Safari compatibility: prioritize supported mime types
+                const mimeTypes = [
+                    'audio/webm;codecs=opus',
+                    'audio/webm',
+                    'audio/mp4',
+                    'audio/ogg',
+                    'audio/aac'
+                ];
+                const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+                console.log('[AudioRecorder] Selected MIME type:', mimeType || 'default');
 
-            recorder.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    console.log('[AudioRecorder] Chunk received:', e.data.size, 'bytes');
-                    chunks.push(e.data);
-                }
-            };
+                const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
 
-            recorder.onstop = () => {
-                console.log('[AudioRecorder] Recording stopped, chunks:', chunks.length);
-                const finalDuration = Math.ceil((Date.now() - startTimeRef.current) / 1000);
-                const type = mimeType || recorder.mimeType || 'audio/webm';
-                const blob = new Blob(chunks, { type });
+                recorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        console.log('[AudioRecorder] Chunk received:', e.data.size, 'bytes');
+                        chunksRef.current.push(e.data);
+                    }
+                };
 
-                if (chunks.length > 0) {
-                    console.log('[AudioRecorder] Sending audio blob:', blob.size, 'bytes, duration:', finalDuration, 's');
-                    onSend(blob, finalDuration);
-                } else {
-                    console.warn('[AudioRecorder] No audio data recorded');
-                }
+                recorder.onstop = () => {
+                    console.log('[AudioRecorder] Recording stopped, chunks:', chunksRef.current.length);
+                    const finalDuration = Math.ceil((Date.now() - startTimeRef.current) / 1000);
+                    const type = mimeType || recorder.mimeType || 'audio/webm';
+                    const blob = new Blob(chunksRef.current, { type });
 
-                stream.getTracks().forEach(track => track.stop());
-            };
+                    if (chunksRef.current.length > 0) {
+                        console.log('[AudioRecorder] Sending audio blob:', blob.size, 'bytes, duration:', finalDuration, 's');
+                        onSend(blob, finalDuration);
+                    } else {
+                        console.warn('[AudioRecorder] No audio data recorded');
+                    }
 
-            startTimeRef.current = Date.now();
-            recorder.start();
-            console.log('[AudioRecorder] Recording started');
-            mediaRecorderRef.current = recorder;
-            setIsRecording(true);
-        } catch (err) {
-            console.error('[AudioRecorder] Error:', err);
-            alert("Permissão de microfone negada ou erro ao iniciar.");
-            isPressedRef.current = false;
-        }
-    };
+                    // Clean up stream
+                    if (streamRef.current) {
+                        streamRef.current.getTracks().forEach(track => track.stop());
+                        streamRef.current = null;
+                    }
 
-    const stopRecording = () => {
-        console.log('[AudioRecorder] stopRecording called');
-        isPressedRef.current = false;
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            console.log('[AudioRecorder] Stopping recorder');
-            mediaRecorderRef.current.stop();
-            setIsRecording(false);
-            mediaRecorderRef.current = null;
+                    setIsRecording(false);
+                };
+
+                startTimeRef.current = Date.now();
+                recorder.start();
+                console.log('[AudioRecorder] Recording started');
+                mediaRecorderRef.current = recorder;
+                setIsRecording(true);
+            } catch (err) {
+                console.error('[AudioRecorder] Error:', err);
+                alert("Permissão de microfone negada ou erro ao iniciar.");
+            }
         }
     };
 
@@ -112,13 +110,9 @@ const AudioRecorder = ({ onSend }: { onSend: (blob: Blob, duration: number) => v
         <div className="relative">
             <button
                 type="button"
-                onMouseDown={startRecording}
-                onMouseUp={stopRecording}
-                onMouseLeave={stopRecording}
-                onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
-                onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
+                onClick={toggleRecording}
                 className={`p-3 rounded-xl transition-all duration-200 ${isRecording ? 'bg-red-500 scale-110 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-[#1A1A1A] text-gray-400 hover:text-white'}`}
-                title="Segure para gravar"
+                title={isRecording ? "Clique para parar e enviar" : "Clique para gravar"}
             >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
