@@ -443,8 +443,21 @@ export const storageService = {
     },
 
     getAudioUrl: async (path: string): Promise<string | null> => {
-        const { data, error } = await supabase.storage.from('audio-comments').createSignedUrl(path, 3600);
-        return data?.signedUrl || null;
+        try {
+            console.log('[getAudioUrl] Getting public URL for path:', path);
+            const { data } = supabase.storage.from('audio-comments').getPublicUrl(path);
+
+            if (!data?.publicUrl) {
+                console.error('[getAudioUrl] No public URL returned');
+                return null;
+            }
+
+            console.log('[getAudioUrl] Public URL generated:', data.publicUrl);
+            return data.publicUrl;
+        } catch (err) {
+            console.error('[getAudioUrl] Exception:', err);
+            return null;
+        }
     },
 
     // --- LOGS & NOTIFS ---
