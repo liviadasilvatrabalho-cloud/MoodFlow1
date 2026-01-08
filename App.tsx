@@ -291,7 +291,7 @@ export default function App() {
                 {view === 'diary' && (
                     <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-10 animate-in slide-in-from-bottom-8 duration-700">
                         <div className="flex justify-between items-center">
-                            <h2 className="text-4xl font-black text-white tracking-tighter">{t.diaryTitle}</h2>
+                            <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter">{t.diaryTitle}</h2>
                             <button onClick={() => { setShowEntryForm(true); setEntryMode('diary'); }} className="bg-white text-black px-6 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all">
                                 {t.writeNew}
                             </button>
@@ -430,12 +430,12 @@ export default function App() {
                                         <div className="pt-6 border-t border-white/5 flex flex-col gap-3">
                                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Para quem você quer escrever?</span>
 
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                                                 {/* Psychologist Option */}
                                                 {connectedDoctors.some(d => d.role === UserRole.PSICOLOGO) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHOLOGIST' }))}
-                                                        className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#1e1b4b] border-[#8b5cf6] text-[#8b5cf6] shadow-[0_0_15px_rgba(139,92,246,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                        className={`flex-1 min-w-[120px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHOLOGIST' ? 'bg-[#1e1b4b] border-[#8b5cf6] text-[#8b5cf6] shadow-[0_0_15px_rgba(139,92,246,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
                                                     >
                                                         <span className="text-lg">🧠</span>
                                                         <span className="text-[10px] font-black uppercase tracking-wider">Psicólogo</span>
@@ -446,7 +446,7 @@ export default function App() {
                                                 {connectedDoctors.some(d => d.role === UserRole.PSIQUIATRA) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'PSYCHIATRIST' }))}
-                                                        className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#064e3b] border-[#10b981] text-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                        className={`flex-1 min-w-[120px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'PSYCHIATRIST' ? 'bg-[#064e3b] border-[#10b981] text-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
                                                     >
                                                         <span className="text-lg">💊</span>
                                                         <span className="text-[10px] font-black uppercase tracking-wider">Psiquiatra</span>
@@ -457,7 +457,7 @@ export default function App() {
                                                 {connectedDoctors.some(d => d.role === UserRole.PSICOLOGO) && connectedDoctors.some(d => d.role === UserRole.PSIQUIATRA) && (
                                                     <button
                                                         onClick={() => setReplyRecipients(prev => ({ ...prev, [entry.id]: 'BOTH' }))}
-                                                        className={`flex-1 py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'BOTH' ? 'bg-indigo-900/40 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
+                                                        className={`flex-1 min-w-[120px] py-3 px-2 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${replyRecipients[entry.id] === 'BOTH' ? 'bg-indigo-900/40 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)] scale-[1.02]' : 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#1a1a1a]'}`}
                                                     >
                                                         <span className="text-lg">👥</span>
                                                         <span className="text-[10px] font-black uppercase tracking-wider">Ambos</span>
