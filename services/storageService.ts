@@ -388,6 +388,7 @@ export const storageService = {
             .select('*')
             .eq('patient_id', patientId)
             .eq('professional_id', professionalId)
+            .eq('specialty', specialty)
             .maybeSingle();
 
         if (existing) return existing as MessageThread;
