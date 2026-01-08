@@ -1126,12 +1126,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
                                                                     {commentingEntryId === entry.id ? (
                                                                         <div className="mt-4">
-                                                                            <div className="relative">
-                                                                                <textarea className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2 text-sm text-white focus:outline-none min-h-[80px]" placeholder="Write a comment..." value={entryComment} onChange={e => setEntryComment(e.target.value)} autoFocus />
-                                                                                <button onClick={toggleRecording} className={`absolute right-2 bottom-2 p-1.5 rounded-full ${isRecording ? 'text-red-500 animate-pulse' : 'text-gray-500 hover:text-white'}`}>
-                                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                                                                                </button>
-                                                                            </div>
+                                                                            <textarea className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2 text-sm text-white focus:outline-none min-h-[80px]" placeholder="Write a comment..." value={entryComment} onChange={e => setEntryComment(e.target.value)} autoFocus />
                                                                             <div className="flex flex-col sm:flex-row justify-end gap-2 mt-2">
                                                                                 <AudioRecorder onSend={(blob, duration) => handleSendAudio(entry.id, blob, duration)} />
                                                                                 <Button variant="ghost" className="h-10 text-xs flex-1 sm:flex-none" onClick={() => setCommentingEntryId(null)}>Cancel</Button>
@@ -1155,14 +1150,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             <div className="bg-surfaceHighlight rounded-3xl border border-neutral-800 p-6 flex flex-col shadow-2xl min-h-[400px]">
                                                 <h3 className="text-sm font-bold text-textMuted uppercase mb-4 flex items-center gap-2 tracking-wider"><span className="text-lg">📝</span> {t.clinicalNotes}</h3>
                                                 <div className="mb-6 space-y-3 bg-neutral-900/50 p-4 rounded-2xl border border-neutral-800">
-                                                    <div className="relative">
-                                                        <textarea className="w-full bg-transparent text-sm text-white focus:outline-none resize-none h-24 placeholder-gray-600 pr-8" placeholder="Confidential observation..." value={newNote} onChange={e => setNewNote(e.target.value)} />
-                                                        <button onClick={toggleRecording} className={`absolute right-0 top-0 p-2 rounded-full ${isRecording ? 'text-red-500 animate-pulse' : 'text-gray-500 hover:text-white'}`}>
-                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                                                        </button>
-                                                    </div>
-                                                    <div className="flex justify-between items-center border-t border-white/5 pt-3">
-                                                        <span className="text-[10px] text-gray-500">{isRecording ? t.micOn : t.micOff}</span>
+                                                    <textarea className="w-full bg-transparent text-sm text-white focus:outline-none resize-none h-24 placeholder-gray-600" placeholder="Confidential observation..." value={newNote} onChange={e => setNewNote(e.target.value)} />
+                                                    <div className="flex justify-end items-center border-t border-white/5 pt-3">
                                                         <Button onClick={handleSavePrivateNote} disabled={!newNote.trim()} className="py-1 px-4 text-xs h-8">Save</Button>
                                                     </div>
                                                 </div>
