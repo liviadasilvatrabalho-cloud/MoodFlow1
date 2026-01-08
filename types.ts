@@ -136,6 +136,19 @@ export interface ViewLog {
   viewedAt: string;
 }
 
+export interface ClinicalReport {
+  id: string;
+  patientId: string;
+  professionalId: string;
+  professionalRole: 'PSICOLOGO' | 'PSIQUIATRA';
+  title: string;
+  reportType: 'avaliacao' | 'evolucao' | 'alta' | 'encaminhamento' | 'livre';
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  isDeleted: boolean;
+}
+
 // Recharts data shapes
 export interface ChartDataPoint {
   name: string;

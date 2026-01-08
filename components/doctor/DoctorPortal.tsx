@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MOODS, TRANSLATIONS } from '../../constants';
 import { storageService } from '../../services/storageService';
 import { aiService } from '../../services/aiService';
-import { MoodEntry, User, DoctorNote, Language, UserRole } from '../../types';
+import { MoodEntry, User, DoctorNote, Language, UserRole, ClinicalReport } from '../../types';
 import { Button } from '../ui/Button';
 import { AudioRecorder, AudioPlayer } from '../ui/AudioComponents';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -93,10 +93,57 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const [aiSummary, setAiSummary] = useState<any | null>(null);
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
+    // --- CLINICAL REPORTS STATE (NEW) ---
+    const [patientTab, setPatientTab] = useState<'dashboard' | 'reports'>('dashboard');
+    const [clinicalReports, setClinicalReports] = useState<ClinicalReport[]>([]);
+    const [isEditingReport, setIsEditingReport] = useState(false);
+    const [editingReport, setEditingReport] = useState<{ id: string, title: string, reportType: 'avaliacao' | 'evolucao' | 'alta' | 'encaminhamento' | 'livre', content: string }>({
+        id: '', title: '', reportType: 'evolucao', content: ''
+    });
+
     const lang: Language = user.language || 'pt';
     const t = TRANSLATIONS[lang];
     const recognitionRef = useRef<any>(null);
 
+    useEffect(() => {
+        if (selectedPatientId && patientTab === 'reports') {
+            loadClinicalReports();
+        }
+    }, [selectedPatientId, patientTab]);
+
+    const loadClinicalReports = async () => {
+        if (!selectedPatientId) return;
+        const reports = await storageService.getClinicalReports(selectedPatientId, user.id);
+        setClinicalReports(reports);
+    };
+
+    const handleSaveReport = async () => {
+        if (!selectedPatientId || !editingReport.title || !editingReport.content) return;
+        try {
+            if (editingReport.id) {
+                await storageService.updateClinicalReport(editingReport.id, {
+                    title: editingReport.title,
+                    reportType: editingReport.reportType,
+                    content: editingReport.content
+                });
+            } else {
+                await storageService.createClinicalReport({
+                    patientId: selectedPatientId,
+                    professionalId: user.id,
+                    professionalRole: user.clinicalRole || 'PSICOLOGO',
+                    title: editingReport.title,
+                    reportType: editingReport.reportType,
+                    content: editingReport.content
+                });
+            }
+            await loadClinicalReports();
+            setIsEditingReport(false);
+            setEditingReport({ id: '', title: '', reportType: 'evolucao', content: '' });
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao salvar relatório.');
+        }
+    };
 
 
     // Initial Load & Polling
@@ -803,6 +850,24 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                 )}
                             </div>
 
+                            {/* CLINICAL REPORTS TAB SWITCHER (NEW ENTERPRISE FEATURE) */}
+                            {viewMode === 'dashboard' && selectedPatientId && (user.role === UserRole.PSICOLOGO || user.role === UserRole.PSIQUIATRA) && (
+                                <div className="flex border-b border-neutral-800 mb-6">
+                                    <button
+                                        onClick={() => setPatientTab('dashboard')}
+                                        className={`px-6 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 ${patientTab !== 'reports' ? 'border-primary text-white' : 'border-transparent text-gray-500 hover:text-white'}`}
+                                    >
+                                        Dashboard
+                                    </button>
+                                    <button
+                                        onClick={() => setPatientTab('reports')}
+                                        className={`px-6 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 ${patientTab === 'reports' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-500 hover:text-white'}`}
+                                    >
+                                        Relatórios Clínicos
+                                    </button>
+                                </div>
+                            )}
+
                             {viewMode === 'clinic' ? (
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                     {/* Clinic Creation */}
@@ -855,6 +920,138 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             </div>
                                         )}
                                     </div>
+                                </div>
+                            ) : patientTab === 'reports' && selectedPatientId ? (
+                                /* --- CLINICAL REPORTS VIEW (ISOLATED) --- */
+                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-bold text-white uppercase tracking-wider">Histórico de Relatórios</h3>
+                                        <Button
+                                            onClick={() => {
+                                                setEditingReport({ id: '', title: '', reportType: 'evolucao', content: '' });
+                                                setIsEditingReport(true);
+                                            }}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-indigo-600/20"
+                                        >
+                                            + Novo Relatório
+                                        </Button>
+                                    </div>
+
+                                    {isEditingReport ? (
+                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h4 className="text-white font-black text-lg">{editingReport.id ? 'Editar Relatório' : 'Novo Relatório'}</h4>
+                                                <button onClick={() => setIsEditingReport(false)} className="text-gray-500 hover:text-white">✕</button>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-wider">Título</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editingReport.title}
+                                                        onChange={e => setEditingReport(prev => ({ ...prev, title: e.target.value }))}
+                                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all"
+                                                        placeholder="Ex: Evolução Semanal"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-wider">Tipo</label>
+                                                    <select
+                                                        value={editingReport.reportType}
+                                                        onChange={e => setEditingReport(prev => ({ ...prev, reportType: e.target.value as any }))}
+                                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all"
+                                                    >
+                                                        <option value="avaliacao">Avaliação Inicial</option>
+                                                        <option value="evolucao">Evolução</option>
+                                                        <option value="encaminhamento">Encaminhamento</option>
+                                                        <option value="alta">Alta</option>
+                                                        <option value="livre">Texto Livre</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-textMuted uppercase tracking-wider">Conteúdo Clínico</label>
+                                                <textarea
+                                                    value={editingReport.content}
+                                                    onChange={e => setEditingReport(prev => ({ ...prev, content: e.target.value }))}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all h-64 resize-none leading-relaxed"
+                                                    placeholder="Descreva a sessão, observações e condutas..."
+                                                />
+                                            </div>
+
+                                            <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                                                <Button variant="ghost" onClick={() => setIsEditingReport(false)}>Cancelar</Button>
+                                                <Button
+                                                    onClick={handleSaveReport}
+                                                    disabled={!editingReport.title || !editingReport.content}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                                                >
+                                                    Salvar Relatório
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {clinicalReports.length === 0 ? (
+                                                <div className="text-center py-12 border border-dashed border-neutral-800 rounded-3xl">
+                                                    <span className="text-4xl block mb-4">📂</span>
+                                                    <p className="text-gray-500 font-medium">Nenhum relatório clínico encontrado.</p>
+                                                </div>
+                                            ) : (
+                                                clinicalReports.map(report => (
+                                                    <div key={report.id} className="bg-surface p-6 rounded-2xl border border-neutral-800 hover:border-indigo-500/30 transition-all group">
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div>
+                                                                <div className="flex items-center gap-3 mb-1">
+                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${report.reportType === 'alta' ? 'bg-green-500/20 text-green-400' : report.reportType === 'avaliacao' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-neutral-800 text-gray-400'}`}>
+                                                                        {report.reportType.toUpperCase()}
+                                                                    </span>
+                                                                    <span className="text-xs text-neutral-500">{new Date(report.createdAt).toLocaleDateString()} às {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                </div>
+                                                                <h4 className="text-white font-bold text-lg">{report.title}</h4>
+                                                            </div>
+                                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingReport({
+                                                                            id: report.id,
+                                                                            title: report.title,
+                                                                            reportType: report.reportType,
+                                                                            content: report.content
+                                                                        });
+                                                                        setIsEditingReport(true);
+                                                                    }}
+                                                                    className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                                                                    title="Editar"
+                                                                >
+                                                                    ✏️
+                                                                </button>
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        if (confirm('Tem certeza que deseja excluir este relatório?')) {
+                                                                            try {
+                                                                                await storageService.softDeleteClinicalReport(report.id, user.id);
+                                                                                setClinicalReports(prev => prev.filter(r => r.id !== report.id));
+                                                                            } catch (e) {
+                                                                                alert('Erro ao excluir relatório.');
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                                                                    title="Excluir"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed break-words">{report.content}</p>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <>

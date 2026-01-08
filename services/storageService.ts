@@ -487,5 +487,68 @@ export const storageService = {
 
     createNotification: async (notif: Partial<Notification>) => {
         await supabase.from('notifications').insert(notif);
+    },
+
+    // --- CLINICAL REPORTS (NEW ENTERPRISE FEATURE) ---
+    getClinicalReports: async (patientId: string, professionalId: string) => {
+        const { data } = await supabase
+            .from('clinical_reports')
+            .select('*')
+            .eq('patient_id', patientId)
+            .eq('professional_id', professionalId)
+            .eq('is_deleted', false) // Soft delete check
+            .order('created_at', { ascending: false });
+
+        if (!data) return [];
+
+        return data.map((r: any) => ({
+            id: r.id,
+            patientId: r.patient_id,
+            professionalId: r.professional_id,
+            professionalRole: r.professional_role,
+            title: r.title,
+            reportType: r.report_type,
+            content: r.content,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at,
+            isDeleted: r.is_deleted
+        }));
+    },
+
+    createClinicalReport: async (report: { patientId: string, professionalId: string, professionalRole: string, title: string, reportType: string, content: string }) => {
+        const payload = {
+            patient_id: report.patientId,
+            professional_id: report.professionalId,
+            professional_role: report.professionalRole,
+            title: report.title,
+            report_type: report.reportType,
+            content: report.content
+        };
+        const { error } = await supabase.from('clinical_reports').insert(payload);
+        if (error) throw error;
+        // Audit Log
+        await storageService.logAudit(report.professionalId, 'CREATE_REPORT', report.patientId);
+    },
+
+    updateClinicalReport: async (id: string, updates: Partial<{ title: string, reportType: string, content: string }>) => {
+        const payload: any = {};
+        if (updates.title) payload.title = updates.title;
+        if (updates.reportType) payload.report_type = updates.reportType;
+        if (updates.content) payload.content = updates.content;
+        payload.updated_at = new Date().toISOString();
+
+        const { error } = await supabase.from('clinical_reports').update(payload).eq('id', id);
+        if (error) throw error;
+    },
+
+    softDeleteClinicalReport: async (id: string, professionalId: string) => {
+        // Extra safety: Policy handles this, but explicit ID check is good habit
+        const { error } = await supabase
+            .from('clinical_reports')
+            .update({ is_deleted: true })
+            .eq('id', id);
+
+        if (error) throw error;
+        await storageService.logAudit(professionalId, 'DELETE_REPORT', id);
     }
 };
