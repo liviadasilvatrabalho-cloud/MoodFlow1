@@ -34,38 +34,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 
 
-        const handleSaveReport = async () => {
-            if (!selectedPatientId || !editingReport.title || !editingReport.content) return;
-            setIsSaving(true);
-            try {
-                if (editingReport.id) {
-                    await storageService.updateClinicalReport(editingReport.id, {
-                        title: editingReport.title,
-                        reportType: editingReport.reportType,
-                        content: editingReport.content
-                    });
-                } else {
-                    await storageService.createClinicalReport({
-                        patientId: selectedPatientId,
-                        professionalId: user.id,
-                        professionalRole: user.clinicalRole || 'PSICOLOGO',
-                        title: editingReport.title,
-                        reportType: editingReport.reportType,
-                        content: editingReport.content
-                    });
-                }
-                // Refresh reports
-                const reports = await storageService.getClinicalReports(selectedPatientId, user.id);
-                setClinicalReports(reports);
-                setIsEditingReport(false);
-                setEditingReport({ id: '', title: '', reportType: 'evolucao', content: '' });
-            } catch (error) {
-                console.error("Failed to save report:", error);
-                alert("Erro ao salvar relatório.");
-            } finally {
-                setIsSaving(false);
-            }
-        };
+
         return (
             <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl shadow-2xl max-w-[250px] z-50">
                 <div className="flex items-center gap-2 mb-2">
@@ -125,6 +94,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
     const [clinics, setClinics] = useState<any[]>([]);
     const [newClinicName, setNewClinicName] = useState('');
+    const [clinicProfessionals, setClinicProfessionals] = useState<any[]>([]);
     const [isCreatingClinic, setIsCreatingClinic] = useState(false);
 
     const [aiSummary, setAiSummary] = useState<any | null>(null);
@@ -150,6 +120,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             storageService.getClinics(user.id).then(setClinics);
         }
     }, [viewMode, user.id]);
+
+    useEffect(() => {
+        if (viewMode === 'professionals' && selectedClinicId) {
+            storageService.getClinicProfessionals(selectedClinicId).then(setClinicProfessionals);
+        }
+    }, [viewMode, selectedClinicId]);
 
     const [precomputedChartData, setPrecomputedChartData] = useState<any[]>([]);
 
@@ -673,6 +649,34 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         }
     };
 
+    const handleLinkProfessional = async () => {
+        if (!selectedClinicId) return;
+        const email = prompt("Digite o e-mail do profissional para vincular:");
+        if (!email) return;
+
+        try {
+            await storageService.addProfessionalToClinic(selectedClinicId, email);
+            alert("Profissional vinculado com sucesso!");
+            // Refresh list
+            storageService.getClinicProfessionals(selectedClinicId).then(setClinicProfessionals);
+        } catch (error: any) {
+            console.error("Failed to link professional:", error);
+            alert(error.message || "Erro ao vincular profissional.");
+        }
+    };
+
+    const handleRemoveProfessional = async (doctorId: string) => {
+        if (!selectedClinicId || !confirm("Tem certeza que deseja remover este profissional desta unidade?")) return;
+
+        try {
+            await storageService.removeProfessionalFromClinic(selectedClinicId, doctorId);
+            setClinicProfessionals(prev => prev.filter(p => p.id !== doctorId));
+        } catch (error: any) {
+            console.error("Failed to remove professional:", error);
+            alert("Erro ao remover profissional.");
+        }
+    };
+
     // Unified filtering logic for both Chart and List
     const getEntriesForSelectedPeriod = () => {
         const sorted = [...patientEntries].sort((a, b) => b.timestamp - a.timestamp); // Descending for list (newest first)
@@ -1018,12 +1022,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             <h3 className="text-lg font-bold text-white uppercase tracking-wider">Gestão de Profissionais</h3>
                                             <p className="text-xs text-textMuted mt-1">Gerencie psicólogos e psiquiatras vinculados às suas unidades.</p>
                                         </div>
-                                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-xl">
+                                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-xl" onClick={handleLinkProfessional}>
                                             + Vincular Profissional
                                         </Button>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {/* Current User Card */}
                                         <div className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
                                             <div className="flex items-center gap-4 mb-6">
                                                 <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center text-xl">👤</div>
@@ -1043,12 +1048,38 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                 </div>
                                             </div>
                                             <div className="mt-6 pt-4 border-t border-white/5 flex gap-2">
-                                                <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black">Editar</Button>
-                                                <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black text-red-400 hover:text-red-500">Remover</Button>
+                                                <Button variant="ghost" disabled className="flex-1 h-8 text-[10px] uppercase font-black opacity-50">Editar</Button>
                                             </div>
                                         </div>
 
-                                        <div className="bg-surface/50 p-12 rounded-3xl border border-dashed border-neutral-800 flex flex-col items-center text-center justify-center min-h-[200px]">
+                                        {/* Listed Professionals */}
+                                        {clinicProfessionals.map((prof) => (
+                                            <div key={prof.id} className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
+                                                <div className="flex items-center gap-4 mb-6">
+                                                    <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center text-xl">👨‍⚕️</div>
+                                                    <div>
+                                                        <h4 className="text-white font-bold group-hover:text-indigo-400 transition-colors">{prof.name}</h4>
+                                                        <p className="text-[10px] text-gray-500 uppercase tracking-tighter">{prof.email}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between text-[10px]">
+                                                        <span className="text-gray-500 uppercase font-black">Papel</span>
+                                                        <span className="text-indigo-400 font-bold uppercase">{prof.specialty || prof.role || 'Profissional'}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-[10px]">
+                                                        <span className="text-gray-500 uppercase font-black">Status</span>
+                                                        <span className={`${prof.membershipStatus === 'active' ? 'text-green-500' : 'text-yellow-500'} font-bold uppercase`}>{prof.membershipStatus === 'active' ? 'ATIVO' : 'PENDENTE'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-6 pt-4 border-t border-white/5 flex gap-2">
+                                                    <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black" onClick={() => alert('Edição de permissões em breve.')}>Editar</Button>
+                                                    <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black text-red-400 hover:text-red-500" onClick={() => handleRemoveProfessional(prof.id)}>Remover</Button>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <div onClick={handleLinkProfessional} className="bg-surface/50 p-12 rounded-3xl border border-dashed border-neutral-800 flex flex-col items-center text-center justify-center min-h-[200px] cursor-pointer hover:bg-surface/80 transition-colors">
                                             <span className="text-2xl mb-2">➕</span>
                                             <p className="text-xs text-gray-500">Convide mais profissionais para expandir sua clínica.</p>
                                         </div>

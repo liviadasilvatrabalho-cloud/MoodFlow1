@@ -653,6 +653,86 @@ export const storageService = {
         if (error) throw error;
     },
 
+
+    // --- PROFESSIONAL MANAGEMENT (ADMIN) ---
+    getClinicProfessionals: async (clinicId: string): Promise<any[]> => {
+        // Fetch profiles via clinic_members
+        const { data, error } = await supabase
+            .from('clinic_members')
+            .select(`
+                status,
+                doctor:doctor_id (
+                    id,
+                    name,
+                    email,
+                    role,
+                    specialty:clinical_role
+                )
+            `)
+            .eq('clinic_id', clinicId)
+            .neq('doctor_id', null); // Ensure we only get doctors
+
+        if (error) {
+            console.error("Error fetching clinic professionals:", error);
+            return [];
+        }
+
+        // Flatten structure
+        return (data || []).map((m: any) => ({
+            ...m.doctor,
+            membershipStatus: m.status
+        }));
+    },
+
+    addProfessionalToClinic: async (clinicId: string, email: string) => {
+        // 1. Find user by email
+        const { data: users, error: userError } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('email', email)
+            .limit(1);
+
+        if (userError || !users || users.length === 0) {
+            throw new Error("Usuário não encontrado com este email.");
+        }
+
+        const userToAdd = users[0];
+
+        // 2. Check if already a member
+        const { data: existing } = await supabase
+            .from('clinic_members')
+            .select('id')
+            .eq('clinic_id', clinicId)
+            .eq('doctor_id', userToAdd.id)
+            .single();
+
+        if (existing) {
+            throw new Error("Profissional já vinculado a esta clínica.");
+        }
+
+        // 3. Add to clinic
+        const { error: linkError } = await supabase
+            .from('clinic_members')
+            .insert({
+                clinic_id: clinicId,
+                doctor_id: userToAdd.id,
+                status: 'active',
+                added_at: new Date().toISOString()
+            });
+
+        if (linkError) throw linkError;
+    },
+
+    removeProfessionalFromClinic: async (clinicId: string, doctorId: string) => {
+        const { error } = await supabase
+            .from('clinic_members')
+            .delete()
+            .eq('clinic_id', clinicId)
+            .eq('doctor_id', doctorId);
+
+        if (error) throw error;
+    },
+
     softDeleteClinicalReport: async (id: string, professionalId: string) => {
         // Extra safety: Policy handles this, but explicit ID check is good habit
         const { error } = await supabase
