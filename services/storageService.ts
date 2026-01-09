@@ -565,6 +565,22 @@ export const storageService = {
         }
     },
 
+    deleteClinic: async (id: string) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        const { error } = await supabase
+            .from('clinics')
+            .delete()
+            .eq('id', id)
+            .eq('admin_id', user.id); // Ensure ownership
+
+        if (error) {
+            console.error("Delete Clinic Error:", error);
+            throw error;
+        }
+    },
+
     getPatientCharts: async (pid: string): Promise<any[]> => {
         const { data } = await supabase.from('charts').select('*').eq('patient_id', pid);
         return data || [];
