@@ -97,6 +97,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const [newClinicName, setNewClinicName] = useState('');
     const [clinicProfessionals, setClinicProfessionals] = useState<any[]>([]);
     const [isCreatingClinic, setIsCreatingClinic] = useState(false);
+    const [b2bMetrics, setB2bMetrics] = useState<{
+        totalPatients: number;
+        totalSessions: number;
+        averageRisk: 'BAIXO' | 'MÉDIO' | 'ALTO';
+        engagementScore: number;
+    }>({ totalPatients: 0, totalSessions: 0, averageRisk: 'BAIXO', engagementScore: 0 });
 
     const [aiSummary, setAiSummary] = useState<any | null>(null);
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -127,6 +133,60 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             storageService.getClinicProfessionals(selectedClinicId).then(setClinicProfessionals);
         }
     }, [viewMode, selectedClinicId]);
+
+    // Calculate B2B Metrics
+    useEffect(() => {
+        if (viewMode === 'reports_b2b' && selectedClinicId && isAdminPortal) {
+            const calculateMetrics = async () => {
+                try {
+                    const clinicPatients = await storageService.getClinicPatients(selectedClinicId);
+                    const totalPatients = clinicPatients.length;
+
+                    // Count total sessions (entries) for all clinic patients
+                    let totalSessions = 0;
+                    let moodSum = 0;
+                    let moodCount = 0;
+                    let activePatients = 0;
+
+                    for (const patient of clinicPatients) {
+                        const entries = await storageService.getPatientEntries(patient.id, user.id);
+                        totalSessions += entries.length;
+
+                        // Calculate average mood for risk assessment
+                        entries.forEach(e => {
+                            if (e.mood !== null && e.mood !== undefined) {
+                                moodSum += e.mood;
+                                moodCount++;
+                            }
+                        });
+
+                        // Count active patients (at least 1 entry in last 30 days)
+                        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+                        if (entries.some(e => e.timestamp >= thirtyDaysAgo)) {
+                            activePatients++;
+                        }
+                    }
+
+                    // Calculate average mood (1-10 scale)
+                    const avgMood = moodCount > 0 ? moodSum / moodCount : 5;
+
+                    // Risk assessment based on average mood
+                    let averageRisk: 'BAIXO' | 'MÉDIO' | 'ALTO';
+                    if (avgMood >= 7) averageRisk = 'BAIXO';
+                    else if (avgMood >= 4) averageRisk = 'MÉDIO';
+                    else averageRisk = 'ALTO';
+
+                    // Engagement score (% of active patients)
+                    const engagementScore = totalPatients > 0 ? Math.round((activePatients / totalPatients) * 100) : 0;
+
+                    setB2bMetrics({ totalPatients, totalSessions, averageRisk, engagementScore });
+                } catch (error) {
+                    console.error('Failed to calculate B2B metrics:', error);
+                }
+            };
+            calculateMetrics();
+        }
+    }, [viewMode, selectedClinicId, isAdminPortal, user.id]);
 
     const [precomputedChartData, setPrecomputedChartData] = useState<any[]>([]);
 
@@ -655,13 +715,20 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             const updated = await storageService.getClinics(user.id);
             setClinics(updated);
             alert("Clínica criada com sucesso!");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to create clinic:", error);
-            alert("Erro ao criar clínica. Verifique as permissões.");
+            console.error("Error details:", {
+                message: error?.message,
+                code: error?.code,
+                details: error?.details,
+                hint: error?.hint
+            });
+            alert(`Erro ao criar clínica: ${error?.message || 'Verifique as permissões.'}\n\nCódigo: ${error?.code || 'N/A'}\n\nDetalhes: ${error?.details || error?.hint || 'Verifique o console (F12) para mais informações.'}`);
         } finally {
             setIsCreatingClinic(false);
         }
     };
+
 
     const handleLinkProfessional = async () => {
         console.log("handleLinkProfessional clicked", { selectedClinicId });
@@ -1188,23 +1255,23 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                         <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
                                             <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Total de Pacientes</p>
-                                            <p className="text-2xl font-black text-white">{patients.length}</p>
-                                            <p className="text-[9px] text-green-500 mt-2">↑ 12% vs mês ant.</p>
+                                            <p className="text-2xl font-black text-white">{b2bMetrics.totalPatients}</p>
+                                            <p className="text-[9px] text-gray-500 mt-2">Clínica ativa</p>
                                         </div>
                                         <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
                                             <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Sessões Realizadas</p>
-                                            <p className="text-2xl font-black text-white">0</p>
-                                            <p className="text-[9px] text-gray-500 mt-2">Dados em atualização...</p>
+                                            <p className="text-2xl font-black text-white">{b2bMetrics.totalSessions}</p>
+                                            <p className="text-[9px] text-blue-500 mt-2">Total de registros</p>
                                         </div>
                                         <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
                                             <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Risco Médio Unitário</p>
-                                            <p className="text-2xl font-black text-green-400">BAIXO</p>
-                                            <p className="text-[9px] text-green-500 mt-2">Estável</p>
+                                            <p className={`text-2xl font-black ${b2bMetrics.averageRisk === 'BAIXO' ? 'text-green-400' : b2bMetrics.averageRisk === 'MÉDIO' ? 'text-yellow-400' : 'text-red-400'}`}>{b2bMetrics.averageRisk}</p>
+                                            <p className={`text-[9px] mt-2 ${b2bMetrics.averageRisk === 'BAIXO' ? 'text-green-500' : b2bMetrics.averageRisk === 'MÉDIO' ? 'text-yellow-500' : 'text-red-500'}`}>{b2bMetrics.averageRisk === 'BAIXO' ? 'Estável' : b2bMetrics.averageRisk === 'MÉDIO' ? 'Atenção' : 'Crítico'}</p>
                                         </div>
                                         <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
                                             <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Engagement Score</p>
-                                            <p className="text-2xl font-black text-indigo-400">88%</p>
-                                            <p className="text-[9px] text-indigo-500 mt-2">Excelente</p>
+                                            <p className="text-2xl font-black text-indigo-400">{b2bMetrics.engagementScore}%</p>
+                                            <p className="text-[9px] text-indigo-500 mt-2">{b2bMetrics.engagementScore >= 70 ? 'Excelente' : b2bMetrics.engagementScore >= 40 ? 'Bom' : 'Baixo'}</p>
                                         </div>
                                     </div>
 
