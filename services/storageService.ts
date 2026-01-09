@@ -530,13 +530,15 @@ export const storageService = {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
 
-        // 1. Create the clinic with admin_id
+        // 1. Create the clinic with admin_id and return the created data
         const { data: clinic, error: clinicError } = await supabase
             .from('clinics')
             .insert({
                 name: clinicName,
                 admin_id: user.id
-            });
+            })
+            .select()
+            .single();
 
         if (clinicError) {
             console.error("Create Clinic Error:", clinicError);
@@ -545,6 +547,7 @@ export const storageService = {
 
         return clinic;
     },
+
 
     updateClinic: async (id: string, name: string) => {
         const { data: { user } } = await supabase.auth.getUser();

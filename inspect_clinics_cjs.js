@@ -1,10 +1,8 @@
 // Script to inspect clinics in the database
-// Run with: node inspect_clinics.js
+// Run with: node inspect_clinics_cjs.js
 
-import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -29,6 +27,7 @@ async function inspectClinics() {
 
         if (clinicsError) {
             console.error('❌ Error fetching clinics:', clinicsError);
+            console.error('Details:', JSON.stringify(clinicsError, null, 2));
             return;
         }
 
@@ -45,31 +44,6 @@ async function inspectClinics() {
             });
         } else {
             console.log('⚠️  No clinics found in database');
-        }
-
-        // Get all clinic members
-        const { data: members, error: membersError } = await supabase
-            .from('clinic_members')
-            .select('*');
-
-        if (membersError) {
-            console.error('❌ Error fetching clinic members:', membersError);
-            return;
-        }
-
-        console.log(`\n👥 Total Clinic Members: ${members?.length || 0}\n`);
-
-        if (members && members.length > 0) {
-            members.forEach((member, index) => {
-                console.log(`--- Member ${index + 1} ---`);
-                console.log(`Clinic ID: ${member.clinic_id}`);
-                console.log(`Doctor ID: ${member.doctor_id}`);
-                console.log(`Patient ID: ${member.patient_id}`);
-                console.log(`Status: ${member.status}`);
-                console.log('');
-            });
-        } else {
-            console.log('⚠️  No clinic members found in database');
         }
 
         // Check for admin user
@@ -90,16 +64,23 @@ async function inspectClinics() {
             console.log(`Email: ${adminProfile.email}`);
 
             // Check clinics for this admin
-            const { data: adminClinics } = await supabase
+            const { data: adminClinics, error: adminClinicsError } = await supabase
                 .from('clinics')
                 .select('*')
                 .eq('admin_id', adminProfile.id);
 
-            console.log(`\n📋 Clinics for this admin: ${adminClinics?.length || 0}`);
-            if (adminClinics && adminClinics.length > 0) {
-                adminClinics.forEach(clinic => {
-                    console.log(`  - ${clinic.name} (ID: ${clinic.id})`);
-                });
+            if (adminClinicsError) {
+                console.error('\n❌ Error fetching admin clinics:', adminClinicsError);
+                console.error('Details:', JSON.stringify(adminClinicsError, null, 2));
+            } else {
+                console.log(`\n📋 Clinics for this admin: ${adminClinics?.length || 0}`);
+                if (adminClinics && adminClinics.length > 0) {
+                    adminClinics.forEach(clinic => {
+                        console.log(`  - ${clinic.name} (ID: ${clinic.id})`);
+                    });
+                } else {
+                    console.log('⚠️  This admin has no clinics yet');
+                }
             }
         } else {
             console.log('⚠️  Admin user not found');
