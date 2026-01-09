@@ -234,6 +234,27 @@ export const storageService = {
         return () => { supabase.removeChannel(chan); };
     },
 
+    getPatientEntries: async (patientId: string, doctorId: string): Promise<MoodEntry[]> => {
+        const { data, error } = await supabase
+            .from('entries')
+            .select('*')
+            .eq('user_id', patientId)
+            .order('date', { ascending: false });
+
+        if (error) throw error;
+
+        return (data || []).map(row => ({
+            ...row,
+            userId: row.user_id,
+            timestamp: new Date(row.date).getTime(),
+            moodLabel: row.mood_label,
+            isLocked: row.is_locked,
+            entryMode: row.ai_analysis?.entry_mode || (row.mood === null ? 'diary' : 'mood'),
+            aiAnalysis: row.ai_analysis
+        })) as MoodEntry[];
+    },
+
+
     // --- DOCTORS ---
     getConnectedDoctors: async (patientId: string): Promise<User[]> => {
         const { data } = await supabase
