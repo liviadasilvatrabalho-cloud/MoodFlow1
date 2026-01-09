@@ -485,9 +485,7 @@ export const storageService = {
             .insert({
                 name: clinicName,
                 admin_id: user.id
-            })
-            .select()
-            .single();
+            });
 
         if (clinicError) {
             console.error("Create Clinic Error:", clinicError);
