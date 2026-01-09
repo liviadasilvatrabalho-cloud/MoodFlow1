@@ -61,7 +61,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
     const [patientEntries, setPatientEntries] = useState<MoodEntry[]>([]);
     const [portalView, setPortalView] = useState<'clinical' | 'administrative'>(isAdminPortal ? 'administrative' : 'clinical');
-    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic' | 'professionals' | 'reports_b2b'>(isAdminPortal ? 'clinic' : 'dashboard');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic' | 'professionals' | 'reports_b2b' | 'clinic_settings'>(isAdminPortal ? 'clinic' : 'dashboard');
+    const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [notes, setNotes] = useState<DoctorNote[]>([]);
     const [newNote, setNewNote] = useState('');
@@ -1012,8 +1013,22 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                         <h4 className="text-white font-bold group-hover:text-indigo-400 transition-colors">{membership.clinics.name}</h4>
                                                         <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">ID: {membership.clinics.id.slice(0, 8)}...</p>
                                                         <div className="mt-6 flex gap-2">
-                                                            <Button variant="ghost" className="h-8 text-[10px] uppercase font-black px-3">Configurar</Button>
-                                                            <Button variant="ghost" className="h-8 text-[10px] uppercase font-black px-3">Profissionais</Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="h-8 text-[10px] uppercase font-black px-3"
+                                                                onClick={() => {
+                                                                    setSelectedClinicId(membership.clinics.id);
+                                                                    setViewMode('clinic_settings');
+                                                                }}
+                                                            >Configurar</Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="h-8 text-[10px] uppercase font-black px-3"
+                                                                onClick={() => {
+                                                                    setSelectedClinicId(membership.clinics.id);
+                                                                    setViewMode('professionals');
+                                                                }}
+                                                            >Profissionais</Button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -1108,6 +1123,57 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                         <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center text-2xl mb-4">📉</div>
                                         <h4 className="text-white font-bold mb-2">Aguardando dados estruturados</h4>
                                         <p className="text-xs text-gray-500 max-w-md">Os gráficos de evolução corporativa estarão disponíveis assim que houver volume de dados suficiente em suas unidades.</p>
+                                    </div>
+                                </div>
+                            ) : viewMode === 'clinic_settings' ? (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white uppercase tracking-wider">Configurações da Unidade</h3>
+                                            <p className="text-xs text-textMuted mt-1">Ajuste as informações fundamentais da sua clínica.</p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            className="text-white text-xs font-bold uppercase border-white/10"
+                                            onClick={() => setViewMode('clinic')}
+                                        >
+                                            Voltar
+                                        </Button>
+                                    </div>
+
+                                    <div className="bg-surface p-8 rounded-3xl border border-neutral-800 max-w-2xl">
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-textMuted uppercase tracking-wider">Nome da Unidade</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all"
+                                                    value={clinics.find(c => c.clinics.id === selectedClinicId)?.clinics.name || ''}
+                                                    onChange={() => { }} // Placeholder for now to avoid readonly warning
+                                                    disabled
+                                                />
+                                                <p className="text-[10px] text-gray-500 italic">A edição de nome está desabilitada para esta versão.</p>
+                                            </div>
+
+                                            <div className="pt-6 border-t border-white/5">
+                                                <h4 className="text-sm font-bold text-white mb-4 uppercase tracking-widest">Informações do Plano</h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="bg-neutral-900/50 p-4 rounded-2xl border border-white/5">
+                                                        <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Status do Plano</p>
+                                                        <p className="text-sm text-green-400 font-bold">PROFISSIONAL</p>
+                                                    </div>
+                                                    <div className="bg-neutral-900/50 p-4 rounded-2xl border border-white/5">
+                                                        <p className="text-sm text-white font-bold">12/02/2026</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-6">
+                                                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3">
+                                                    Salvar Alterações
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             ) : patientTab === 'reports' && selectedPatientId ? (
