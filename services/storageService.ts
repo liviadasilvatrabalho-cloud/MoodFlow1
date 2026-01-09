@@ -495,6 +495,18 @@ export const storageService = {
         return clinic;
     },
 
+    updateClinic: async (id: string, name: string) => {
+        const { error } = await supabase
+            .from('clinics')
+            .update({ name })
+            .eq('id', id);
+
+        if (error) {
+            console.error("Update Clinic Error:", error);
+            throw error;
+        }
+    },
+
     getPatientCharts: async (pid: string): Promise<any[]> => {
         const { data } = await supabase.from('charts').select('*').eq('patient_id', pid);
         return data || [];

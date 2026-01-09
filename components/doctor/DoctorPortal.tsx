@@ -63,6 +63,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const [portalView, setPortalView] = useState<'clinical' | 'administrative'>(isAdminPortal ? 'administrative' : 'clinical');
     const [viewMode, setViewMode] = useState<'dashboard' | 'clinic' | 'professionals' | 'reports_b2b' | 'clinic_settings'>(isAdminPortal ? 'clinic' : 'dashboard');
     const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
+    const [editingClinicName, setEditingClinicName] = useState('');
     const [isConnecting, setIsConnecting] = useState(false);
     const [notes, setNotes] = useState<DoctorNote[]>([]);
     const [newNote, setNewNote] = useState('');
@@ -680,6 +681,22 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         }
     };
 
+    const handleUpdateClinic = async () => {
+        if (!selectedClinicId || !editingClinicName.trim()) return;
+        setIsCreatingClinic(true);
+        try {
+            await storageService.updateClinic(selectedClinicId, editingClinicName);
+            const updated = await storageService.getClinics(user.id);
+            setClinics(updated);
+            alert("Nome da unidade atualizado com sucesso!");
+        } catch (error) {
+            console.error("Failed to update clinic:", error);
+            alert("Erro ao atualizar nome da unidade. Verifique as permissões.");
+        } finally {
+            setIsCreatingClinic(false);
+        }
+    };
+
 
     const handleCreateClinic = async () => {
         if (!newClinicName.trim()) return;
@@ -1147,12 +1164,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                 <label className="text-[10px] font-bold text-textMuted uppercase tracking-wider">Nome da Unidade</label>
                                                 <input
                                                     type="text"
-                                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all"
-                                                    value={clinics.find(c => c.clinics.id === selectedClinicId)?.clinics.name || ''}
-                                                    onChange={() => { }} // Placeholder for now to avoid readonly warning
-                                                    disabled
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                                                    value={editingClinicName}
+                                                    onChange={e => setEditingClinicName(e.target.value)}
+                                                    placeholder="Digite o nome da unidade..."
                                                 />
-                                                <p className="text-[10px] text-gray-500 italic">A edição de nome está desabilitada para esta versão.</p>
+                                                <p className="text-[10px] text-gray-500 italic mt-1">Nome atual: {clinics.find(c => c.clinics.id === selectedClinicId)?.clinics.name}</p>
                                             </div>
 
                                             <div className="pt-6 border-t border-white/5">
@@ -1169,8 +1186,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             </div>
 
                                             <div className="pt-6">
-                                                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3">
-                                                    Salvar Alterações
+                                                <Button 
+                                                    onClick={handleUpdateClinic}
+                                                    disabled={isCreatingClinic || !editingClinicName.trim()}
+                                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
+                                                >
+                                                    {isCreatingClinic ? 'Salvando...' : 'Salvar Alterações'}
                                                 </Button>
                                             </div>
                                         </div>
