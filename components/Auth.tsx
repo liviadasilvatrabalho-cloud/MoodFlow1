@@ -40,14 +40,30 @@ export default function Auth({ isAdminMode = false }: AuthProps) {
                 await storageService.signupEmail(email, password, fullName, role);
                 setMessage({ type: 'success', text: 'Conta criada! Verifique seu email ou faça login.' })
             } else {
-                const { error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 })
                 if (error) throw error
+
+                // After successful login, if in admin mode, verify the profile role
+                if (isAdminMode && data.user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', data.user.id)
+                        .single();
+
+                    if (!profile || profile.role !== UserRole.ADMIN_CLINICA) {
+                        await supabase.auth.signOut();
+                        setMessage({ type: 'error', text: 'Acesso negado: Esta conta não possui privilégios administrativos.' });
+                        setLoading(false);
+                        return;
+                    }
+                }
             }
         } catch (error: any) {
-            setMessage({ type: 'error', text: error.message })
+            setMessage({ type: 'error', text: error.message === 'Invalid login credentials' ? 'Credenciais inválidas. Verifique seu email e senha.' : error.message })
         } finally {
             setLoading(false)
         }
