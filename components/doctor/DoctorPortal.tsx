@@ -61,7 +61,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
     const [patientEntries, setPatientEntries] = useState<MoodEntry[]>([]);
     const [portalView, setPortalView] = useState<'clinical' | 'administrative'>(isAdminPortal ? 'administrative' : 'clinical');
-    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic'>(isAdminPortal ? 'clinic' : 'dashboard');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'clinic' | 'professionals' | 'reports_b2b'>(isAdminPortal ? 'clinic' : 'dashboard');
     const [isConnecting, setIsConnecting] = useState(false);
     const [notes, setNotes] = useState<DoctorNote[]>([]);
     const [newNote, setNewNote] = useState('');
@@ -859,15 +859,15 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                 <span className="text-sm font-bold">Minha Clínica</span>
                             </button>
                             <button
-                                className="w-full text-left p-3 rounded-xl flex items-center gap-3 text-gray-400 hover:bg-white/5 hover:text-white transition-all opacity-50 cursor-not-allowed"
-                                title="Em breve"
+                                onClick={() => setViewMode('professionals')}
+                                className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${viewMode === 'professionals' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-600/30' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
                             >
                                 <span className="text-lg">👥</span>
                                 <span className="text-sm font-bold">Profissionais</span>
                             </button>
                             <button
-                                className="w-full text-left p-3 rounded-xl flex items-center gap-3 text-gray-400 hover:bg-white/5 hover:text-white transition-all opacity-50 cursor-not-allowed"
-                                title="Em breve"
+                                onClick={() => setViewMode('reports_b2b')}
+                                className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${viewMode === 'reports_b2b' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-600/30' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
                             >
                                 <span className="text-lg">📊</span>
                                 <span className="text-sm font-bold">Relatórios B2B</span>
@@ -973,7 +973,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                     {/* Clinic Creation */}
                                     <div className="md:col-span-1 space-y-6">
                                         <div className="bg-surface p-6 rounded-3xl border border-neutral-800 shadow-xl space-y-4">
-                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t.newClinic}</h3>
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t.newClinic || 'Nova Unidade / Clínica'}</h3>
                                             <p className="text-xs text-gray-500 leading-relaxed">Expandir sua operação permite gerir múltiplos profissionais e centralizar o faturamento corporate.</p>
                                             <input
                                                 type="text"
@@ -987,14 +987,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                 disabled={isCreatingClinic || !newClinicName.trim()}
                                                 className="w-full bg-indigo-600 hover:bg-indigo-700 h-10 text-xs font-bold uppercase tracking-widest shadow-lg shadow-indigo-600/20"
                                             >
-                                                {isCreatingClinic ? 'Criando...' : t.createUnit}
+                                                {isCreatingClinic ? 'Criando...' : (t.createUnit || 'Criar Unidade')}
                                             </Button>
                                         </div>
                                     </div>
 
                                     {/* Clinic List */}
                                     <div className="md:col-span-2 space-y-6">
-                                        <h2 className="text-lg font-bold text-white px-2">{t.yourClinics}</h2>
+                                        <h2 className="text-lg font-bold text-white px-2">{t.yourClinics || 'Suas Unidades'}</h2>
                                         {clinics.length === 0 ? (
                                             <div className="bg-surface p-12 rounded-3xl border border-dashed border-neutral-800 flex flex-col items-center text-center">
                                                 <span className="text-4xl mb-4">🏥</span>
@@ -1019,6 +1019,95 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                 ))}
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+                            ) : viewMode === 'professionals' ? (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white uppercase tracking-wider">Gestão de Profissionais</h3>
+                                            <p className="text-xs text-textMuted mt-1">Gerencie psicólogos e psiquiatras vinculados às suas unidades.</p>
+                                        </div>
+                                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-xl">
+                                            + Vincular Profissional
+                                        </Button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center text-xl">👤</div>
+                                                <div>
+                                                    <h4 className="text-white font-bold group-hover:text-indigo-400 transition-colors">{user.name} (Você)</h4>
+                                                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">{user.email}</p>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between text-[10px]">
+                                                    <span className="text-gray-500 uppercase font-black">Papel</span>
+                                                    <span className="text-indigo-400 font-bold uppercase">ADMINISTRADOR</span>
+                                                </div>
+                                                <div className="flex justify-between text-[10px]">
+                                                    <span className="text-gray-500 uppercase font-black">Status</span>
+                                                    <span className="text-green-500 font-bold uppercase">ATIVO</span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-6 pt-4 border-t border-white/5 flex gap-2">
+                                                <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black">Editar</Button>
+                                                <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black text-red-400 hover:text-red-500">Remover</Button>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-surface/50 p-12 rounded-3xl border border-dashed border-neutral-800 flex flex-col items-center text-center justify-center min-h-[200px]">
+                                            <span className="text-2xl mb-2">➕</span>
+                                            <p className="text-xs text-gray-500">Convide mais profissionais para expandir sua clínica.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : viewMode === 'reports_b2b' ? (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white uppercase tracking-wider">Relatórios Corporativos B2B</h3>
+                                            <p className="text-xs text-textMuted mt-1">Visão analítica de saúde emocional por unidade e empresa.</p>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <Button variant="outline" className="h-10 text-[10px] uppercase font-black gap-2 border-white/5">
+                                                <span>📅</span> Este Mês
+                                            </Button>
+                                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white h-10 text-[10px] uppercase font-black px-6">
+                                                Exportar PDF
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
+                                            <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Total de Pacientes</p>
+                                            <p className="text-2xl font-black text-white">{patients.length}</p>
+                                            <p className="text-[9px] text-green-500 mt-2">↑ 12% vs mês ant.</p>
+                                        </div>
+                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
+                                            <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Sessões Realizadas</p>
+                                            <p className="text-2xl font-black text-white">0</p>
+                                            <p className="text-[9px] text-gray-500 mt-2">Dados em atualização...</p>
+                                        </div>
+                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
+                                            <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Risco Médio Unitário</p>
+                                            <p className="text-2xl font-black text-green-400">BAIXO</p>
+                                            <p className="text-[9px] text-green-500 mt-2">Estável</p>
+                                        </div>
+                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
+                                            <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Engagement Score</p>
+                                            <p className="text-2xl font-black text-indigo-400">88%</p>
+                                            <p className="text-[9px] text-indigo-500 mt-2">Excelente</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-surface p-8 rounded-3xl border border-neutral-800 min-h-[300px] flex flex-col items-center justify-center text-center">
+                                        <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center text-2xl mb-4">📉</div>
+                                        <h4 className="text-white font-bold mb-2">Aguardando dados estruturados</h4>
+                                        <p className="text-xs text-gray-500 max-w-md">Os gráficos de evolução corporativa estarão disponíveis assim que houver volume de dados suficiente em suas unidades.</p>
                                     </div>
                                 </div>
                             ) : patientTab === 'reports' && selectedPatientId ? (
