@@ -47,24 +47,6 @@ export interface MoodEntry {
   aiClinicalInsight?: any; // New: Link to ai_clinical_insight in DB
 }
 
-export interface DoctorNote {
-  id: string;
-  doctorId: string;
-  doctorName?: string;
-  doctorRole?: UserRole;
-  patientId: string;
-  entryId?: string;
-  threadId?: string; // New: Link to a message thread
-  text: string;
-  isShared: boolean;
-  authorRole: 'PSICOLOGO' | 'PSIQUIATRA' | 'ADMIN_CLINICA' | 'PACIENTE';
-  visibility?: 'PRIVATE' | 'PATIENT_VISIBLE'; // New for admin segregation
-  professionalType?: string;
-  parentNoteId?: string;
-  read: boolean;
-  status?: 'active' | 'resolved' | 'hidden';
-  createdAt: string;
-}
 
 export interface Notification {
   id: string;

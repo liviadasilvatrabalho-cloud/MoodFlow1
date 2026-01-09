@@ -441,41 +441,60 @@ export const storageService = {
 
     // --- CLINICS & CHARTS ---
     getClinics: async (userId: string): Promise<any[]> => {
-        const { data, error } = await supabase
-            .from('clinic_members')
-            .select('role, clinics!inner(id, name)')
-            .eq('user_id', userId);
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single();
+        const role = profile ? normalizeRole(profile.role) : UserRole.PACIENTE;
 
-        if (error) {
-            console.error("Error fetching clinics:", error);
-            return [];
+        if (role === UserRole.ADMIN_CLINICA) {
+            const { data, error } = await supabase
+                .from('clinics')
+                .select('id, name')
+                .eq('admin_id', userId);
+
+            if (error) {
+                console.error("Error fetching admin clinics:", error);
+                return [];
+            }
+            return (data || []).map(c => ({
+                role: 'admin',
+                clinics: c
+            }));
+        } else {
+            const { data, error } = await supabase
+                .from('clinic_members')
+                .select('status, clinics!inner(id, name)')
+                .or(`doctor_id.eq.${userId},patient_id.eq.${userId}`);
+
+            if (error) {
+                console.error("Error fetching member clinics:", error);
+                return [];
+            }
+            return (data || []).map(m => ({
+                role: 'member',
+                clinics: m.clinics
+            }));
         }
-        return data || [];
     },
 
     createClinic: async (clinicName: string) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
 
-        // 1. Create the clinic
+        // 1. Create the clinic with admin_id
         const { data: clinic, error: clinicError } = await supabase
             .from('clinics')
-            .insert({ name: clinicName })
+            .insert({
+                name: clinicName,
+                admin_id: user.id
+            })
             .select()
             .single();
 
-        if (clinicError) throw clinicError;
+        if (clinicError) {
+            console.error("Create Clinic Error:", clinicError);
+            throw clinicError;
+        }
 
-        // 2. Add current user as admin member of this clinic
-        const { error: memberError } = await supabase
-            .from('clinic_members')
-            .insert({
-                clinic_id: clinic.id,
-                user_id: user.id,
-                role: 'admin'
-            });
-
-        if (memberError) throw memberError;
+        return clinic;
     },
 
     getPatientCharts: async (pid: string): Promise<any[]> => {
