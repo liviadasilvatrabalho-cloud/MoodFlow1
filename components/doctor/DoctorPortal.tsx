@@ -650,7 +650,11 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     };
 
     const handleLinkProfessional = async () => {
-        if (!selectedClinicId) return;
+        console.log("handleLinkProfessional clicked", { selectedClinicId });
+        if (!selectedClinicId) {
+            alert("Erro: Nenhuma clínica selecionada. Tente recarregar a página.");
+            return;
+        }
         const email = prompt("Digite o e-mail do profissional para vincular:");
         if (!email) return;
 
@@ -839,7 +843,15 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                 <span className="text-sm font-bold">Minha Clínica</span>
                             </button>
                             <button
-                                onClick={() => setViewMode('professionals')}
+                                onClick={() => {
+                                    if (!selectedClinicId && clinics.length > 0) {
+                                        setSelectedClinicId(clinics[0].clinics.id);
+                                    } else if (!selectedClinicId) {
+                                        alert("Selecione uma clínica primeiro na aba 'Minha Clínica'.");
+                                        return;
+                                    }
+                                    setViewMode('professionals');
+                                }}
                                 className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${viewMode === 'professionals' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-600/30' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
                             >
                                 <span className="text-lg">👥</span>
