@@ -31,6 +31,41 @@ const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         const dateObj = new Date(data.timestamp);
+
+
+
+        const handleSaveReport = async () => {
+            if (!selectedPatientId || !editingReport.title || !editingReport.content) return;
+            setIsSaving(true);
+            try {
+                if (editingReport.id) {
+                    await storageService.updateClinicalReport(editingReport.id, {
+                        title: editingReport.title,
+                        reportType: editingReport.reportType,
+                        content: editingReport.content
+                    });
+                } else {
+                    await storageService.createClinicalReport({
+                        patientId: selectedPatientId,
+                        professionalId: user.id,
+                        professionalRole: user.clinicalRole || 'PSICOLOGO',
+                        title: editingReport.title,
+                        reportType: editingReport.reportType,
+                        content: editingReport.content
+                    });
+                }
+                // Refresh reports
+                const reports = await storageService.getClinicalReports(selectedPatientId, user.id);
+                setClinicalReports(reports);
+                setIsEditingReport(false);
+                setEditingReport({ id: '', title: '', reportType: 'evolucao', content: '' });
+            } catch (error) {
+                console.error("Failed to save report:", error);
+                alert("Erro ao salvar relatório.");
+            } finally {
+                setIsSaving(false);
+            }
+        };
         return (
             <div className="bg-neutral-950 border border-neutral-800 p-4 rounded-xl shadow-2xl max-w-[250px] z-50">
                 <div className="flex items-center gap-2 mb-2">
@@ -94,6 +129,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
     const [aiSummary, setAiSummary] = useState<any | null>(null);
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+
+    const [isSaving, setIsSaving] = useState(false);
+
 
     // --- CLINICAL REPORTS STATE (NEW) ---
     const [patientTab, setPatientTab] = useState<'dashboard' | 'reports'>('dashboard');
@@ -174,6 +212,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         }
     };
 
+
+    const loadPatients = async () => {
+        const data = await storageService.getPatientsForDoctor(user.id);
+        setPatients(data);
+    };
+
     const handleConnectPatient = async (e: React.FormEvent) => {
         e.preventDefault();
         const result = await storageService.connectPatient(user.id, connectEmail);
@@ -249,6 +293,41 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             setEntryComment(currentComment);
         }
     };
+
+    // Also include handleSaveReport if it was missed
+    const handleSaveReport = async () => {
+        if (!selectedPatientId || !editingReport.title || !editingReport.content) return;
+        setIsSaving(true);
+        try {
+            if (editingReport.id) {
+                await storageService.updateClinicalReport(editingReport.id, {
+                    title: editingReport.title,
+                    reportType: editingReport.reportType,
+                    content: editingReport.content
+                });
+            } else {
+                await storageService.createClinicalReport({
+                    patientId: selectedPatientId,
+                    professionalId: user.id,
+                    professionalRole: user.clinicalRole || 'PSICOLOGO',
+                    title: editingReport.title,
+                    reportType: editingReport.reportType,
+                    content: editingReport.content
+                });
+            }
+            // Refresh reports
+            const reports = await storageService.getClinicalReports(selectedPatientId, user.id);
+            setClinicalReports(reports);
+            setIsEditingReport(false);
+            setEditingReport({ id: '', title: '', reportType: 'evolucao', content: '' });
+        } catch (error) {
+            console.error("Failed to save report:", error);
+            alert("Erro ao salvar relatório.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
 
     const handleSendAudio = async (entryId: string, blob: Blob, duration: number) => {
         if (!selectedPatientId) return;
@@ -566,14 +645,15 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             await storageService.updateClinic(selectedClinicId, editingClinicName);
             const updated = await storageService.getClinics(user.id);
             setClinics(updated);
-            alert("Nome da unidade atualizado com sucesso!");
+            setViewMode('clinic');
         } catch (error) {
             console.error("Failed to update clinic:", error);
-            alert("Erro ao atualizar nome da unidade. Verifique as permissões.");
+            // alert("Erro ao atualizar nome da unidade. Verifique as permissões.");
         } finally {
             setIsCreatingClinic(false);
         }
     };
+
 
 
     const handleCreateClinic = async () => {
@@ -1064,7 +1144,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             </div>
 
                                             <div className="pt-6">
-                                                <Button 
+                                                <Button
                                                     onClick={handleUpdateClinic}
                                                     disabled={isCreatingClinic || !editingClinicName.trim()}
                                                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
