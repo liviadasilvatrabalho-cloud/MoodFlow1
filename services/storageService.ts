@@ -441,12 +441,41 @@ export const storageService = {
 
     // --- CLINICS & CHARTS ---
     getClinics: async (userId: string): Promise<any[]> => {
-        const { data } = await supabase.from('clinics').select('*');
+        const { data, error } = await supabase
+            .from('clinic_members')
+            .select('role, clinics!inner(id, name)')
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error("Error fetching clinics:", error);
+            return [];
+        }
         return data || [];
     },
 
     createClinic: async (clinicName: string) => {
-        await supabase.from('clinics').insert({ name: clinicName });
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        // 1. Create the clinic
+        const { data: clinic, error: clinicError } = await supabase
+            .from('clinics')
+            .insert({ name: clinicName })
+            .select()
+            .single();
+
+        if (clinicError) throw clinicError;
+
+        // 2. Add current user as admin member of this clinic
+        const { error: memberError } = await supabase
+            .from('clinic_members')
+            .insert({
+                clinic_id: clinic.id,
+                user_id: user.id,
+                role: 'admin'
+            });
+
+        if (memberError) throw memberError;
     },
 
     getPatientCharts: async (pid: string): Promise<any[]> => {
