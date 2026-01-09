@@ -251,6 +251,36 @@ export const storageService = {
         return data ? data.map((d: any) => mapDbUserToUser(d.profiles)) : [];
     },
 
+    getClinicPatients: async (clinicId: string): Promise<User[]> => {
+        // 1. Get doctors in this clinic
+        const { data: members } = await supabase
+            .from('clinic_members')
+            .select('doctor_id')
+            .eq('clinic_id', clinicId);
+
+        if (!members || members.length === 0) return [];
+
+        const doctorIds = members.map(m => m.doctor_id);
+
+        // 2. Get patients connected to these doctors
+        const { data: connections } = await supabase
+            .from('doctor_patients')
+            .select('patient_id, profiles!doctor_patients_patient_id_fkey(*)')
+            .in('doctor_id', doctorIds);
+
+        // Deduplicate patients
+        const uniquePatients = new Map();
+        if (connections) {
+            connections.forEach((c: any) => {
+                if (c.profiles && !uniquePatients.has(c.patient_id)) {
+                    uniquePatients.set(c.patient_id, mapDbUserToUser(c.profiles));
+                }
+            });
+        }
+
+        return Array.from(uniquePatients.values());
+    },
+
     getMedicalDashboard: async (doctorId: string): Promise<any[]> => {
         const { data } = await supabase
             .from('doctor_patients')
@@ -496,10 +526,14 @@ export const storageService = {
     },
 
     updateClinic: async (id: string, name: string) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
         const { error } = await supabase
             .from('clinics')
             .update({ name })
-            .eq('id', id);
+            .eq('id', id)
+            .eq('admin_id', user.id); // Ensure ownership
 
         if (error) {
             console.error("Update Clinic Error:", error);
@@ -685,6 +719,12 @@ export const storageService = {
     },
 
     addProfessionalToClinic: async (clinicId: string, email: string) => {
+        // 0. Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            throw new Error("Formato de email inválido.");
+        }
+
         // 1. Find user by email
         const { data: users, error: userError } = await supabase
             .from('profiles')
@@ -698,16 +738,17 @@ export const storageService = {
 
         const userToAdd = users[0];
 
-        // 2. Check if already a member
+        // 2. Check if already a member of ANY clinic (Strict Restriction)
         const { data: existing } = await supabase
             .from('clinic_members')
-            .select('id')
-            .eq('clinic_id', clinicId)
+            .select('id, clinics(name)')
             .eq('doctor_id', userToAdd.id)
             .single();
 
         if (existing) {
-            throw new Error("Profissional já vinculado a esta clínica.");
+            // @ts-ignore
+            const clinicName = existing.clinics?.name || 'outra clínica';
+            throw new Error(`Este profissional já está vinculado à ${clinicName}. Remova-o da clínica anterior antes de vincular.`);
         }
 
         // 3. Add to clinic
@@ -724,6 +765,7 @@ export const storageService = {
     },
 
     removeProfessionalFromClinic: async (clinicId: string, doctorId: string) => {
+        // 1. Remove from clinic
         const { error } = await supabase
             .from('clinic_members')
             .delete()
@@ -731,7 +773,15 @@ export const storageService = {
             .eq('doctor_id', doctorId);
 
         if (error) throw error;
+
+        // 2. Cascade: Remove direct connections to patients (Revoke access)
+        // This ensures they cannot see patients even if they were linked
+        await supabase
+            .from('doctor_patients')
+            .delete()
+            .eq('doctor_id', doctorId);
     },
+
 
     softDeleteClinicalReport: async (id: string, professionalId: string) => {
         // Extra safety: Policy handles this, but explicit ID check is good habit

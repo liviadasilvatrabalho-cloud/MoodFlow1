@@ -73,6 +73,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const [newNote, setNewNote] = useState('');
     const [connectEmail, setConnectEmail] = useState('');
     const chartScrollRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
@@ -190,9 +191,22 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
 
     const loadPatients = async () => {
-        const data = await storageService.getPatientsForDoctor(user.id);
-        setPatients(data);
+        try {
+            if (isAdminPortal && selectedClinicId) {
+                const data = await storageService.getClinicPatients(selectedClinicId);
+                setPatients(data);
+            } else {
+                const data = await storageService.getPatientsForDoctor(user.id);
+                setPatients(data);
+            }
+        } catch (error) {
+            console.error("Failed to load patients:", error);
+        }
     };
+
+    useEffect(() => {
+        loadPatients();
+    }, [user.id, isAdminPortal, selectedClinicId]);
 
     const handleConnectPatient = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -681,6 +695,48 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         }
     };
 
+
+
+    const handleBatchUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !selectedClinicId) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const text = e.target?.result as string;
+            // Split by new lines and commas to find emails
+            const emails = text.split(/[\n,]/).map(s => s.trim()).filter(s => s.includes('@'));
+
+            if (emails.length === 0) {
+                alert("Nenhum email válido encontrado no arquivo.");
+                return;
+            }
+
+            let successCount = 0;
+            let failureCount = 0;
+            const errors: string[] = [];
+
+            for (const email of emails) {
+                try {
+                    await storageService.addProfessionalToClinic(selectedClinicId, email);
+                    successCount++;
+                } catch (error: any) {
+                    failureCount++;
+                    errors.push(`${email}: ${error.message}`);
+                }
+            }
+
+            alert(`Importação concluída!\nSucessos: ${successCount}\nFalhas: ${failureCount}\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '...' : ''}`);
+
+            // Refresh list
+            storageService.getClinicProfessionals(selectedClinicId).then(setClinicProfessionals);
+
+            // Reset input
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        };
+        reader.readAsText(file);
+    };
+
     // Unified filtering logic for both Chart and List
     const getEntriesForSelectedPeriod = () => {
         const sorted = [...patientEntries].sort((a, b) => b.timestamp - a.timestamp); // Descending for list (newest first)
@@ -1034,9 +1090,24 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             <h3 className="text-lg font-bold text-white uppercase tracking-wider">Gestão de Profissionais</h3>
                                             <p className="text-xs text-textMuted mt-1">Gerencie psicólogos e psiquiatras vinculados às suas unidades.</p>
                                         </div>
-                                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-xl" onClick={handleLinkProfessional}>
-                                            + Vincular Profissional
-                                        </Button>
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="file"
+                                                accept=".csv,.txt"
+                                                ref={fileInputRef}
+                                                onChange={handleBatchUpload}
+                                                className="hidden"
+                                            />
+                                            <Button
+                                                className="bg-indigo-900/40 hover:bg-indigo-900/60 text-indigo-300 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl border border-indigo-500/30"
+                                                onClick={() => fileInputRef.current?.click()}
+                                            >
+                                                📥 Importar CSV
+                                            </Button>
+                                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-xl" onClick={handleLinkProfessional}>
+                                                + Vincular Profissional
+                                            </Button>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
