@@ -76,6 +76,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isEditingAdmin, setIsEditingAdmin] = useState(false);
+    const [adminEditData, setAdminEditData] = useState({ name: user.name, password: '' });
 
     const [isRecording, setIsRecording] = useState(false);
 
@@ -1176,87 +1178,132 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                     </div>
                                 </div>
                             ) : viewMode === 'professionals' ? (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-white uppercase tracking-wider">Gestão de Profissionais</h3>
-                                            <p className="text-xs text-textMuted mt-1">Gerencie psicólogos e psiquiatras vinculados às suas unidades.</p>
-                                        </div>
-                                        <div className="flex gap-3">
-                                            <input
-                                                type="file"
-                                                accept=".csv,.txt"
-                                                ref={fileInputRef}
-                                                onChange={handleBatchUpload}
-                                                className="hidden"
-                                            />
+                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+                                    {/* SECTION: ADMINISTRATION */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-6">
+                                            <div>
+                                                <h3 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                                    Administração
+                                                </h3>
+                                                <p className="text-xs text-textMuted mt-1">Gestão de administradores da unidade.</p>
+                                            </div>
                                             <Button
-                                                className="bg-indigo-900/40 hover:bg-indigo-900/60 text-indigo-300 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl border border-indigo-500/30"
-                                                onClick={() => fileInputRef.current?.click()}
+                                                onClick={() => alert("Para adicionar outro administrador, entre em contato com o suporte ou crie uma nova conta com perfil de Administrador.")}
+                                                className="bg-neutral-800 hover:bg-neutral-700 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl border border-white/5"
                                             >
-                                                📥 Importar CSV
-                                            </Button>
-                                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-xl" onClick={handleLinkProfessional}>
-                                                + Vincular Profissional
+                                                + Adicionar Admin
                                             </Button>
                                         </div>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {/* Current User Card */}
-                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
-                                            <div className="flex items-center gap-4 mb-6">
-                                                <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center text-xl">👤</div>
-                                                <div>
-                                                    <h4 className="text-white font-bold group-hover:text-indigo-400 transition-colors">{user.name} (Você)</h4>
-                                                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">{user.email}</p>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between text-[10px]">
-                                                    <span className="text-gray-500 uppercase font-black">Papel</span>
-                                                    <span className="text-indigo-400 font-bold uppercase">ADMINISTRADOR</span>
-                                                </div>
-                                                <div className="flex justify-between text-[10px]">
-                                                    <span className="text-gray-500 uppercase font-black">Status</span>
-                                                    <span className="text-green-500 font-bold uppercase">ATIVO</span>
-                                                </div>
-                                            </div>
-                                            <div className="mt-6 pt-4 border-t border-white/5 flex gap-2">
-                                                <Button variant="ghost" disabled className="flex-1 h-8 text-[10px] uppercase font-black opacity-50">Editar</Button>
-                                            </div>
-                                        </div>
-
-                                        {/* Listed Professionals */}
-                                        {clinicProfessionals.map((prof) => (
-                                            <div key={prof.id} className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {/* Current User Card */}
+                                            <div className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/50 transition-all group relative overflow-hidden shadow-lg shadow-indigo-500/5">
                                                 <div className="flex items-center gap-4 mb-6">
-                                                    <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center text-xl">👨‍⚕️</div>
+                                                    <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center text-xl border border-indigo-500/20">👤</div>
                                                     <div>
-                                                        <h4 className="text-white font-bold group-hover:text-indigo-400 transition-colors">{prof.name}</h4>
-                                                        <p className="text-[10px] text-gray-500 uppercase tracking-tighter">{prof.email}</p>
+                                                        <h4 className="text-white font-bold group-hover:text-indigo-400 transition-colors">{user.name} (Você)</h4>
+                                                        <p className="text-[10px] text-gray-500 uppercase tracking-tighter">{user.email}</p>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-3">
                                                     <div className="flex justify-between text-[10px]">
                                                         <span className="text-gray-500 uppercase font-black">Papel</span>
-                                                        <span className="text-indigo-400 font-bold uppercase">{prof.specialty || prof.role || 'Profissional'}</span>
+                                                        <span className="text-indigo-400 font-bold uppercase">ADMINISTRADOR</span>
                                                     </div>
                                                     <div className="flex justify-between text-[10px]">
                                                         <span className="text-gray-500 uppercase font-black">Status</span>
-                                                        <span className={`${prof.membershipStatus === 'active' ? 'text-green-500' : 'text-yellow-500'} font-bold uppercase`}>{prof.membershipStatus === 'active' ? 'ATIVO' : 'PENDENTE'}</span>
+                                                        <span className="text-green-500 font-bold uppercase">ATIVO</span>
                                                     </div>
                                                 </div>
                                                 <div className="mt-6 pt-4 border-t border-white/5 flex gap-2">
-                                                    <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black" onClick={() => alert('Edição de permissões em breve.')}>Editar</Button>
-                                                    <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black text-red-400 hover:text-red-500" onClick={() => handleRemoveProfessional(prof.id)}>Remover</Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="flex-1 h-8 text-[10px] uppercase font-black hover:bg-indigo-500/10 hover:text-indigo-400 disabled:opacity-50"
+                                                        onClick={() => setIsEditingAdmin(true)}
+                                                    >
+                                                        Editar
+                                                    </Button>
                                                 </div>
                                             </div>
-                                        ))}
+                                        </div>
+                                    </div>
 
-                                        <div onClick={handleLinkProfessional} className="bg-surface/50 p-12 rounded-3xl border border-dashed border-neutral-800 flex flex-col items-center text-center justify-center min-h-[200px] cursor-pointer hover:bg-surface/80 transition-colors">
-                                            <span className="text-2xl mb-2">➕</span>
-                                            <p className="text-xs text-gray-500">Convide mais profissionais para expandir sua clínica.</p>
+                                    {/* SECTION: CLINICAL STAFF */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-6 border-t border-neutral-800 pt-8">
+                                            <div>
+                                                <h3 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                                    Corpo Clínico
+                                                </h3>
+                                                <p className="text-xs text-textMuted mt-1">Psicólogos e Psiquiatras com acesso aos pacientes.</p>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <input
+                                                    type="file"
+                                                    accept=".csv,.txt"
+                                                    ref={fileInputRef}
+                                                    onChange={handleBatchUpload}
+                                                    className="hidden"
+                                                />
+                                                <Button
+                                                    className="bg-indigo-900/40 hover:bg-indigo-900/60 text-indigo-300 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl border border-indigo-500/30"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                >
+                                                    📥 Importar CSV
+                                                </Button>
+                                                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-widest px-6 py-2 rounded-xl" onClick={handleLinkProfessional}>
+                                                    + Vincular Profissional
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {/* Listed Professionals */}
+                                            {clinicProfessionals.length === 0 ? (
+                                                <div className="col-span-full py-12 text-center border border-dashed border-neutral-800 rounded-3xl">
+                                                    <span className="text-4xl block mb-4">👨‍⚕️</span>
+                                                    <p className="text-gray-500 font-medium">Nenhum profissional vinculado.</p>
+                                                    <p className="text-xs text-gray-600 mt-2">Clique em "Vincular Profissional" para adicionar.</p>
+                                                </div>
+                                            ) : (
+                                                clinicProfessionals.map((prof) => (
+                                                    <div key={prof.id} className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group relative overflow-hidden">
+                                                        <div className="flex items-center gap-4 mb-6">
+                                                            <div className="w-12 h-12 bg-neutral-800 rounded-full flex items-center justify-center text-xl">👨‍⚕️</div>
+                                                            <div>
+                                                                <h4 className="text-white font-bold group-hover:text-indigo-400 transition-colors">{prof.name}</h4>
+                                                                <p className="text-[10px] text-gray-500 uppercase tracking-tighter">{prof.email}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <div className="flex justify-between text-[10px]">
+                                                                <span className="text-gray-500 uppercase font-black">Papel</span>
+                                                                <span className="text-indigo-400 font-bold uppercase">{prof.specialty || prof.role || 'Profissional'}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-[10px]">
+                                                                <span className="text-gray-500 uppercase font-black">Status</span>
+                                                                <span className={`${prof.membershipStatus === 'active' ? 'text-green-500' : 'text-yellow-500'} font-bold uppercase`}>{prof.membershipStatus === 'active' ? 'ATIVO' : 'PENDENTE'}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-6 pt-4 border-t border-white/5 flex gap-2">
+                                                            <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black" onClick={() => alert('Edição de permissões em breve.')}>Editar</Button>
+                                                            <Button variant="ghost" className="flex-1 h-8 text-[10px] uppercase font-black text-red-400 hover:text-red-500" onClick={() => handleRemoveProfessional(prof.id)}>Remover</Button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+
+                                            <button onClick={handleLinkProfessional} className="group bg-surface/30 p-6 rounded-3xl border border-dashed border-neutral-800 flex flex-col items-center text-center justify-center min-h-[200px] cursor-pointer hover:bg-surface/50 hover:border-indigo-500/50 transition-all">
+                                                <div className="w-12 h-12 rounded-full bg-neutral-800 group-hover:bg-indigo-500/20 flex items-center justify-center transition-colors mb-4">
+                                                    <span className="text-xl group-hover:text-indigo-400 transition-colors">➕</span>
+                                                </div>
+                                                <p className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">Convidar Profissional</p>
+                                                <p className="text-[10px] text-gray-500 mt-2">Adicionar novo membro à equipe</p>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1376,6 +1423,58 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             + Novo Relatório
                                         </Button>
                                     </div>
+
+                                    {/* ADMIN EDIT MODAL */}
+                                    {isEditingAdmin && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                                            <div className="bg-surface p-6 rounded-3xl border border-neutral-800 shadow-2xl w-full max-w-md space-y-4 animate-in fade-in zoom-in-95">
+                                                <div className="flex justify-between items-center">
+                                                    <h4 className="text-white font-black text-lg">Editar Administrador</h4>
+                                                    <button onClick={() => setIsEditingAdmin(false)} className="text-gray-500 hover:text-white">✕</button>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-bold text-textMuted uppercase tracking-wider">Nome</label>
+                                                        <input
+                                                            type="text"
+                                                            value={adminEditData.name}
+                                                            onChange={e => setAdminEditData(prev => ({ ...prev, name: e.target.value }))}
+                                                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-bold text-textMuted uppercase tracking-wider">Nova Senha (Opcional)</label>
+                                                        <input
+                                                            type="password"
+                                                            value={adminEditData.password}
+                                                            onChange={e => setAdminEditData(prev => ({ ...prev, password: e.target.value }))}
+                                                            placeholder="Deixe em branco para manter"
+                                                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="pt-4 flex gap-3">
+                                                    <Button variant="ghost" className="flex-1" onClick={() => setIsEditingAdmin(false)}>Cancelar</Button>
+                                                    <Button
+                                                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                                                        onClick={async () => {
+                                                            try {
+                                                                if (!adminEditData.name.trim()) return alert("Nome é obrigatório");
+                                                                await storageService.updateAdminProfile(user.id, adminEditData.name, adminEditData.password);
+                                                                setIsEditingAdmin(false);
+                                                                alert("Dados atualizados com sucesso!");
+                                                                // Reload or update verification would be ideal
+                                                            } catch (e: any) {
+                                                                alert("Erro ao atualizar: " + e.message);
+                                                            }
+                                                        }}
+                                                    >
+                                                        Salvar Alterações
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {isEditingReport ? (
                                         <div className="bg-surface p-6 rounded-3xl border border-neutral-800 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">

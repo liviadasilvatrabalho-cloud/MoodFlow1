@@ -832,5 +832,22 @@ export const storageService = {
 
         if (error) throw error;
         await storageService.logAudit(professionalId, 'DELETE_REPORT', id);
+    },
+    updateAdminProfile: async (userId: string, name: string, password?: string) => {
+        // 1. Update Profile Logic
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ name })
+            .eq('id', userId);
+
+        if (profileError) throw profileError;
+
+        // 2. Update Password Logic (if provided)
+        if (password && password.trim().length > 0) {
+            const { error: authError } = await supabase.auth.updateUser({ password: password });
+            if (authError) throw authError;
+        }
     }
 };
+
+
