@@ -729,33 +729,52 @@ export const storageService = {
 
 
     // --- PROFESSIONAL MANAGEMENT (ADMIN) ---
+    // --- PROFESSIONAL MANAGEMENT (ADMIN) ---
     getClinicProfessionals: async (clinicId: string): Promise<any[]> => {
-        // Fetch profiles via clinic_members
-        const { data, error } = await supabase
-            .from('clinic_members')
-            .select(`
-                status,
-                doctor:doctor_id (
-                    id,
-                    name,
-                    email,
-                    role,
-                    specialty:clinical_role
-                )
-            `)
-            .eq('clinic_id', clinicId)
-            .neq('doctor_id', null); // Ensure we only get doctors
+        // STRATEGY: Two-step fetch to avoid foreign key dependency (PGRST200 error)
 
-        if (error) {
-            console.error("Error fetching clinic professionals:", error);
+        // 1. Fetch membership links
+        const { data: members, error: membersError } = await supabase
+            .from('clinic_members')
+            .select('*')
+            .eq('clinic_id', clinicId)
+            .not('doctor_id', 'is', null);
+
+        if (membersError) {
+            console.error("Error fetching clinic members:", membersError);
             return [];
         }
 
-        // Flatten structure
-        return (data || []).map((m: any) => ({
-            ...m.doctor,
-            membershipStatus: m.status
-        }));
+        if (!members || members.length === 0) return [];
+
+        // 2. Extract IDs and fetch profiles
+        const doctorIds = members.map(m => m.doctor_id);
+        const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, name, email, role')
+            .in('id', doctorIds);
+
+        if (profilesError) {
+            console.error("Error fetching profiles (RLS?):", profilesError);
+            // Even if profiles fail, return basic member info if possible, or empty
+            return [];
+        }
+
+        // 3. Merge data
+        // Create a map for faster lookup
+        const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+        const merged = members.map(m => {
+            const profile = profileMap.get(m.doctor_id);
+            if (!profile) return null; // Skip if profile not found/visible
+            return {
+                ...profile,
+                membershipStatus: m.status,
+                specialty: profile.role // Fallback
+            };
+        }).filter(item => item !== null);
+
+        return merged;
     },
 
     addProfessionalToClinic: async (clinicId: string, email: string) => {
