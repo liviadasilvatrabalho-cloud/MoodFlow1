@@ -133,13 +133,16 @@ export const storageService = {
         if (role === UserRole.PSICOLOGO || role === UserRole.PSIQUIATRA) {
             const { data: invite } = await supabase
                 .from('clinic_members')
-                .select('id')
-                .eq('email', email)
-                .is('doctor_id', null)
-                .single();
+                .select('id, doctor_id')
+                .ilike('email', email.trim())
+                .limit(1);
 
-            if (!invite) {
-                throw new Error("Este e-mail não possui um convite pendente. Entre em contato com sua clínica.");
+            if (!invite || invite.length === 0) {
+                throw new Error("Este e-mail não possui um convite pendente. Entre em contato com sua clínica para ser convidado.");
+            }
+
+            if (invite[0].doctor_id) {
+                throw new Error("Este e-mail já possui uma conta vinculada a esta clínica. Por favor, faça login em vez de criar uma nova conta.");
             }
         }
 
@@ -832,15 +835,17 @@ export const storageService = {
             throw new Error("Formato de email inválido.");
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         // 1. Check if email is already invited to ANY clinic (B2B Constraint: 1 clinic per email invite)
         const { data: existingInvite } = await supabase
             .from('clinic_members')
             .select('id')
-            .eq('email', email)
+            .ilike('email', normalizedEmail)
             .is('doctor_id', null)
-            .single();
+            .limit(1);
 
-        if (existingInvite) {
+        if (existingInvite && existingInvite.length > 0) {
             throw new Error("Este profissional já possui um convite pendente para uma unidade.");
         }
 
@@ -848,7 +853,8 @@ export const storageService = {
         const { data: existingProfiles } = await supabase
             .from('profiles')
             .select('id, role')
-            .eq('email', email);
+            .ilike('email', normalizedEmail)
+            .limit(1);
 
         if (existingProfiles && existingProfiles.length > 0) {
             const userToAdd = existingProfiles[0];
@@ -870,7 +876,7 @@ export const storageService = {
                 .insert({
                     clinic_id: clinicId,
                     doctor_id: userToAdd.id,
-                    email,
+                    email: normalizedEmail,
                     clinical_role: clinicalRole,
                     status: 'active',
                     added_at: new Date().toISOString()
@@ -882,7 +888,7 @@ export const storageService = {
                 .from('clinic_members')
                 .insert({
                     clinic_id: clinicId,
-                    email,
+                    email: normalizedEmail,
                     clinical_role: clinicalRole,
                     status: 'pending',
                     added_at: new Date().toISOString()
