@@ -128,6 +128,21 @@ export const storageService = {
         if (role === UserRole.ADMIN_CLINICA) {
             throw new Error("Cadastro de administradores não é permitido. Consulte o suporte.");
         }
+
+        // B2B Pre-authorization Check: Professionals must be invited first
+        if (role === UserRole.PSICOLOGO || role === UserRole.PSIQUIATRA) {
+            const { data: invite } = await supabase
+                .from('clinic_members')
+                .select('id')
+                .eq('email', email)
+                .is('doctor_id', null)
+                .single();
+
+            if (!invite) {
+                throw new Error("Este e-mail não possui um convite pendente. Entre em contato com sua clínica.");
+            }
+        }
+
         const clinicalRole = (role === UserRole.PSICOLOGO ? 'PSICOLOGO' : role === UserRole.PSIQUIATRA ? 'PSIQUIATRA' : 'none') as ClinicalRole;
         const { error } = await supabase.auth.signUp({
             email, password: pass,
@@ -752,12 +767,11 @@ export const storageService = {
     getClinicProfessionals: async (clinicId: string): Promise<any[]> => {
         // STRATEGY: Two-step fetch to avoid foreign key dependency (PGRST200 error)
 
-        // 1. Fetch membership links
+        // 1. Fetch membership links (Both active and pending)
         const { data: members, error: membersError } = await supabase
             .from('clinic_members')
             .select('*')
-            .eq('clinic_id', clinicId)
-            .not('doctor_id', 'is', null);
+            .eq('clinic_id', clinicId);
 
         if (membersError) {
             console.error("Error fetching clinic members:", membersError);
@@ -766,80 +780,115 @@ export const storageService = {
 
         if (!members || members.length === 0) return [];
 
-        // 2. Extract IDs and fetch profiles
-        const doctorIds = members.map(m => m.doctor_id);
-        const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, name, email, role')
-            .in('id', doctorIds);
+        // 2. Extract doctor IDs for profiles (excluding pending invites without user_id)
+        const activeDoctorIds = members.filter(m => m.doctor_id).map(m => m.doctor_id);
 
-        if (profilesError) {
-            console.error("Error fetching profiles (RLS?):", profilesError);
-            // Even if profiles fail, return basic member info if possible, or empty
-            return [];
+        let profiles: any[] = [];
+        if (activeDoctorIds.length > 0) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, name, email, role')
+                .in('id', activeDoctorIds);
+
+            if (error) {
+                console.error("Error fetching profiles:", error);
+            } else {
+                profiles = data || [];
+            }
         }
 
         // 3. Merge data
-        // Create a map for faster lookup
         const profileMap = new Map(profiles.map(p => [p.id, p]));
 
         const merged = members.map(m => {
-            const profile = profileMap.get(m.doctor_id);
-            if (!profile) return null; // Skip if profile not found/visible
-            return {
-                ...profile,
-                membershipStatus: m.status,
-                specialty: profile.role // Fallback
-            };
+            if (m.doctor_id) {
+                const profile = profileMap.get(m.doctor_id);
+                if (!profile) return null;
+                return {
+                    ...profile,
+                    membershipStatus: m.status,
+                    specialty: profile.role || m.clinical_role
+                };
+            } else {
+                // Return placeholder for pending приглашение
+                return {
+                    id: m.id, // Use membership ID as temporary reference
+                    name: 'Convite Enviado',
+                    email: m.email,
+                    role: m.clinical_role,
+                    specialty: m.clinical_role,
+                    membershipStatus: 'pending'
+                };
+            }
         }).filter(item => item !== null);
 
         return merged;
     },
 
-    addProfessionalToClinic: async (clinicId: string, email: string) => {
+    addProfessionalToClinic: async (clinicId: string, email: string, clinicalRole: string) => {
         // 0. Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             throw new Error("Formato de email inválido.");
         }
 
-        // 1. Find user by email
-        const { data: users, error: userError } = await supabase
-            .from('profiles')
-            .select('id, role')
-            .eq('email', email)
-            .limit(1);
-
-        if (userError || !users || users.length === 0) {
-            throw new Error("Usuário não encontrado com este email.");
-        }
-
-        const userToAdd = users[0];
-
-        // 2. Check if already a member of ANY clinic (Strict Restriction)
-        const { data: existing } = await supabase
+        // 1. Check if email is already invited to ANY clinic (B2B Constraint: 1 clinic per email invite)
+        const { data: existingInvite } = await supabase
             .from('clinic_members')
-            .select('id, clinics(name)')
-            .eq('doctor_id', userToAdd.id)
+            .select('id')
+            .eq('email', email)
+            .is('doctor_id', null)
             .single();
 
-        if (existing) {
-            // @ts-ignore
-            const clinicName = existing.clinics?.name || 'outra clínica';
-            throw new Error(`Este profissional já está vinculado à ${clinicName}. Remova-o da clínica anterior antes de vincular.`);
+        if (existingInvite) {
+            throw new Error("Este profissional já possui um convite pendente para uma unidade.");
         }
 
-        // 3. Add to clinic
-        const { error: linkError } = await supabase
-            .from('clinic_members')
-            .insert({
-                clinic_id: clinicId,
-                doctor_id: userToAdd.id,
-                status: 'active',
-                added_at: new Date().toISOString()
-            });
+        // 2. Check if user already exists
+        const { data: existingProfiles } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('email', email);
 
-        if (linkError) throw linkError;
+        if (existingProfiles && existingProfiles.length > 0) {
+            const userToAdd = existingProfiles[0];
+
+            // If user exists, check if already in any clinic
+            const { data: membership } = await supabase
+                .from('clinic_members')
+                .select('id')
+                .eq('doctor_id', userToAdd.id)
+                .single();
+
+            if (membership) {
+                throw new Error("Este profissional já está vinculado a uma unidade.");
+            }
+
+            // Add existing user as active member
+            const { error } = await supabase
+                .from('clinic_members')
+                .insert({
+                    clinic_id: clinicId,
+                    doctor_id: userToAdd.id,
+                    email,
+                    clinical_role: clinicalRole,
+                    status: 'active',
+                    added_at: new Date().toISOString()
+                });
+            if (error) throw error;
+        } else {
+            // 3. Brand new invite for non-existent user
+            const { error: inviteError } = await supabase
+                .from('clinic_members')
+                .insert({
+                    clinic_id: clinicId,
+                    email,
+                    clinical_role: clinicalRole,
+                    status: 'pending',
+                    added_at: new Date().toISOString()
+                });
+            if (inviteError) throw inviteError;
+        }
     },
 
     removeProfessionalFromClinic: async (clinicId: string, doctorId: string) => {

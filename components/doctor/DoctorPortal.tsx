@@ -725,9 +725,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         const email = prompt("Digite o e-mail do profissional para vincular:");
         if (!email) return;
 
+        const rolePrompt = prompt("Tipo de profissional (1 para Psicólogo, 2 para Psiquiatra):", "1");
+        if (!rolePrompt) return;
+        const clinicalRole = rolePrompt === "2" ? 'PSIQUIATRA' : 'PSICOLOGO';
+
         try {
-            await storageService.addProfessionalToClinic(selectedClinicId, email);
-            alert("Profissional vinculado com sucesso!");
+            await storageService.addProfessionalToClinic(selectedClinicId, email, clinicalRole);
+            alert("Convite enviado com sucesso! O profissional será vinculado automaticamente ao criar sua conta.");
             // Refresh list
             storageService.getClinicProfessionals(selectedClinicId).then(setClinicProfessionals);
         } catch (error: any) {
@@ -784,7 +788,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
             for (const email of emails) {
                 try {
-                    await storageService.addProfessionalToClinic(selectedClinicId, email);
+                    await storageService.addProfessionalToClinic(selectedClinicId, email, 'PSICOLOGO');
                     successCount++;
                 } catch (error: any) {
                     failureCount++;
