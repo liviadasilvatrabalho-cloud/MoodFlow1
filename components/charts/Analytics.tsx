@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { MoodEntry, Language } from '../../types';
 import { MOODS, TRANSLATIONS } from '../../constants';
-import { aiService } from '../../services/aiService';
+import { processingService } from '../../services/processingService';
 import { Button } from '../ui/Button';
 
 interface AnalyticsProps {
@@ -159,7 +159,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
         setIsAnalyzing(true);
         try {
             const period = viewMode === 'day' ? 'weekly' : viewMode === 'week' ? 'weekly' : 'monthly';
-            const result = await aiService.generateAdvancedInsight(filteredData, period as any);
+            const result = await processingService.generateAdvancedInsight(filteredData, period as any);
             setInsight(result);
         } catch (error) {
             console.error("AI Analysis failed:", error);
@@ -324,8 +324,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-3xl shadow-inner">✨</div>
                         <div>
-                            <h3 className="text-xl font-black text-white tracking-tight">{t.aiEvolution}</h3>
-                            <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.2em]">Powered by Clinical AI</p>
+                            <h3 className="text-xl font-black text-white tracking-tight">{t.moodEvolution}</h3>
+                            <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.2em]">Processamento Clínico de Dados</p>
                         </div>
                     </div>
                     <Button
@@ -351,7 +351,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
                     <div className="py-20 border-2 border-dashed border-indigo-500/10 rounded-[32px] flex flex-col items-center justify-center text-center px-10 group hover:border-indigo-500/20 transition-all">
                         <div className="w-20 h-20 bg-indigo-500/5 rounded-full flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition-transform">🧠</div>
                         <h4 className="text-white font-bold mb-2">Pronto para a Evolução?</h4>
-                        <p className="text-gray-500 text-sm max-w-sm font-medium leading-relaxed">Nossa IA clínica analisa seus registros para identificar padrões ocultos e seu score de estabilidade emocional.</p>
+                        <p className="text-gray-500 text-sm max-w-sm font-medium leading-relaxed">Nosso sistema avançado analisa seus registros para identificar padrões ocultos e seu score de estabilidade emocional.</p>
                     </div>
                 )}
 
@@ -419,7 +419,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ entries, lang }) => {
                             </div>
 
                             <div className="bg-black/20 p-8 rounded-[32px] border border-white/5 italic">
-                                <p className="text-xs text-gray-500 leading-relaxed"><strong>Observação Clínica:</strong> Esta análise é preditiva e educacional. Não substitui o diagnóstico médico profissional. Em caso de crise, contate seu terapeuta imediatamente.</p>
+                                <p className="text-xs text-gray-500 leading-relaxed"><strong>Observação Clínica:</strong> Esta análise é preditiva e técnica. Não substitui o diagnóstico médico profissional. Em caso de crise, contate seu terapeuta imediatamente.</p>
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MOODS, ACTIVITIES, SYMPTOMS, TRANSLATIONS } from '../../constants';
 import { Button } from '../ui/Button';
-import { aiService } from '../../services/aiService';
+import { processingService } from '../../services/processingService';
 import { storageService } from '../../services/storageService';
 import { MoodEntry, UserRole, Language } from '../../types';
 
@@ -101,13 +101,13 @@ export const EntryForm: React.FC<EntryFormProps> = ({ userId, userRole, onSave, 
 
         setIsAnalyzing(true);
 
-        // Simulating AI analysis for now or calling real service if available
+        // Simulating internal processing engine
         setTimeout(async () => {
             if (newEntry.text.length > 5) {
                 try {
-                    // const analysis = await aiService.analyzeEntry(newEntry.text);
-                    // newEntry.aiAnalysis = analysis;
-                } catch (err) { console.warn("AI fail", err); }
+                    // const analysis = await processingService.analyzeEntry(newEntry.text);
+                    // newEntry.processingAnalysis = analysis;
+                } catch (err) { console.warn("Processing fail", err); }
             }
             onSave(newEntry);
             setIsAnalyzing(false);

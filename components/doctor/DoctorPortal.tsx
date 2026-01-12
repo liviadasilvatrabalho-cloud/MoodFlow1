@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MOODS, TRANSLATIONS } from '../../constants';
 import { storageService } from '../../services/storageService';
-import { aiService } from '../../services/aiService';
+import { processingService } from '../../services/processingService';
 import { MoodEntry, User, DoctorNote, Language, UserRole, ClinicalReport } from '../../types';
 import { Button } from '../ui/Button';
 import { AudioRecorder, AudioPlayer } from '../ui/AudioComponents';
@@ -106,7 +106,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         engagementScore: number;
     }>({ totalPatients: 0, totalSessions: 0, averageRisk: 'BAIXO', engagementScore: 0 });
 
-    const [aiSummary, setAiSummary] = useState<any | null>(null);
+    const [caseSummary, setCaseSummary] = useState<any | null>(null);
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
     const [isSaving, setIsSaving] = useState(false);
@@ -471,13 +471,13 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
         // Summary if available
         let startY = 65;
-        if (aiSummary) {
+        if (caseSummary) {
             doc.setFontSize(11);
             doc.setTextColor(124, 58, 237);
-            doc.text('Resumo Clínico (AI):', 14, startY);
+            doc.text('Resumo Clínico:', 14, startY);
             doc.setFontSize(9);
             doc.setTextColor(50);
-            const splitSummary = doc.splitTextToSize(aiSummary.summaryText, 180);
+            const splitSummary = doc.splitTextToSize(caseSummary.summaryText, 180);
             doc.text(splitSummary, 14, startY + 7);
             startY += (splitSummary.length * 5) + 15;
         }
@@ -653,24 +653,24 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         return { avg7, avgPrev, trend, isUnstable };
     };
 
-    const handleGenerateAISummary = async () => {
-        if (!patientEntries.length || !selectedPatientId) return;
-        setIsGeneratingSummary(true);
+    const handleGenerateCaseSummary = async () => {
+        if (!selectedPatientId || patientEntries.length === 0) return;
+        setIsGeneratingSummary(true); // Assuming isLoading is now isGeneratingSummary
         try {
-            const summary = await aiService.summarizeHistory(patientEntries);
-            setAiSummary(summary);
+            const summaryData = await processingService.summarizeHistory(patientEntries); // Assuming processingService.summarizeHistory takes patientEntries
+            setCaseSummary(summaryData); // Assuming caseSummary replaces aiSummary
 
             // AUTO-RISK ALERT: If risk is detected as medium or high in the summary
-            if (summary.riskLevel === 'high' || summary.riskLevel === 'medium') {
-                await storageService.createRiskAlert(selectedPatientId, summary.riskLevel === 'high' ? 90 : 50, summary.riskLevel, summary.summaryText);
+            if (summaryData.riskLevel === 'high' || summaryData.riskLevel === 'medium') {
+                await storageService.createRiskAlert(selectedPatientId, summaryData.riskLevel === 'high' ? 90 : 50, summaryData.riskLevel, summaryData.summaryText);
             }
 
-            storageService.logAudit(user.id, 'GENERATE_AI_SUMMARY', selectedPatientId);
+            storageService.logAudit(user.id, 'GENERATE_CASE_SUMMARY', selectedPatientId); // Updated log audit event
         } catch (error) {
-            console.error("AI Summary generation failed:", error);
-            alert("Falha ao gerar resumo de IA. Verifique sua conexão ou chave de API.");
+            console.error("Clinical Summary generation failed:", error); // Updated error message
+            alert(t.summaryError || 'Erro ao gerar resumo');
         } finally {
-            setIsGeneratingSummary(false);
+            setIsGeneratingSummary(false); // Assuming isLoading is now isGeneratingSummary
         }
     };
 
@@ -1206,6 +1206,19 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                         <span className="text-green-500 font-bold uppercase">ATIVO</span>
                                                     </div>
                                                 </div>
+                                                {caseSummary && (
+                                                    <div className="bg-[#1A1A1A] p-6 rounded-3xl border border-white/5 space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                                                        <div className="flex items-center justify-between">
+                                                            <h4 className="text-[11px] font-black text-[#8b5cf6] uppercase tracking-[0.2em]">{t.summaryResult || "Resumo Clínico"}</h4>
+                                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${caseSummary.riskLevel === 'high' ? 'bg-red-500/20 text-red-400' : caseSummary.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}`}>
+                                                                Risco: {caseSummary.riskLevel || 'N/A'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-300 leading-relaxed font-medium">
+                                                            {caseSummary.summaryText}
+                                                        </p>
+                                                    </div>
+                                                )}
                                                 <div className="mt-6 pt-4 border-t border-white/5 flex gap-2">
                                                     <Button
                                                         variant="ghost"
@@ -1739,14 +1752,14 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                 )}
                                             </div>
 
-                                            {/* AI Clinical Insights Section */}
+                                            {/* Clinical Insights Section */}
                                             <div className="bg-gradient-to-br from-neutral-900 to-indigo-950/20 p-6 md:p-8 rounded-3xl border border-indigo-500/20 shadow-2xl space-y-6">
                                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-xl">✨</div>
                                                         <div>
-                                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t.clinicalAiInsights}</h3>
-                                                            <p className="text-[10px] text-indigo-300/60 uppercase font-black">Powered by Gemini 1.5</p>
+                                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t.clinicalInsights}</h3>
+                                                            <p className="text-[10px] text-indigo-300/60 uppercase font-black">Processamento Clínico Proprietário</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-wrap gap-2 w-full md:w-auto">
@@ -1757,7 +1770,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                             <span>📄</span> Relatórios
                                                         </Button>
                                                         <Button
-                                                            onClick={handleGenerateAISummary}
+                                                            onClick={handleGenerateCaseSummary}
                                                             disabled={isGeneratingSummary || patientEntries.length === 0}
                                                             className={`h-10 px-2 md:px-6 text-xs font-bold whitespace-nowrap gap-2 flex-1 md:flex-none print:hidden ${isGeneratingSummary ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-700 shadow-[0_0_20px_rgba(79,70,229,0.3)]'}`}
                                                         >
@@ -1777,24 +1790,24 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                 </div>
 
 
-                                                {!aiSummary && !isGeneratingSummary && (
+                                                {!caseSummary && !isGeneratingSummary && (
                                                     <div className="py-10 border border-dashed border-indigo-500/10 rounded-2xl flex flex-col items-center justify-center text-center px-6 print:hidden">
-                                                        <p className="text-gray-500 text-sm max-w-sm">Use a inteligência artificial para identificar padrões comportamentais, riscos e recomendações com base nos últimos 30 registros.</p>
+                                                        <p className="text-gray-500 text-sm max-w-sm">Use o sistema de processamento de dados para identificar padrões comportamentais, riscos e recomendações com base nos últimos 30 registros.</p>
                                                     </div>
                                                 )}
 
-                                                {aiSummary && (
+                                                {caseSummary && (
                                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4">
                                                         <div className="space-y-4">
                                                             <div>
                                                                 <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2 block">{t.executiveSummary}</label>
-                                                                <p className="text-sm text-gray-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5">{aiSummary.summaryText}</p>
+                                                                <p className="text-sm text-gray-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5">{caseSummary.summaryText}</p>
                                                             </div>
                                                             <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/5">
-                                                                <div className={`w-3 h-3 rounded-full ${aiSummary.riskLevel === 'high' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : aiSummary.riskLevel === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                                                                <div className={`w-3 h-3 rounded-full ${caseSummary.riskLevel === 'high' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : caseSummary.riskLevel === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
                                                                 <div>
                                                                     <span className="text-[10px] text-gray-500 uppercase font-bold block">{t.riskLevel}</span>
-                                                                    <span className="text-sm font-bold text-white uppercase">{aiSummary.riskLevel === 'high' ? t.riskLevels.high : aiSummary.riskLevel === 'medium' ? t.riskLevels.medium : t.riskLevels.low}</span>
+                                                                    <span className="text-sm font-bold text-white uppercase">{caseSummary.riskLevel === 'high' ? t.riskLevels.high : caseSummary.riskLevel === 'medium' ? t.riskLevels.medium : t.riskLevels.low}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1802,7 +1815,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                             <div>
                                                                 <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2 block">{t.identifiedPatterns}</label>
                                                                 <div className="flex flex-wrap gap-2">
-                                                                    {aiSummary.patterns.map((p: string, i: number) => (
+                                                                    {caseSummary.patterns.map((p: string, i: number) => (
                                                                         <span key={i} className="bg-indigo-500/10 text-indigo-200 text-[11px] px-3 py-1 rounded-full border border-indigo-500/10">{p}</span>
                                                                     ))}
                                                                 </div>
@@ -1810,7 +1823,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                             <div>
                                                                 <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2 block">{t.clinicalRecommendations}</label>
                                                                 <ul className="space-y-2">
-                                                                    {aiSummary.recommendations.map((r: string, i: number) => (
+                                                                    {caseSummary.recommendations.map((r: string, i: number) => (
                                                                         <li key={i} className="text-xs text-gray-400 flex gap-2">
                                                                             <span className="text-indigo-500">•</span> {r}
                                                                         </li>
