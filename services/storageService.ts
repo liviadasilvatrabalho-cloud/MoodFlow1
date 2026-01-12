@@ -248,7 +248,7 @@ export const storageService = {
 
     subscribeEntries: (userId: string, callback: (entries: MoodEntry[]) => void) => {
         const fetch = async () => {
-            const { data } = await supabase.from('entries').select('*').eq('user_id', userId).order('date', { ascending: false });
+            const { data } = await supabase.from('entries').select('*').eq('user_id', userId).order('date', { ascending: false }).order('id', { ascending: false });
             if (data) callback(data.map(row => ({
                 ...row,
                 userId: row.user_id,
@@ -271,7 +271,8 @@ export const storageService = {
             .from('entries')
             .select('*')
             .eq('user_id', patientId)
-            .order('date', { ascending: false });
+            .order('date', { ascending: false })
+            .order('id', { ascending: false });
 
         if (error) throw error;
 
