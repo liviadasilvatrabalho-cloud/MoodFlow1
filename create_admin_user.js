@@ -26,7 +26,7 @@ function loadEnv() {
     }
 }
 
-const vars = loadEnv() as any;
+const vars = loadEnv();
 const supabaseUrl = vars.VITE_SUPABASE_URL
 const supabaseAnonKey = vars.VITE_SUPABASE_ANON_KEY
 
