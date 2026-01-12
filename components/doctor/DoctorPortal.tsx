@@ -254,6 +254,39 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         loadPatients();
     }, [user.id, isAdminPortal, selectedClinicId]);
 
+    useEffect(() => {
+        if (selectedPatientId) {
+            const loadPatientData = async () => {
+                try {
+                    // Fetch mood entries
+                    const entries = await storageService.getPatientEntries(selectedPatientId, user.id);
+                    setPatientEntries(entries);
+
+                    // Fetch charts/precomputed data (Energy, etc.)
+                    await loadPatientCharts(selectedPatientId);
+
+                    // Fetch thread notes/comments (Shared)
+                    const patientNotes = await storageService.getPatientNotes(selectedPatientId);
+                    setNotes(patientNotes);
+
+                    // Fetch clinical reports
+                    const reports = await storageService.getClinicalReports(selectedPatientId, user.id);
+                    setClinicalReports(reports);
+                } catch (error) {
+                    console.error("Failed to load patient data:", error);
+                }
+            };
+            loadPatientData();
+        } else {
+            // Reset states when no patient is selected
+            setPatientEntries([]);
+            setPrecomputedChartData([]);
+            setNotes([]);
+            setClinicalReports([]);
+            setCaseSummary(null);
+        }
+    }, [selectedPatientId, user.id]);
+
     const handleConnectPatient = async (e: React.FormEvent) => {
         e.preventDefault();
         const result = await storageService.connectPatient(user.id, connectEmail);
