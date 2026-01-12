@@ -279,36 +279,40 @@ export default function App() {
                         <div className="space-y-6">
                             <h3 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-3">
                                 {t.recentActivity}
-                                <span className="text-xs bg-white/5 text-gray-500 px-3 py-1 rounded-full border border-white/5 font-bold">{entries.length}</span>
+                                <span className="text-xs bg-white/5 text-gray-500 px-3 py-1 rounded-full border border-white/5 font-bold">
+                                    {entries.filter(e => new Date(e.timestamp).toLocaleDateString('pt-BR') === new Date().toLocaleDateString('pt-BR')).length}
+                                </span>
                             </h3>
                             <div className="space-y-4">
-                                {entries.length === 0 ? (
+                                {entries.filter(e => new Date(e.timestamp).toLocaleDateString('pt-BR') === new Date().toLocaleDateString('pt-BR')).length === 0 ? (
                                     <div className="bg-[#0D0D0D] border border-dashed border-white/10 rounded-[32px] p-16 text-center">
                                         <span className="text-4xl mb-4 block">📔</span>
-                                        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">{t.emptyBook}</p>
+                                        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Nenhum registro hoje</p>
                                     </div>
                                 ) : (
-                                    entries.slice(0, 5).map(e => {
-                                        const entryIsMood = e.entryMode === 'mood' || (!e.entryMode && e.mood !== null);
-                                        const m = entryIsMood ? MOODS.find(mood => mood.value === e.mood) : null;
-                                        return (
-                                            <div key={e.id} className="bg-[#0D0D0D] p-5 rounded-[28px] border border-white/5 flex items-center justify-between group hover:bg-[#111] hover:border-white/10 transition-all gap-4">
-                                                <div className="flex items-center gap-5 min-w-0 flex-1">
-                                                    <span className="text-3xl flex-shrink-0 select-none">{m?.emoji || '📖'}</span>
-                                                    <div className="min-w-0">
-                                                        <div className="font-black text-white text-sm tracking-tight">{m?.label || t.diary}</div>
-                                                        <p className="text-xs text-gray-500 truncate max-w-md font-medium tracking-tight mt-0.5">{e.text || 'Sem texto...'}</p>
+                                    entries
+                                        .filter(e => new Date(e.timestamp).toLocaleDateString('pt-BR') === new Date().toLocaleDateString('pt-BR'))
+                                        .map(e => {
+                                            const entryIsMood = e.entryMode === 'mood' || (!e.entryMode && e.mood !== null);
+                                            const m = entryIsMood ? MOODS.find(mood => mood.value === e.mood) : null;
+                                            return (
+                                                <div key={e.id} className="bg-[#0D0D0D] p-5 rounded-[28px] border border-white/5 flex items-center justify-between group hover:bg-[#111] hover:border-white/10 transition-all gap-4">
+                                                    <div className="flex items-center gap-5 min-w-0 flex-1">
+                                                        <span className="text-3xl flex-shrink-0 select-none">{m?.emoji || '📖'}</span>
+                                                        <div className="min-w-0">
+                                                            <div className="font-black text-white text-sm tracking-tight">{m?.label || t.diary}</div>
+                                                            <p className="text-xs text-gray-500 truncate max-w-md font-medium tracking-tight mt-0.5">{e.text || 'Sem texto...'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 flex-shrink-0">
+                                                        <span className="text-[10px] text-gray-600 font-black uppercase tracking-tighter">{new Date(e.timestamp).toLocaleDateString('pt-BR')}</span>
+                                                        {user.role === UserRole.PACIENTE && (
+                                                            <span className={`w-2 h-2 rounded-full ${e.isLocked ? 'bg-orange-500 shadow-[0_0_8px_#f97316]' : 'bg-green-500 shadow-[0_0_8px_#10b981]'}`} />
+                                                        )}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4 flex-shrink-0">
-                                                    <span className="text-[10px] text-gray-600 font-black uppercase tracking-tighter">{new Date(e.timestamp).toLocaleDateString('pt-BR')}</span>
-                                                    {user.role === UserRole.PACIENTE && (
-                                                        <span className={`w-2 h-2 rounded-full ${e.isLocked ? 'bg-orange-500 shadow-[0_0_8px_#f97316]' : 'bg-green-500 shadow-[0_0_8px_#10b981]'}`} />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })
+                                            );
+                                        })
                                 )}
                             </div>
                         </div>
