@@ -1209,7 +1209,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             <div>
                                                 <h3 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
                                                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                                    Corpo Clínico
+                                                    Corpo Clínico <span className="text-gray-500 ml-1">- {clinics.find(c => c.clinics.id === selectedClinicId)?.clinics.name}</span>
                                                 </h3>
                                                 <p className="text-xs text-textMuted mt-1">Psicólogos e Psiquiatras com acesso aos pacientes.</p>
                                             </div>
