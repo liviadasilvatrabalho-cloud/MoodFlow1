@@ -120,6 +120,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         id: '', title: '', reportType: 'evolucao', content: ''
     });
 
+    // --- B2B STATE ---
+    const [b2bPeriod, setB2bPeriod] = useState<'all' | 'month'>('month');
+
     const lang: Language = user.language || 'pt';
     const t = TRANSLATIONS[lang];
     const recognitionRef = useRef<any>(null);
@@ -141,54 +144,23 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         if (viewMode === 'reports_b2b' && selectedClinicId && isAdminPortal) {
             const calculateMetrics = async () => {
                 try {
-                    const clinicPatients = await storageService.getClinicPatients(selectedClinicId);
-                    const totalPatients = clinicPatients.length;
+                    // Use server-side aggregation for performance and security (Bypass RLS for agg)
+                    // Pass selected period filter
+                    const data = await storageService.getClinicB2BMetrics(selectedClinicId, b2bPeriod);
 
-                    // Count total sessions (entries) for all clinic patients
-                    let totalSessions = 0;
-                    let moodSum = 0;
-                    let moodCount = 0;
-                    let activePatients = 0;
-
-                    for (const patient of clinicPatients) {
-                        const entries = await storageService.getPatientEntries(patient.id, user.id);
-                        totalSessions += entries.length;
-
-                        // Calculate average mood for risk assessment
-                        entries.forEach(e => {
-                            if (e.mood !== null && e.mood !== undefined) {
-                                moodSum += e.mood;
-                                moodCount++;
-                            }
-                        });
-
-                        // Count active patients (at least 1 entry in last 30 days)
-                        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-                        if (entries.some(e => e.timestamp >= thirtyDaysAgo)) {
-                            activePatients++;
-                        }
-                    }
-
-                    // Calculate average mood (1-10 scale)
-                    const avgMood = moodCount > 0 ? moodSum / moodCount : 5;
-
-                    // Risk assessment based on average mood
-                    let averageRisk: 'BAIXO' | 'MÉDIO' | 'ALTO';
-                    if (avgMood >= 7) averageRisk = 'BAIXO';
-                    else if (avgMood >= 4) averageRisk = 'MÉDIO';
-                    else averageRisk = 'ALTO';
-
-                    // Engagement score (% of active patients)
-                    const engagementScore = totalPatients > 0 ? Math.round((activePatients / totalPatients) * 100) : 0;
-
-                    setB2bMetrics({ totalPatients, totalSessions, averageRisk, engagementScore });
+                    setB2bMetrics({
+                        totalPatients: data.totalPatients || 0,
+                        totalSessions: data.totalSessions || 0,
+                        averageRisk: data.averageRisk || 'BAIXO',
+                        engagementScore: data.engagementScore || 0
+                    });
                 } catch (error) {
                     console.error('Failed to calculate B2B metrics:', error);
                 }
             };
             calculateMetrics();
         }
-    }, [viewMode, selectedClinicId, isAdminPortal, user.id]);
+    }, [viewMode, selectedClinicId, isAdminPortal, user.id, b2bPeriod]); // Add b2bPeriod dependency
 
     const [precomputedChartData, setPrecomputedChartData] = useState<any[]>([]);
 
@@ -1315,12 +1287,21 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             <p className="text-xs text-textMuted mt-1">Visão analítica de saúde emocional por unidade e empresa.</p>
                                         </div>
                                         <div className="flex gap-3">
-                                            <Button variant="outline" className="h-10 text-[10px] uppercase font-black gap-2 border-white/5">
-                                                <span>📅</span> Este Mês
-                                            </Button>
-                                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white h-10 text-[10px] uppercase font-black px-6">
-                                                Exportar PDF
-                                            </Button>
+                                            <div className="flex gap-3">
+                                                <Button
+                                                    variant={b2bPeriod === 'month' ? 'default' : 'outline'}
+                                                    className={`h-10 text-[10px] uppercase font-black gap-2 ${b2bPeriod === 'month' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'border-white/5 text-white'}`}
+                                                    onClick={() => setB2bPeriod(prev => prev === 'month' ? 'all' : 'month')}
+                                                >
+                                                    <span>📅</span> {b2bPeriod === 'month' ? 'Este Mês' : 'Todo Período'}
+                                                </Button>
+                                                <Button
+                                                    className="bg-neutral-800 hover:bg-neutral-700 text-white h-10 text-[10px] uppercase font-black px-6 border border-white/5"
+                                                    onClick={() => window.print()}
+                                                >
+                                                    Exportar PDF
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1406,7 +1387,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                     disabled={isCreatingClinic || !editingClinicName.trim()}
                                                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
                                                 >
-                                                    {isCreatingClinic ? 'Salvando...' : 'Salvar Alterações'}
+                                                    {isCreatingClinic ? 'Salvando...' : 'Salvar Nome da Unidade'}
                                                 </Button>
                                             </div>
                                         </div>
