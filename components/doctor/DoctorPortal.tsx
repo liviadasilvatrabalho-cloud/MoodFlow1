@@ -121,7 +121,8 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     });
 
     // --- B2B STATE ---
-    const [b2bPeriod, setB2bPeriod] = useState<'all' | 'month'>('month');
+    const [b2bFilterType, setB2bFilterType] = useState<'all' | 'month'>('month');
+    const [b2bMonth, setB2bMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
     const lang: Language = user.language || 'pt';
     const t = TRANSLATIONS[lang];
@@ -145,8 +146,19 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             const calculateMetrics = async () => {
                 try {
                     // Use server-side aggregation for performance and security (Bypass RLS for agg)
-                    // Pass selected period filter
-                    const data = await storageService.getClinicB2BMetrics(selectedClinicId, b2bPeriod);
+                    let startDate: string | null = null;
+                    let endDate: string | null = null;
+
+                    if (b2bFilterType === 'month' && b2bMonth) {
+                        const [year, month] = b2bMonth.split('-').map(Number);
+                        const start = new Date(year, month - 1, 1);
+                        const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+                        startDate = start.toISOString();
+                        endDate = end.toISOString();
+                    }
+
+                    const data = await storageService.getClinicB2BMetrics(selectedClinicId, startDate, endDate);
 
                     setB2bMetrics({
                         totalPatients: data.totalPatients || 0,
@@ -160,7 +172,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
             };
             calculateMetrics();
         }
-    }, [viewMode, selectedClinicId, isAdminPortal, user.id, b2bPeriod]); // Add b2bPeriod dependency
+    }, [viewMode, selectedClinicId, isAdminPortal, user.id, b2bFilterType, b2bMonth]);
 
     const [precomputedChartData, setPrecomputedChartData] = useState<any[]>([]);
 
@@ -1287,21 +1299,37 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             <p className="text-xs text-textMuted mt-1">Visão analítica de saúde emocional por unidade e empresa.</p>
                                         </div>
                                         <div className="flex gap-3">
-                                            <div className="flex gap-3">
+                                            <div className="flex items-center gap-1 bg-surfaceHighlight p-1.5 rounded-2xl border border-white/5 shadow-inner">
                                                 <Button
-                                                    variant={b2bPeriod === 'month' ? 'default' : 'outline'}
-                                                    className={`h-10 text-[10px] uppercase font-black gap-2 ${b2bPeriod === 'month' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'border-white/5 text-white'}`}
-                                                    onClick={() => setB2bPeriod(prev => prev === 'month' ? 'all' : 'month')}
+                                                    variant={b2bFilterType === 'all' ? 'default' : 'ghost'}
+                                                    className={`h-9 text-[10px] uppercase font-black px-4 rounded-xl transition-all ${b2bFilterType === 'all' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                                    onClick={() => setB2bFilterType('all')}
                                                 >
-                                                    <span>📅</span> {b2bPeriod === 'month' ? 'Este Mês' : 'Todo Período'}
+                                                    Desde o Início
                                                 </Button>
-                                                <Button
-                                                    className="bg-neutral-800 hover:bg-neutral-700 text-white h-10 text-[10px] uppercase font-black px-6 border border-white/5"
-                                                    onClick={() => window.print()}
-                                                >
-                                                    Exportar PDF
-                                                </Button>
+
+                                                <div className="h-5 w-[1px] bg-white/10 mx-2"></div>
+
+                                                <div className={`flex items-center gap-3 px-3 py-1.5 rounded-xl transition-all ${b2bFilterType === 'month' ? 'bg-white/5 ring-1 ring-indigo-500/50' : 'opacity-60 hover:opacity-100'}`}>
+                                                    <span className="text-sm">📅</span>
+                                                    <input
+                                                        type="month"
+                                                        value={b2bMonth}
+                                                        onChange={(e) => {
+                                                            setB2bMonth(e.target.value);
+                                                            setB2bFilterType('month');
+                                                        }}
+                                                        className="bg-transparent border-none text-white text-[11px] font-bold uppercase focus:ring-0 cursor-pointer w-[120px] p-0"
+                                                    />
+                                                </div>
+
                                             </div>
+                                            <Button
+                                                className="bg-neutral-800 hover:bg-neutral-700 text-white h-10 text-[10px] uppercase font-black px-6 border border-white/5"
+                                                onClick={() => window.print()}
+                                            >
+                                                Exportar PDF
+                                            </Button>
                                         </div>
                                     </div>
 

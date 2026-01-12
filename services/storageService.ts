@@ -492,15 +492,21 @@ export const storageService = {
 
 
 
+
     // --- B2B METRICS (RPC) ---
-    getClinicB2BMetrics: async (clinicId: string, period: 'all' | 'month' = 'all') => {
-        const { data, error } = await supabase.rpc('get_clinic_b2b_metrics', { p_clinic_id: clinicId, p_period: period });
+    getClinicB2BMetrics: async (clinicId: string, startDate: string | null = null, endDate: string | null = null) => {
+        const { data, error } = await supabase.rpc('get_clinic_b2b_metrics', {
+            p_clinic_id: clinicId,
+            p_start_date: startDate,
+            p_end_date: endDate
+        });
         if (error) {
             console.error('Error fetching B2B metrics:', error);
             throw error;
         }
         return data; // Returns { totalPatients, totalSessions, averageRisk, engagementScore }
     },
+
 
 
     // --- CLINICS & CHARTS ---
