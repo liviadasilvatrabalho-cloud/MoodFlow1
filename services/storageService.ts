@@ -131,18 +131,32 @@ export const storageService = {
 
         // B2B Pre-authorization Check: Professionals must be invited first
         if (role === UserRole.PSICOLOGO || role === UserRole.PSIQUIATRA) {
-            const { data: invite } = await supabase
-                .from('clinic_members')
-                .select('id, doctor_id')
-                .ilike('email', email.trim())
-                .limit(1);
+            try {
+                const { data: invite, error: inviteError } = await supabase
+                    .from('clinic_members')
+                    .select('id, doctor_id, clinical_role')
+                    .ilike('email', email.trim())
+                    .limit(1);
 
-            if (!invite || invite.length === 0) {
-                throw new Error("Este e-mail não possui um convite pendente. Entre em contato com sua clínica para ser convidado.");
-            }
+                if (inviteError) {
+                    console.error("Supabase Error checking invite:", inviteError);
+                    throw new Error("Falha ao verificar convite no servidor. Por favor, tente novamente em instantes.");
+                }
 
-            if (invite[0].doctor_id) {
-                throw new Error("Este e-mail já possui uma conta vinculada a esta clínica. Por favor, faça login em vez de criar uma nova conta.");
+                if (!invite || invite.length === 0) {
+                    throw new Error("Este e-mail não possui um convite pendente. Entre em contato com sua clínica para ser convidado.");
+                }
+
+                if (invite[0].doctor_id) {
+                    throw new Error("Este e-mail já possui uma conta profissional vinculada. Por favor, use a tela de 'Login' em vez de criar uma nova conta.");
+                }
+            } catch (err: any) {
+                // Preserve our custom error messages if they were thrown inside the block
+                if (err.message && (err.message.includes("não possui um convite") || err.message.includes("já possui uma conta"))) {
+                    throw err;
+                }
+                console.error("Generic Error checking professional pre-auth:", err);
+                throw new Error("Ocorreu um erro ao validar seu cadastro. Verifique se o e-mail está correto ou contate o suporte.");
             }
         }
 
