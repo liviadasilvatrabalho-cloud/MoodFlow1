@@ -1384,13 +1384,17 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                             </div>
 
                                             <div className="pt-6 border-t border-white/5">
-                                                <h4 className="text-sm font-bold text-white mb-4 uppercase tracking-widest">Informações do Plano</h4>
+                                                <div className="flex items-center gap-2 mb-4">
+                                                    <h4 className="text-sm font-bold text-white uppercase tracking-widest">Informações do Plano</h4>
+                                                    <span className="text-[10px] text-gray-600 border border-gray-800 rounded px-2 py-0.5">(Gerenciado pelo Sistema)</span>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="bg-neutral-900/50 p-4 rounded-2xl border border-white/5">
                                                         <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Status do Plano</p>
                                                         <p className="text-sm text-green-400 font-bold">PROFISSIONAL</p>
                                                     </div>
                                                     <div className="bg-neutral-900/50 p-4 rounded-2xl border border-white/5">
+                                                        <p className="text-[9px] text-gray-500 uppercase font-bold mb-1">Renovação</p>
                                                         <p className="text-sm text-white font-bold">12/02/2026</p>
                                                     </div>
                                                 </div>

@@ -1,0 +1,4 @@
+🔍 Testing App Query Logic...
+Testing with Clinic ID: 7a2d8750-b0d8-428c-bfbf-ecd29568aeaf
+
+--- Executing JOIN Query ---

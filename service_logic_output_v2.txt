@@ -1,0 +1,25 @@
+🔍 Testing storageService Logic...
+🏥 Clinic: numero um (7a2d8750-b0d8-428c-bfbf-ecd29568aeaf)
+--- Running getClinicProfessionals logic ---
+✅ Step 1: Found 2 members
+   IDs: c93af325-8cf0-4f41-9729-4eebd5c4a5fd, ee9ef258-da9b-4c18-a1de-6c9e411bf869
+✅ Step 2: Found 2 profiles
+✅ Step 3: Merged result has 2 items
+[
+  {
+    id: 'c93af325-8cf0-4f41-9729-4eebd5c4a5fd',
+    name: 'Usuário Novo',
+    email: 'breno@gmail.com',
+    role: 'PSICOLOGO',
+    membershipStatus: 'active',
+    specialty: 'PSICOLOGO'
+  },
+  {
+    id: 'ee9ef258-da9b-4c18-a1de-6c9e411bf869',
+    name: 'Usuário Novo',
+    email: 'lara@gmail.com',
+    role: 'PSIQUIATRA',
+    membershipStatus: 'active',
+    specialty: 'PSIQUIATRA'
+  }
+]

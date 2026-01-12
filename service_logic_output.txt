@@ -1,0 +1,3 @@
+🔍 Testing storageService Logic...
+🏥 Clinic: numero um (7a2d8750-b0d8-428c-bfbf-ecd29568aeaf)
+--- Running getClinicProfessionals logic ---
