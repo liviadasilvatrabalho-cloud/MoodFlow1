@@ -22,7 +22,7 @@ const mapDbUserToUser = (dbUser: any, authName?: string): User => {
     // otherwise fall back to 'User'
     let finalName = dbUser.name;
 
-    const invalidNames = ['user', 'usuário', 'usuario', 'admin', 'administrator'];
+    const invalidNames = ['user', 'usuário', 'usuario', 'admin', 'administrator', 'usuário novo', 'novo usuário', 'user novo', 'novo user', 'usuário novo | lara'];
     const dbNameLower = finalName ? finalName.toLowerCase().trim() : '';
 
     if (!finalName || invalidNames.includes(dbNameLower) || finalName.trim() === '') {

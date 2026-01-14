@@ -128,6 +128,10 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const t = TRANSLATIONS[lang];
     const recognitionRef = useRef<any>(null);
 
+    // Dynamic professional title and emoji
+    const profPrefix = user.clinicalRole === 'PSICOLOGO' ? 'Psic.' : 'Dr.';
+    const profEmoji = user.clinicalRole === 'PSICOLOGO' ? '🧠' : '👨‍⚕️';
+
     useEffect(() => {
         if (viewMode === 'clinic' || viewMode === 'clinic_settings' || viewMode === 'reports_b2b' || viewMode === 'professionals') {
             storageService.getClinics(user.id).then((data) => {
@@ -974,7 +978,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
 
                     <div className="flex items-center gap-2 text-xs md:text-sm text-textMuted">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        {user.clinicalRole === 'psychologist' ? 'Psicólogo(a)' : user.clinicalRole === 'psychiatrist' ? 'Psiquiatra' : 'Profissional'} {user.name}
+                        {user.clinicalRole === 'PSICOLOGO' ? 'Psic.' : user.clinicalRole === 'PSIQUIATRA' ? 'Dr.' : 'Prof.'} {user.name}
                     </div>
                 </div>
 
@@ -1060,9 +1064,9 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                     <div className="h-full flex flex-col items-center justify-start p-8 md:p-12">
                         <div className="text-center mb-12 mt-12">
                             <div className="w-20 h-20 bg-surfaceHighlight rounded-full flex items-center justify-center mx-auto mb-6">
-                                <span className="text-4xl">👨‍⚕️</span>
+                                <span className="text-4xl">{profEmoji}</span>
                             </div>
-                            <h2 className="text-2xl font-bold text-white mb-2">{t.hello} Dr. {user.name}</h2>
+                            <h2 className="text-2xl font-bold text-white mb-2">{t.hello} {profPrefix} {user.name}</h2>
                             <p className="text-textMuted">{t.selectPatient}</p>
                         </div>
                     </div>
@@ -1077,7 +1081,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-bold">{new Date().toLocaleDateString()}</p>
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold">Gerado por Dr(a). {user.name}</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold">Gerado por {profPrefix}(a). {user.name}</p>
                                 </div>
                             </div>
                             <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100 mt-8">
@@ -2059,7 +2063,7 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                     entries={patientEntries}
                     notes={notes}
                     userRole={user.role || ''}
-                    userName={user.name || 'Doutor'}
+                    userName={user.name || 'Profissional'}
                     patientName={patients.find(p => p.id === selectedPatientId)?.name || 'Paciente'}
                 />
             )}
