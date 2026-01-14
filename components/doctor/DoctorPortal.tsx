@@ -129,10 +129,16 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
     const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
-        if (viewMode === 'clinic' || viewMode === 'clinic_settings') {
-            storageService.getClinics(user.id).then(setClinics);
+        if (viewMode === 'clinic' || viewMode === 'clinic_settings' || viewMode === 'reports_b2b' || viewMode === 'professionals') {
+            storageService.getClinics(user.id).then((data) => {
+                setClinics(data);
+                // Auto-select first clinic if none selected
+                if (!selectedClinicId && data.length > 0) {
+                    setSelectedClinicId(data[0].clinics.id);
+                }
+            });
         }
-    }, [viewMode, user.id]);
+    }, [viewMode, user.id, selectedClinicId]);
 
     useEffect(() => {
         if (viewMode === 'professionals' && selectedClinicId) {
@@ -1347,12 +1353,30 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                 </div>
                             ) : viewMode === 'reports_b2b' ? (
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                                         <div>
                                             <h3 className="text-lg font-bold text-white uppercase tracking-wider">Relatórios Corporativos B2B</h3>
                                             <p className="text-xs text-textMuted mt-1">Visão analítica de saúde emocional por unidade e empresa.</p>
                                         </div>
-                                        <div className="flex gap-3">
+                                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                                            {/* Clinic Selector for B2B */}
+                                            {clinics.length > 1 && (
+                                                <div className="flex items-center gap-2 bg-surfaceHighlight p-1.5 rounded-2xl border border-white/5 shadow-inner">
+                                                    <span className="text-[10px] font-black text-gray-500 uppercase ml-2">Unidade:</span>
+                                                    <select
+                                                        value={selectedClinicId || ''}
+                                                        onChange={(e) => setSelectedClinicId(e.target.value)}
+                                                        className="bg-transparent border-none text-indigo-400 text-xs font-black uppercase focus:ring-0 cursor-pointer py-1 pr-8"
+                                                    >
+                                                        {clinics.map(c => (
+                                                            <option key={c.clinics.id} value={c.clinics.id} className="bg-[#0A0A0A] text-white">
+                                                                {c.clinics.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
                                             <div className="flex items-center gap-1 bg-surfaceHighlight p-1.5 rounded-2xl border border-white/5 shadow-inner">
                                                 <Button
                                                     variant={b2bFilterType === 'all' ? 'default' : 'ghost'}
@@ -1376,7 +1400,6 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                                         className="bg-transparent border-none text-white text-[11px] font-bold uppercase focus:ring-0 cursor-pointer w-[120px] p-0"
                                                     />
                                                 </div>
-
                                             </div>
                                             <Button
                                                 className="bg-neutral-800 hover:bg-neutral-700 text-white h-10 text-[10px] uppercase font-black px-6 border border-white/5"
@@ -1387,34 +1410,44 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
-                                            <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Total de Pacientes</p>
-                                            <p className="text-2xl font-black text-white">{b2bMetrics.totalPatients}</p>
-                                            <p className="text-[9px] text-gray-500 mt-2">Clínica ativa</p>
+                                    {!selectedClinicId ? (
+                                        <div className="bg-surface p-12 rounded-3xl border border-dashed border-neutral-800 text-center space-y-4">
+                                            <div className="text-4xl">🏢</div>
+                                            <h4 className="text-white font-bold">Nenhuma unidade selecionada</h4>
+                                            <p className="text-xs text-gray-500 max-w-sm mx-auto">Selecione uma unidade no menu superior para visualizar os relatórios corporativos.</p>
                                         </div>
-                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
-                                            <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Sessões Realizadas</p>
-                                            <p className="text-2xl font-black text-white">{b2bMetrics.totalSessions}</p>
-                                            <p className="text-[9px] text-blue-500 mt-2">Total de registros</p>
-                                        </div>
-                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
-                                            <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Risco Médio Unitário</p>
-                                            <p className={`text-2xl font-black ${b2bMetrics.averageRisk === 'BAIXO' ? 'text-green-400' : b2bMetrics.averageRisk === 'MÉDIO' ? 'text-yellow-400' : 'text-red-400'}`}>{b2bMetrics.averageRisk}</p>
-                                            <p className={`text-[9px] mt-2 ${b2bMetrics.averageRisk === 'BAIXO' ? 'text-green-500' : b2bMetrics.averageRisk === 'MÉDIO' ? 'text-yellow-500' : 'text-red-500'}`}>{b2bMetrics.averageRisk === 'BAIXO' ? 'Estável' : b2bMetrics.averageRisk === 'MÉDIO' ? 'Atenção' : 'Crítico'}</p>
-                                        </div>
-                                        <div className="bg-surface p-6 rounded-3xl border border-neutral-800">
-                                            <p className="text-[10px] text-gray-500 uppercase font-black mb-1">Engagement Score</p>
-                                            <p className="text-2xl font-black text-indigo-400">{b2bMetrics.engagementScore}%</p>
-                                            <p className="text-[9px] text-indigo-500 mt-2">{b2bMetrics.engagementScore >= 70 ? 'Excelente' : b2bMetrics.engagementScore >= 40 ? 'Bom' : 'Baixo'}</p>
-                                        </div>
-                                    </div>
+                                    ) : (
+                                        <>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                <div className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black mb-1 group-hover:text-indigo-400">Total de Pacientes</p>
+                                                    <p className="text-2xl font-black text-white">{b2bMetrics.totalPatients}</p>
+                                                    <p className="text-[9px] text-gray-500 mt-2">Na unidade selecionada</p>
+                                                </div>
+                                                <div className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black mb-1 group-hover:text-indigo-400">Sessões Realizadas</p>
+                                                    <p className="text-2xl font-black text-white">{b2bMetrics.totalSessions}</p>
+                                                    <p className="text-[9px] text-blue-500 mt-2">Total de registros</p>
+                                                </div>
+                                                <div className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black mb-1 group-hover:text-indigo-400">Risco Médio Unitário</p>
+                                                    <p className={`text-2xl font-black ${b2bMetrics.averageRisk === 'BAIXO' ? 'text-green-400' : b2bMetrics.averageRisk === 'MÉDIO' ? 'text-yellow-400' : 'text-red-400'}`}>{b2bMetrics.averageRisk}</p>
+                                                    <p className={`text-[9px] mt-2 ${b2bMetrics.averageRisk === 'BAIXO' ? 'text-green-500' : b2bMetrics.averageRisk === 'MÉDIO' ? 'text-yellow-500' : 'text-red-500'}`}>{b2bMetrics.averageRisk === 'BAIXO' ? 'Estável' : b2bMetrics.averageRisk === 'MÉDIO' ? 'Atenção' : 'Crítico'}</p>
+                                                </div>
+                                                <div className="bg-surface p-6 rounded-3xl border border-neutral-800 hover:border-indigo-500/30 transition-all group">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black mb-1 group-hover:text-indigo-400">Engagement Score</p>
+                                                    <p className="text-2xl font-black text-indigo-400">{b2bMetrics.engagementScore}%</p>
+                                                    <p className="text-[9px] text-indigo-500 mt-2">{b2bMetrics.engagementScore >= 70 ? 'Excelente' : b2bMetrics.engagementScore >= 40 ? 'Bom' : 'Baixo'}</p>
+                                                </div>
+                                            </div>
 
-                                    <div className="bg-surface p-8 rounded-3xl border border-neutral-800 min-h-[300px] flex flex-col items-center justify-center text-center">
-                                        <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center text-2xl mb-4">📉</div>
-                                        <h4 className="text-white font-bold mb-2">Aguardando dados estruturados</h4>
-                                        <p className="text-xs text-gray-500 max-w-md">Os gráficos de evolução corporativa estarão disponíveis assim que houver volume de dados suficiente em suas unidades.</p>
-                                    </div>
+                                            <div className="bg-surface p-8 rounded-3xl border border-neutral-800 min-h-[300px] flex flex-col items-center justify-center text-center">
+                                                <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center text-2xl mb-4">📉</div>
+                                                <h4 className="text-white font-bold mb-2">Aguardando dados estruturados</h4>
+                                                <p className="text-xs text-gray-500 max-w-md">Os gráficos de evolução corporativa para a unidade <strong>{clinics.find(c => c.clinics.id === selectedClinicId)?.clinics.name}</strong> estarão disponíveis assim que houver volume de dados suficiente.</p>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             ) : viewMode === 'clinic_settings' ? (
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -2015,26 +2048,21 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
                             )}
                         </div>
                     </div>
-                )
-                }
-            </main >
+                )}
+            </main>
 
             {/* EXPORT MODAL */}
-            {
-                selectedPatientId && (
-                    <ExportReportModal
-                        isOpen={isExportModalOpen}
-                        onClose={() => setIsExportModalOpen(false)}
-                        entries={patientEntries}
-                        notes={notes}
-                        userRole={user.role || ''}
-                        userName={user.name || 'Doutor'}
-                        patientName={patients.find(p => p.id === selectedPatientId)?.name || 'Paciente'}
-                    />
-                )
-            }
-
-
-        </div >
+            {selectedPatientId && (
+                <ExportReportModal
+                    isOpen={isExportModalOpen}
+                    onClose={() => setIsExportModalOpen(false)}
+                    entries={patientEntries}
+                    notes={notes}
+                    userRole={user.role || ''}
+                    userName={user.name || 'Doutor'}
+                    patientName={patients.find(p => p.id === selectedPatientId)?.name || 'Paciente'}
+                />
+            )}
+        </div>
     );
 };
