@@ -626,22 +626,22 @@ export default function App() {
 
                 {
                     view === 'settings' && user && (
-                        <div className="px-4 pt-14 pb-4 md:p-10 max-w-3xl mx-auto space-y-10 animate-in fade-in duration-500">
+                        <div className="px-4 pt-14 pb-4 md:p-10 max-w-3xl mx-auto space-y-6 md:space-y-10 animate-in fade-in duration-500">
                             <h2 className="text-3xl font-black text-white tracking-tighter">{t.accountSettings}</h2>
                             <div className="space-y-6">
-                                <div className="bg-[#0D0D0D] p-8 rounded-[36px] border border-white/5 space-y-8 shadow-2xl">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 rounded-[24px] bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#7c3aed]/20">
+                                <div className="bg-[#0D0D0D] p-6 md:p-8 rounded-[36px] border border-white/5 space-y-8 shadow-2xl">
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+                                        <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-[24px] bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#7c3aed]/20">
                                             {((user.name || '?')[0]).toUpperCase()}
                                         </div>
-                                        <div className="space-y-1 flex-1">
+                                        <div className="space-y-1 flex-1 w-full text-center sm:text-left">
                                             {isEditingName ? (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 w-full max-w-full">
                                                     <input
                                                         type="text"
                                                         value={tempName}
                                                         onChange={(e) => setTempName(e.target.value)}
-                                                        className="bg-[#1A1A1A] border border-white/10 rounded-xl px-3 py-1.5 text-white font-black text-lg focus:outline-none focus:border-[#8b5cf6]"
+                                                        className="flex-1 min-w-0 bg-[#1A1A1A] border border-white/10 rounded-xl px-3 py-2 text-white font-black text-base focus:outline-none focus:border-[#8b5cf6]"
                                                         autoFocus
                                                     />
                                                     <button
@@ -670,14 +670,14 @@ export default function App() {
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-3 group">
-                                                    <h3 className="text-2xl font-black text-white tracking-tight">{user.name}</h3>
+                                                <div className="flex items-center justify-center sm:justify-start gap-3 group">
+                                                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate max-w-full">{user.name}</h3>
                                                     <button
                                                         onClick={() => {
                                                             setTempName(user.name);
                                                             setIsEditingName(true);
                                                         }}
-                                                        className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-[#8b5cf6] transition-all rounded-lg hover:bg-white/5"
+                                                        className="opacity-40 sm:opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-[#8b5cf6] transition-all rounded-lg hover:bg-white/5"
                                                         title="Editar nome"
                                                     >
                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
