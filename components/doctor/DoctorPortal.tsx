@@ -763,8 +763,12 @@ export const DoctorPortal: React.FC<DoctorPortalProps> = ({ user, onLogout, isAd
         const clinicalRole = rolePrompt === "2" ? 'PSIQUIATRA' : 'PSICOLOGO';
 
         try {
-            await storageService.addProfessionalToClinic(selectedClinicId, email, clinicalRole);
-            alert("Convite enviado com sucesso! O profissional será vinculado automaticamente ao criar sua conta.");
+            const result = await storageService.addProfessionalToClinic(selectedClinicId, email, clinicalRole);
+            if (result.status === 'active') {
+                alert("Profissional vinculado com sucesso!");
+            } else {
+                alert("Vínculo criado! O profissional terá acesso assim que criar sua conta.");
+            }
             // Refresh list
             storageService.getClinicProfessionals(selectedClinicId).then(setClinicProfessionals);
         } catch (error: any) {
